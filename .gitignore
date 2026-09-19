@@ -1,0 +1,14 @@
+node_modules
+.next
+out
+.DS_Store
+*.log
+_excel_dump.json
+_photo_slugs.json
+Menu Photos/
+Sushinaa-Rebranding /
+SUSHINA MENU.pdf
+*.xlsx
+.vercel
+tsconfig.tsbuildinfo
+
