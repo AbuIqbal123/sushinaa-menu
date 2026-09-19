@@ -52,7 +52,7 @@ export function DishSlide({
         ) : showPhoto ? (
           <Image
             src={photo}
-            alt={dish.name}
+            alt={`${dish.name}. ${dish.description}`}
             fill
             sizes="(max-width: 430px) 100vw, 430px"
             priority={active || index < 2}
@@ -87,7 +87,8 @@ export function DishSlide({
           </p>
           <DietTags tags={dish.tags} />
           <p className="dish-desc dish-desc-feed">{dish.description}</p>
-          <p className="tap-hint">Tap to choose · {hintFor(dish, sel)}</p>
+          <p className="tap-hint">{hintFor(dish, sel)}</p>
+          <span className="slide-cta">Add to ticket</span>
         </div>
       </button>
     </article>

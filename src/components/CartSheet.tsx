@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { WHATSAPP_E164 } from "@/data/menu";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useCart } from "@/lib/cart";
 import { formatQar } from "@/lib/money";
+import { waLink } from "@/lib/site";
 
 type Props = {
   open: boolean;
@@ -13,6 +15,7 @@ type Props = {
 export function CartSheet({ open, onClose }: Props) {
   const { lines, totalQar, inc, dec, clear } = useCart();
   const closeRef = useRef<HTMLButtonElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     if (!open) return;
@@ -96,9 +99,24 @@ export function CartSheet({ open, onClose }: Props) {
 
             <p className="ticket-note">No payment here. Show this ticket at the counter, or send it on WhatsApp.</p>
 
-            <a className="wa-btn" href={wa} target="_blank" rel="noreferrer">
+            <button
+              type="button"
+              className="wa-btn"
+              onClick={() => {
+                window.open(wa, "_blank", "noopener,noreferrer");
+                router.push("/thank-you");
+              }}
+            >
               Send on WhatsApp
-            </a>
+            </button>
+
+            <p className="ticket-legal">
+              <Link href="/privacy">Privacy</Link>
+              {" · "}
+              <Link href="/terms">Terms</Link>
+              {" · "}
+              <Link href="/contact">Contact</Link>
+            </p>
 
             <button type="button" className="clear-ticket" onClick={clear}>
               Clear
@@ -124,5 +142,5 @@ function whatsappHref(
     "",
     `Total: ${total} QAR`,
   ].join("\n");
-  return `https://wa.me/${WHATSAPP_E164}?text=${encodeURIComponent(body)}`;
+  return waLink(body);
 }

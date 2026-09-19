@@ -73,4 +73,4 @@ export function matchesDiet(dish: Dish, filter: DietFilter): boolean {
   return true;
 }
 
-export const WHATSAPP_E164 = "97455075933";
+export { SITE } from "@/lib/site";

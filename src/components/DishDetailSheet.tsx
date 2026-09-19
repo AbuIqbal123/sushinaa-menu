@@ -79,7 +79,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
           ) : (
             <Image
               src={photo}
-              alt={current.name}
+              alt={`${current.name}. ${current.description}`}
               fill
               sizes="(max-width: 430px) 100vw, 430px"
               unoptimized

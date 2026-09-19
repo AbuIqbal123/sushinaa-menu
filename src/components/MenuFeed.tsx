@@ -12,12 +12,13 @@ import {
   type Section,
 } from "@/data/menu";
 import { CartProvider, useCart } from "@/lib/cart";
+import { formatQar } from "@/lib/money";
 import { CartSheet } from "./CartSheet";
 import { DishDetailSheet } from "./DishDetailSheet";
 import { DishSlide } from "./DishSlide";
 
 function FeedInner() {
-  const { itemCount } = useCart();
+  const { itemCount, totalQar } = useCart();
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<Dish | null>(null);
   const [pop, setPop] = useState(false);
@@ -185,6 +186,7 @@ function FeedInner() {
 
       <div
         ref={feedRef}
+        id="main"
         className="feed"
         role="feed"
         aria-label="Sushinaa menu"
@@ -211,6 +213,12 @@ function FeedInner() {
           ))
         )}
       </div>
+
+      {itemCount > 0 && !sheetOpen ? (
+        <button type="button" className="sticky-cta" onClick={() => setOpen(true)}>
+          View ticket · {formatQar(totalQar)}
+        </button>
+      ) : null}
 
       <div className="sr-only" aria-live="polite">
         {itemCount ? `${itemCount} ${itemCount === 1 ? "item" : "items"} on the ticket` : ""}

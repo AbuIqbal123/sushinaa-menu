@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { AnalyticsGate } from "@/components/AnalyticsGate";
+import { CookieBanner } from "@/components/CookieBanner";
+import { SITE } from "@/lib/site";
 import "./globals.css";
 
 const display = localFont({
@@ -10,6 +13,7 @@ const display = localFont({
   variable: "--font-display",
   display: "swap",
   preload: true,
+  fallback: ["ui-sans-serif", "system-ui", "sans-serif"],
 });
 
 const sans = localFont({
@@ -21,25 +25,57 @@ const sans = localFont({
   variable: "--font-sans",
   display: "swap",
   preload: true,
+  fallback: ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
 });
 
 const arabic = localFont({
   src: [{ path: "../../public/fonts/ArbFONTS-Greta-Arabic-Medium.ttf", weight: "500" }],
   variable: "--font-arabic",
   display: "swap",
+  fallback: ["Tahoma", "Arial", "sans-serif"],
 });
 
 export const metadata: Metadata = {
-  title: "Sushinaa — menu",
-  description:
-    "Let the good times roll. Sushinaa QR menu — pick your protein, pieces, and sauces. Add to ticket, then show it at the counter.",
-  applicationName: "Sushinaa",
-  icons: { icon: "/brand/logo-red.svg" },
+  metadataBase: new URL(SITE.url),
+  title: {
+    default: `${SITE.name} · QR menu`,
+    template: `%s · ${SITE.name}`,
+  },
+  description: `${SITE.tagline}. Sushinaa QR menu in Qatar — pick protein, pieces, and sauces. Add to your ticket and send on WhatsApp ${SITE.whatsappDisplay}.`,
+  applicationName: SITE.name,
+  keywords: ["Sushinaa", "sushi Qatar", "Doha sushi", "QR menu", "سوشينا"],
+  authors: [{ name: SITE.name }],
+  creator: SITE.name,
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
+  manifest: "/site.webmanifest",
+  openGraph: {
+    type: "website",
+    locale: "en_QA",
+    url: SITE.url,
+    siteName: SITE.name,
+    title: `${SITE.name} · QR menu`,
+    description: `${SITE.tagline}. Order sushi in Qatar from the QR menu — no payment on this page.`,
+    images: [{ url: "/og.jpg", width: 1200, height: 630, alt: `${SITE.name} QR menu` }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE.name} · QR menu`,
+    description: `${SITE.tagline}. Sushi QR menu for Qatar.`,
+    images: ["/og.jpg"],
+  },
+  robots: { index: true, follow: true },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Sushinaa",
+    title: SITE.name,
   },
+  alternates: { canonical: SITE.url },
 };
 
 export const viewport: Viewport = {
@@ -50,12 +86,42 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Restaurant",
+    name: SITE.name,
+    alternateName: SITE.nameAr,
+    slogan: SITE.tagline,
+    url: SITE.url,
+    telephone: `+${SITE.whatsappE164}`,
+    areaServed: SITE.areas.map((a) => ({ "@type": "City", name: `${a}, Qatar` })),
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Doha",
+      addressCountry: "QA",
+    },
+    servesCuisine: ["Sushi", "Japanese", "Qatari"],
+    priceRange: "$$",
+    sameAs: [SITE.instagram],
+  };
+
   return (
     <html
       lang="en"
       className={`${display.variable} ${sans.variable} ${arabic.variable} h-full`}
     >
-      <body className="min-h-full antialiased">{children}</body>
+      <body className="min-h-full antialiased">
+        <a className="skip-link" href="#main">
+          Skip to menu
+        </a>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        {children}
+        <CookieBanner />
+        <AnalyticsGate />
+      </body>
     </html>
   );
 }
