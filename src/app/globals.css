@@ -312,19 +312,22 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 0 12px;
-  pointer-events: none;
+  padding: 4px 0;
+  pointer-events: auto;
 }
 
 .chip-row {
   display: flex;
+  flex-wrap: nowrap;
   gap: 6px;
   overflow-x: auto;
-  pointer-events: none;
+  overflow-y: hidden;
+  padding: 2px 12px;
+  pointer-events: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  touch-action: pan-x pan-y;
-  overscroll-behavior: contain;
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
 }
 
 .chip-row::-webkit-scrollbar {
@@ -345,6 +348,7 @@ body {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   pointer-events: auto;
+  touch-action: pan-x;
   cursor: pointer;
   white-space: nowrap;
 }

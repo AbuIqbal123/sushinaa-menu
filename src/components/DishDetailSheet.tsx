@@ -140,7 +140,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
             onClick={onAdd}
             disabled={!ready}
           >
-            {justAdded ? "Added" : `Add · ${formatQar(unit * pickQty)}`}
+            {justAdded ? "Added" : `Add to order · ${formatQar(unit * pickQty)}`}
           </button>
         </div>
       </div>

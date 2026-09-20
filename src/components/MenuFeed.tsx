@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   CATEGORY_CHIPS,
   DIET_CHIPS,
@@ -31,7 +31,15 @@ function FeedInner() {
   const skipSpy = useRef(false);
 
   const dishes = useMemo(() => DISHES.filter((d) => matchesDiet(d, diet)), [diet]);
+  const looped = useMemo(() => {
+    if (dishes.length === 0) return [];
+    return [0, 1, 2].flatMap((copy) =>
+      dishes.map((dish, real) => ({ dish, copy, real, key: `${copy}-${dish.id}` })),
+    );
+  }, [dishes]);
+  const origin = dishes.length;
   const sheetOpen = open || Boolean(detail);
+  const rowDrag = useRef(false);
 
   useEffect(() => {
     if (itemCount > prevCount.current) {
@@ -45,47 +53,75 @@ function FeedInner() {
 
   const syncSectionFromScroll = useCallback(() => {
     const feed = feedRef.current;
-    if (!feed || skipSpy.current) return;
+    const n = dishes.length;
+    if (!feed || skipSpy.current || !n) return;
     const h = feed.clientHeight;
     if (!h) return;
-    const index = Math.max(0, Math.min(dishes.length - 1, Math.round(feed.scrollTop / h)));
-    const dish = dishes[index];
+    const visual = Math.round(feed.scrollTop / h);
+    const real = ((visual % n) + n) % n;
+    const dish = dishes[real];
     if (!dish) return;
-    setActiveIndex(index);
+    setActiveIndex(real);
     setActiveSection(dish.section);
   }, [dishes]);
+
+  const wrapLoop = useCallback(() => {
+    const feed = feedRef.current;
+    const n = dishes.length;
+    if (!feed || skipSpy.current || !n) return;
+    const h = feed.clientHeight;
+    if (!h) return;
+    let visual = Math.round(feed.scrollTop / h);
+    if (visual < n) {
+      skipSpy.current = true;
+      feed.scrollTo({ top: (visual + n) * h });
+      skipSpy.current = false;
+    } else if (visual >= n * 2) {
+      skipSpy.current = true;
+      feed.scrollTo({ top: (visual - n) * h });
+      skipSpy.current = false;
+    }
+    syncSectionFromScroll();
+  }, [dishes.length, syncSectionFromScroll]);
 
   useEffect(() => {
     const feed = feedRef.current;
     if (!feed) return;
     let raf = 0;
+    let wrapTimer = 0;
     function onScroll() {
       if (raf) return;
       raf = window.requestAnimationFrame(() => {
         raf = 0;
         syncSectionFromScroll();
       });
+      window.clearTimeout(wrapTimer);
+      wrapTimer = window.setTimeout(wrapLoop, 140);
     }
     feed.addEventListener("scroll", onScroll, { passive: true });
+    feed.addEventListener("scrollend", wrapLoop);
     syncSectionFromScroll();
     return () => {
       feed.removeEventListener("scroll", onScroll);
+      feed.removeEventListener("scrollend", wrapLoop);
       if (raf) window.cancelAnimationFrame(raf);
+      window.clearTimeout(wrapTimer);
     };
-  }, [syncSectionFromScroll]);
+  }, [syncSectionFromScroll, wrapLoop]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const feed = feedRef.current;
-    if (!feed) return;
+    if (!feed || dishes.length === 0) return;
     skipSpy.current = true;
-    feed.scrollTo({ top: 0 });
+    const h = feed.clientHeight;
+    feed.scrollTo({ top: origin * h });
     setActiveIndex(0);
     setActiveSection(dishes[0]?.section ?? "Starters");
     const t = window.setTimeout(() => {
       skipSpy.current = false;
     }, 80);
     return () => window.clearTimeout(t);
-  }, [diet, dishes]);
+  }, [diet, dishes, origin]);
 
   useEffect(() => {
     const feed = feedRef.current;
@@ -109,7 +145,7 @@ function FeedInner() {
     if (id === "all") {
       setActiveIndex(0);
       setActiveSection(dishes[0]?.section ?? "Starters");
-      feed.scrollTo({ top: 0, behavior: "smooth" });
+      feed.scrollTo({ top: origin * feed.clientHeight, behavior: "smooth" });
     } else {
       const idx = dishes.findIndex((d) => d.section === id);
       if (idx < 0) {
@@ -118,7 +154,7 @@ function FeedInner() {
       }
       setActiveIndex(idx);
       setActiveSection(id);
-      const top = idx * feed.clientHeight;
+      const top = (origin + idx) * feed.clientHeight;
       const far = Math.abs(idx - activeIndex) > 3;
       feed.scrollTo({ top, behavior: far ? "auto" : "smooth" });
     }
@@ -149,7 +185,17 @@ function FeedInner() {
       </header>
 
       <div className="filter-bar" role="toolbar" aria-label="Menu filters">
-        <div ref={catRowRef} className="chip-row" aria-label="Category">
+        <div
+          ref={catRowRef}
+          className="chip-row"
+          aria-label="Category"
+          onPointerDown={() => {
+            rowDrag.current = false;
+          }}
+          onPointerMove={(e) => {
+            if (Math.abs(e.movementX) > 2) rowDrag.current = true;
+          }}
+        >
           {CATEGORY_CHIPS.map((chip) => {
             const on = chip.id !== "all" && activeSection === chip.id;
             const empty = chip.id !== "all" && !dishes.some((d) => d.section === chip.id);
@@ -162,21 +208,36 @@ function FeedInner() {
                 aria-pressed={on}
                 aria-current={on ? "true" : undefined}
                 disabled={empty}
-                onClick={() => jumpTo(chip.id)}
+                onClick={() => {
+                  if (rowDrag.current) return;
+                  jumpTo(chip.id);
+                }}
               >
                 {chip.label}
               </button>
             );
           })}
         </div>
-        <div className="chip-row chip-row-diet" aria-label="Dietary">
+        <div
+          className="chip-row chip-row-diet"
+          aria-label="Dietary"
+          onPointerDown={() => {
+            rowDrag.current = false;
+          }}
+          onPointerMove={(e) => {
+            if (Math.abs(e.movementX) > 2) rowDrag.current = true;
+          }}
+        >
           {DIET_CHIPS.map((chip) => (
             <button
               key={chip.id}
               type="button"
               className={`chip chip-diet ${diet === chip.id ? "chip-on" : ""}`}
               aria-pressed={diet === chip.id}
-              onClick={() => setDiet(chip.id)}
+              onClick={() => {
+                if (rowDrag.current) return;
+                setDiet(chip.id);
+              }}
             >
               {chip.label}
             </button>
@@ -200,17 +261,25 @@ function FeedInner() {
             </button>
           </div>
         ) : (
-          dishes.map((dish, index) => (
-            <DishSlide
-              key={dish.id}
-              dish={dish}
-              index={index}
-              diet={diet}
-              active={index === activeIndex}
-              eager={Math.abs(index - activeIndex) <= 2}
-              onOpen={setDetail}
-            />
-          ))
+          looped.map((item) => {
+            const n = dishes.length;
+            const dist = Math.min(
+              Math.abs(item.real - activeIndex),
+              n - Math.abs(item.real - activeIndex),
+            );
+            return (
+              <DishSlide
+                key={item.key}
+                dish={item.dish}
+                index={item.real}
+                diet={diet}
+                active={item.real === activeIndex}
+                eager={dist <= 2}
+                showHint={item.copy === 1 && item.real === 0}
+                onOpen={setDetail}
+              />
+            );
+          })
         )}
       </div>
 

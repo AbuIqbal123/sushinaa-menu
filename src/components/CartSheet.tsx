@@ -97,8 +97,6 @@ export function CartSheet({ open, onClose }: Props) {
               <strong>{formatQar(totalQar)}</strong>
             </div>
 
-            <p className="ticket-note">No payment here. Show this ticket at the counter, or send it on WhatsApp.</p>
-
             <button
               type="button"
               className="wa-btn"

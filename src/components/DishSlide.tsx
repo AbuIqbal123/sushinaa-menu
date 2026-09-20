@@ -12,6 +12,7 @@ type Props = {
   diet?: DietFilter;
   active?: boolean;
   eager?: boolean;
+  showHint?: boolean;
   onOpen: (dish: Dish) => void;
 };
 
@@ -21,6 +22,7 @@ export function DishSlide({
   diet = "all",
   active = false,
   eager = false,
+  showHint = false,
   onOpen,
 }: Props) {
   const sel = selectionForDiet(dish, diet);
@@ -29,6 +31,7 @@ export function DishSlide({
   const photo = imageFor(dish, sel);
   const patterned = photo.startsWith("/brand/");
   const showPhoto = eager || patterned;
+  const hint = hintFor(dish, sel);
 
   return (
     <article
@@ -66,7 +69,7 @@ export function DishSlide({
         )}
         <div className="scrim" />
 
-        {index === 0 ? (
+        {showHint ? (
           <p className="swipe-hint" aria-hidden="true">
             Swipe up
             <span className="swipe-chevron">⌃</span>
@@ -87,15 +90,15 @@ export function DishSlide({
           </p>
           <DietTags tags={dish.tags} />
           <p className="dish-desc dish-desc-feed">{dish.description}</p>
-          <p className="tap-hint">{hintFor(dish, sel)}</p>
-          <span className="slide-cta">Add to ticket</span>
+          {hint ? <p className="tap-hint">{hint}</p> : null}
+          <span className="slide-cta">Add to order</span>
         </div>
       </button>
     </article>
   );
 }
 
-function hintFor(dish: Dish, sel: { pieces?: number; sauce?: string }) {
+function hintFor(dish: Dish, sel: { pieces?: number; sauce?: string }): string | null {
   const kind = dish.kind;
   if (kind.type === "roll") {
     const n = kind.proteins[0] ? Object.keys(kind.proteins[0].prices).length : 0;
@@ -110,5 +113,5 @@ function hintFor(dish: Dish, sel: { pieces?: number; sauce?: string }) {
   if (kind.type === "addons") return "Add-ons available";
   if (kind.type === "size-price") return "Size & flavour";
   if (sel.sauce) return sel.sauce;
-  return "Add to ticket";
+  return null;
 }
