@@ -134,7 +134,7 @@ export const SAUCES: Dish[] = [
     section: "Sauces",
     description: "Small 1oz or big 2oz. Pick the sauce.",
     image: IMG("extra-sauce.jpg"),
-    tags: ["veg"],
+    tags: [],
     kind: {
       type: "size-price",
       sizes: [
@@ -167,7 +167,7 @@ export const DRINKS: Dish[] = [
     section: "Drinks",
     description: "250ml.",
     image: IMG("redbull.jpg"),
-    tags: ["veg"],
+    tags: [],
     kind: { type: "simple", priceQar: 15 },
   },
   {
@@ -177,7 +177,7 @@ export const DRINKS: Dish[] = [
     section: "Drinks",
     description: "Small 330ml or big 500ml.",
     image: IMG("still-water.jpg"),
-    tags: ["veg"],
+    tags: [],
     kind: {
       type: "size-price",
       sizes: [
@@ -193,7 +193,7 @@ export const DRINKS: Dish[] = [
     section: "Drinks",
     description: "Small 185ml or big 250ml. Pick a flavour.",
     image: IMG("kinza.jpg"),
-    tags: ["veg"],
+    tags: [],
     kind: {
       type: "size-price",
       sizes: [
@@ -222,7 +222,7 @@ export const DRINKS: Dish[] = [
     section: "Drinks",
     description: "250ml.",
     image: IMG("shani.jpg"),
-    tags: ["veg"],
+    tags: [],
     kind: { type: "simple", priceQar: 5 },
   },
 ];
