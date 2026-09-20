@@ -29,8 +29,7 @@ export const DISH_BY_ID = Object.fromEntries(DISHES.map((d) => [d.id, d])) as Re
   Dish
 >;
 
-export const CATEGORY_CHIPS: { id: CategoryFilter; label: string }[] = [
-  { id: "all", label: "All" },
+export const CATEGORY_CHIPS: { id: Section; label: string }[] = [
   { id: "Starters", label: "Starters" },
   { id: "Fried rice", label: "Fried rice" },
   { id: "Poke bowls", label: "Poke" },

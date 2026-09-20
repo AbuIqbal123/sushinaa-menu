@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import Image from "next/image";
 import type { DietFilter, Dish } from "@/data/menu";
 import type { Choice, Extra, PieceCount, Selection } from "@/data/types";
@@ -26,13 +26,19 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
   const [sel, setSel] = useState<Selection>({});
   const [pickQty, setPickQty] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
+  const [dragY, setDragY] = useState(0);
+  const [dragging, setDragging] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const drag = useRef({ start: 0, dy: 0, tracking: false, t: 0 });
 
   useEffect(() => {
     if (!dish) return;
     setSel(selectionForDiet(dish, diet));
     setPickQty(1);
     setJustAdded(false);
+    setDragY(0);
+    setDragging(false);
   }, [dish, diet]);
 
   useEffect(() => {
@@ -45,12 +51,6 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [dish, onClose]);
 
-  useEffect(() => {
-    if (!justAdded) return;
-    const t = window.setTimeout(() => setJustAdded(false), 900);
-    return () => window.clearTimeout(t);
-  }, [justAdded]);
-
   if (!dish) return null;
   const current = dish;
   const unit = unitPrice(current, sel);
@@ -62,14 +62,59 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
     if (!ready) return;
     add(current.id, sel, pickQty);
     setJustAdded(true);
-    setPickQty(1);
+    window.setTimeout(() => onClose(), 700);
+  }
+
+  function onPointerDown(e: PointerEvent) {
+    const sheet = sheetRef.current;
+    if (!sheet) return;
+    const target = e.target as HTMLElement;
+    const onGrab = Boolean(target.closest(".sheet-grab, .detail-photo-wrap"));
+    if (!onGrab && sheet.scrollTop > 2) return;
+    drag.current = { start: e.clientY, dy: 0, tracking: true, t: performance.now() };
+  }
+
+  function onPointerMove(e: PointerEvent) {
+    if (!drag.current.tracking) return;
+    const dy = e.clientY - drag.current.start;
+    if (!dragging && dy < 10) return;
+    if (dy < 0) return;
+    e.preventDefault();
+    drag.current.dy = dy;
+    setDragging(true);
+    setDragY(dy);
+  }
+
+  function endDrag() {
+    if (!drag.current.tracking) return;
+    const { dy, t } = drag.current;
+    const speed = dy / Math.max(1, performance.now() - t);
+    drag.current.tracking = false;
+    setDragging(false);
+    if (dy > 88 || speed > 0.55) {
+      onClose();
+      return;
+    }
+    setDragY(0);
   }
 
   return (
     <div className="sheet-root">
       <button type="button" className="sheet-backdrop" aria-label="Close details" onClick={onClose} />
-      <div className="detail-sheet" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+      <div
+        ref={sheetRef}
+        className={`detail-sheet${dragging ? " is-dragging" : ""}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="detail-title"
+        style={{ transform: dragY ? `translate3d(0, ${dragY}px, 0)` : undefined }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+      >
         <div className="detail-photo-wrap">
+          <div className="sheet-grab" aria-hidden="true" />
           {patterned ? (
             <div
               className="detail-photo dish-photo-pattern"

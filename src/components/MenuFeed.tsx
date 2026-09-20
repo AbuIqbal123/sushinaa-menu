@@ -6,7 +6,6 @@ import {
   DIET_CHIPS,
   DISHES,
   matchesDiet,
-  type CategoryFilter,
   type DietFilter,
   type Dish,
   type Section,
@@ -138,26 +137,20 @@ function FeedInner() {
     row.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
   }, [activeSection]);
 
-  function jumpTo(id: CategoryFilter) {
+  function jumpTo(id: Section) {
     const feed = feedRef.current;
     if (!feed) return;
     skipSpy.current = true;
-    if (id === "all") {
-      setActiveIndex(0);
-      setActiveSection(dishes[0]?.section ?? "Starters");
-      feed.scrollTo({ top: origin * feed.clientHeight, behavior: "smooth" });
-    } else {
-      const idx = dishes.findIndex((d) => d.section === id);
-      if (idx < 0) {
-        skipSpy.current = false;
-        return;
-      }
-      setActiveIndex(idx);
-      setActiveSection(id);
-      const top = (origin + idx) * feed.clientHeight;
-      const far = Math.abs(idx - activeIndex) > 3;
-      feed.scrollTo({ top, behavior: far ? "auto" : "smooth" });
+    const idx = dishes.findIndex((d) => d.section === id);
+    if (idx < 0) {
+      skipSpy.current = false;
+      return;
     }
+    setActiveIndex(idx);
+    setActiveSection(id);
+    const top = (origin + idx) * feed.clientHeight;
+    const far = Math.abs(idx - activeIndex) > 3;
+    feed.scrollTo({ top, behavior: far ? "auto" : "smooth" });
     let finished = false;
     function done() {
       if (finished) return;
@@ -197,8 +190,8 @@ function FeedInner() {
           }}
         >
           {CATEGORY_CHIPS.map((chip) => {
-            const on = chip.id !== "all" && activeSection === chip.id;
-            const empty = chip.id !== "all" && !dishes.some((d) => d.section === chip.id);
+            const on = activeSection === chip.id;
+            const empty = !dishes.some((d) => d.section === chip.id);
             return (
               <button
                 key={chip.id}
