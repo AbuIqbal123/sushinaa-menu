@@ -1220,62 +1220,6 @@ button {
   overflow: hidden;
 }
 
-.cookie {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 70;
-  padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
-}
-.cookie-inner {
-  max-width: 430px;
-  margin: 0 auto;
-  padding: 16px;
-  border-radius: 16px;
-  background: #fbf4e6;
-  color: #14110f;
-  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.35);
-}
-.cookie-title {
-  margin: 0 0 6px;
-  font-family: var(--font-display);
-  font-size: 1.2rem;
-  font-weight: 700;
-}
-.cookie-copy {
-  margin: 0 0 12px;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  max-width: 65ch;
-}
-.cookie-copy a {
-  color: #a3141c;
-  text-decoration: underline;
-}
-.cookie-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.cookie-btn {
-  min-height: 44px;
-  padding: 0 14px;
-  border-radius: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.cookie-btn-ghost {
-  border: 1.5px solid rgba(20, 17, 15, 0.2);
-  background: #f3e4c4;
-  color: #14110f;
-}
-.cookie-btn-solid {
-  border: 0;
-  background: #d52029;
-  color: #fff;
-}
-
 @media (max-width: 380px) {
   .dish-name {
     font-size: 1.45rem;

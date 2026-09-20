@@ -4,7 +4,7 @@ import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Privacy policy",
-  description: `How ${SITE.name} uses the ticket on your device, WhatsApp, and optional analytics.`,
+  description: `How ${SITE.name} uses the ticket on your device, WhatsApp, and anonymous analytics.`,
   alternates: { canonical: `${SITE.url}/privacy` },
 };
 
@@ -30,13 +30,10 @@ export default function PrivacyPage() {
         your phone unless you clear the ticket or site data. It is necessary for the menu to
         work.
       </p>
+      <h2>Analytics</h2>
       <p>
-        Cookie consent is also stored locally so we do not ask again on every visit.
-      </p>
-      <h2>Optional analytics</h2>
-      <p>
-        If you tap “Accept analytics”, we load Vercel Analytics to see anonymous page views and
-        performance. If you choose “Necessary only”, that script does not run.
+        We use Vercel Analytics for anonymous page views and performance. It does not identify
+        you by name.
       </p>
       <h2>WhatsApp</h2>
       <p>
