@@ -5,6 +5,8 @@ import Image from "next/image";
 import type { DietFilter, Dish } from "@/data/menu";
 import type { Choice, Extra, PieceCount, Selection } from "@/data/types";
 import { useCart } from "@/lib/cart";
+import { useLocale } from "@/lib/locale";
+import { dishDescription, fieldLabel, pickName, sectionName } from "@/lib/localize";
 import { formatQar } from "@/lib/money";
 import {
   imageFor,
@@ -23,6 +25,7 @@ type Props = {
 
 export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
   const { add } = useCart();
+  const { lang, t } = useLocale();
   const [sel, setSel] = useState<Selection>({});
   const [pickQty, setPickQty] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
@@ -100,7 +103,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
 
   return (
     <div className="sheet-root">
-      <button type="button" className="sheet-backdrop" aria-label="Close details" onClick={onClose} />
+      <button type="button" className="sheet-backdrop" aria-label={t.closeDetails} onClick={onClose} />
       <div
         ref={sheetRef}
         className={`detail-sheet${dragging ? " is-dragging" : ""}`}
@@ -124,7 +127,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
           ) : (
             <Image
               src={photo}
-              alt={`${current.name}. ${current.description}`}
+              alt={`${pickName(current, lang)}. ${dishDescription(current, lang)}`}
               fill
               sizes="(max-width: 430px) 100vw, 430px"
               unoptimized
@@ -133,18 +136,22 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
           )}
         </div>
         <header className="detail-kicker-row">
-          <p className="ticket-kicker">{current.section}</p>
+          <p className="ticket-kicker">{sectionName(current.section, lang)}</p>
           <button ref={closeRef} type="button" className="ticket-close" onClick={onClose}>
-            Close
+            {t.close}
           </button>
         </header>
         <div className="detail-title-row">
           <div>
             <h2 id="detail-title" className="ticket-title">
-              {current.name}
+              {pickName(current, lang)}
             </h2>
-            <p className="detail-ar" lang="ar" dir="rtl">
-              {current.nameAr}
+            <p
+              className={lang === "ar" ? "detail-en" : "detail-ar"}
+              lang={lang === "ar" ? "en" : "ar"}
+              dir={lang === "ar" ? "ltr" : "rtl"}
+            >
+              {lang === "ar" ? current.name : current.nameAr}
             </p>
           </div>
           <p className="detail-unit" aria-live="polite">
@@ -152,7 +159,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
           </p>
         </div>
         <DietTags tags={current.tags} />
-        <p className="detail-desc">{current.description}</p>
+        <p className="detail-desc">{dishDescription(current, lang)}</p>
 
         <Configurator dish={current} sel={sel} setSel={setSel} />
 
@@ -161,7 +168,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
             <button
               type="button"
               className="qty-btn"
-              aria-label="Fewer"
+              aria-label={t.fewer}
               disabled={pickQty <= 1}
               onClick={() => setPickQty((n) => Math.max(1, n - 1))}
             >
@@ -173,7 +180,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
             <button
               type="button"
               className="qty-btn"
-              aria-label="More"
+              aria-label={t.more}
               onClick={() => setPickQty((n) => Math.min(20, n + 1))}
             >
               +
@@ -185,7 +192,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
             onClick={onAdd}
             disabled={!ready}
           >
-            {justAdded ? "Added" : `Add to order · ${formatQar(unit * pickQty)}`}
+            {justAdded ? t.added : `${t.addToOrder} · ${formatQar(unit * pickQty)}`}
           </button>
         </div>
       </div>
@@ -202,18 +209,22 @@ function Configurator({
   sel: Selection;
   setSel: (s: Selection) => void;
 }) {
+  const { lang, t } = useLocale();
   const kind = dish.kind;
+  const label = (name: string) => fieldLabel(name, lang);
+  const named = <T extends { id: string; name: string; nameAr?: string; spicy?: boolean }>(
+    items: T[],
+  ) => items.map((item) => ({ ...item, name: pickName(item, lang) }));
   const extras = kind.type === "addons" ? kind.extras : dish.extras;
 
   return (
     <div className="config">
       {kind.type === "sauce-price" ? (
         <ChoiceRow
-          label="Sauce"
-          labelAr="الصوص"
+          label={label("Sauce")}
           options={kind.sauces.map((s) => ({
             id: s.id,
-            name: s.name,
+            name: pickName(s, lang),
             hint: `${s.priceQar} QAR`,
             spicy: s.spicy,
           }))}
@@ -224,11 +235,10 @@ function Configurator({
 
       {kind.type === "spicy-toggle" ? (
         <ChoiceRow
-          label="Heat"
-          labelAr="الحرارة"
+          label={label("Heat")}
           options={[
-            { id: "spicy", name: "Spicy", hint: `${kind.spicyQar} QAR`, spicy: true },
-            { id: "mild", name: "Regular", hint: `${kind.mildQar} QAR` },
+            { id: "spicy", name: t.spicy, hint: `${kind.spicyQar} QAR`, spicy: true },
+            { id: "mild", name: t.regular, hint: `${kind.mildQar} QAR` },
           ]}
           value={sel.spicy ? "spicy" : "mild"}
           onChange={(id) => setSel({ ...sel, spicy: id === "spicy" })}
@@ -239,11 +249,10 @@ function Configurator({
         <>
           {kind.proteins.length > 1 ? (
             <ChoiceRow
-              label="Protein"
-              labelAr="البروتين"
+              label={label("Protein")}
               options={kind.proteins.map((p) => ({
                 id: p.id,
-                name: p.name,
+                name: pickName(p, lang),
                 hint: p.prices[sel.pieces ?? preferredPieces(p.prices)]
                   ? `${p.prices[sel.pieces ?? preferredPieces(p.prices)]} QAR`
                   : undefined,
@@ -262,8 +271,7 @@ function Configurator({
             />
           ) : null}
           <ChoiceRow
-            label="Pieces"
-            labelAr="الحبات"
+            label={label("Pieces")}
             options={pieceOptions(kind.proteins.find((p) => p.id === sel.protein) ?? kind.proteins[0]).map(
               (n) => {
                 const protein = kind.proteins.find((p) => p.id === sel.protein) ?? kind.proteins[0];
@@ -279,24 +287,16 @@ function Configurator({
           />
           {kind.topping ? (
             <ChoiceRow
-              label={kind.topping.name}
-              options={kind.topping.options.map((o) => ({
-                id: o.id,
-                name: o.name,
-                spicy: o.spicy,
-              }))}
+              label={label(kind.topping.name)}
+              options={named(kind.topping.options)}
               value={sel.topping}
               onChange={(id) => setSel({ ...sel, topping: id })}
             />
           ) : null}
           {kind.style ? (
             <ChoiceRow
-              label={kind.style.name}
-              options={kind.style.options.map((o) => ({
-                id: o.id,
-                name: o.name,
-                spicy: o.spicy,
-              }))}
+              label={label(kind.style.name)}
+              options={named(kind.style.options)}
               value={sel.style}
               onChange={(id) => setSel({ ...sel, style: id })}
             />
@@ -307,16 +307,14 @@ function Configurator({
       {kind.type === "deal-box" ? (
         <>
           <ChoiceRow
-            label="Starter"
-            labelAr="المقبلات"
-            options={kind.starters.map((o) => ({ id: o.id, name: o.name, spicy: o.spicy }))}
+            label={label("Starter")}
+            options={named(kind.starters)}
             value={sel.starter}
             onChange={(id) => setSel({ ...sel, starter: id })}
           />
           <ChoiceRow
-            label="Sushi"
-            labelAr="السوشي"
-            options={kind.sushi.map((o) => ({ id: o.id, name: o.name, spicy: o.spicy }))}
+            label={label("Sushi")}
+            options={named(kind.sushi)}
             value={sel.sushi}
             onChange={(id) => setSel({ ...sel, sushi: id })}
           />
@@ -337,22 +335,17 @@ function Configurator({
         <>
           {kind.flavors ? (
             <ChoiceRow
-              label={kind.flavors.name}
-              options={kind.flavors.options.map((o) => ({
-                id: o.id,
-                name: o.name,
-                spicy: o.spicy,
-              }))}
+              label={label(kind.flavors.name)}
+              options={named(kind.flavors.options)}
               value={sel.flavor}
               onChange={(id) => setSel({ ...sel, flavor: id })}
             />
           ) : null}
           <ChoiceRow
-            label="Size"
-            labelAr="الحجم"
+            label={label("Size")}
             options={kind.sizes.map((s) => ({
               id: s.id,
-              name: s.name,
+              name: pickName(s, lang),
               hint: `${s.priceQar} QAR`,
             }))}
             value={sel.size}
@@ -363,11 +356,10 @@ function Configurator({
 
       {kind.type === "addons" && kind.spicyOptional ? (
         <ChoiceRow
-          label="Heat"
-          labelAr="الحرارة"
+          label={label("Heat")}
           options={[
-            { id: "spicy", name: "Spicy", spicy: true },
-            { id: "mild", name: "Regular" },
+            { id: "spicy", name: t.spicy, spicy: true },
+            { id: "mild", name: t.regular },
           ]}
           value={sel.spicy ? "spicy" : "mild"}
           onChange={(id) => setSel({ ...sel, spicy: id === "spicy" })}
@@ -378,8 +370,8 @@ function Configurator({
         ? kind.freeChoices?.map((g) => (
             <ChoiceRow
               key={g.id}
-              label={g.name}
-              options={g.options.map((o) => ({ id: o.id, name: o.name, spicy: o.spicy }))}
+              label={label(g.name)}
+              options={named(g.options)}
               value={g.id === "cut" ? sel.cut : g.id === "style" ? sel.style : sel.topping}
               onChange={(id) => {
                 if (g.id === "cut") setSel({ ...sel, cut: id });
@@ -392,9 +384,8 @@ function Configurator({
 
       {dish.freeDips?.length ? (
         <ChoiceRow
-          label="Dip"
-          labelAr="صوص"
-          options={dish.freeDips.map((o) => ({ id: o.id, name: o.name, spicy: o.spicy }))}
+          label={label("Dip")}
+          options={named(dish.freeDips)}
           value={sel.dip}
           onChange={(id) => setSel({ ...sel, dip: id })}
         />
@@ -480,12 +471,13 @@ function PartyStarters({
   max: number;
   onChange: (ids: string[]) => void;
 }) {
+  const { lang, t } = useLocale();
+  const show = (opt: Choice) => pickName(opt, lang);
   if (max <= 1) {
     return (
       <ChoiceRow
-        label="Starter"
-        labelAr="المقبلات"
-        options={options.map((opt) => ({ id: opt.id, name: opt.name, spicy: opt.spicy }))}
+        label={fieldLabel("Starter", lang)}
+        options={options.map((opt) => ({ id: opt.id, name: show(opt), spicy: opt.spicy }))}
         value={selected[0]}
         onChange={(id) => onChange([id])}
       />
@@ -495,16 +487,17 @@ function PartyStarters({
   const counts = new Map<string, number>();
   for (const id of selected) counts.set(id, (counts.get(id) ?? 0) + 1);
   const total = selected.length;
-  const range = min === max ? `${max}` : `${min} or ${max}`;
+  const range = min === max ? `${max}` : `${min} ${t.or} ${max}`;
   const summary =
     total > 1
       ? options
           .filter((opt) => counts.get(opt.id))
           .map((opt) => {
             const n = counts.get(opt.id) ?? 0;
-            return n > 1 ? `${opt.name} × ${n}` : opt.name;
+            const name = show(opt);
+            return n > 1 ? `${name} × ${n}` : name;
           })
-          .join(", ")
+          .join(lang === "ar" ? "، " : ", ")
       : "";
 
   function setCount(id: string, count: number) {
@@ -516,13 +509,10 @@ function PartyStarters({
   return (
     <div className="starter-picks">
       <div className="choice-head">
-        <p className="choice-label">Starters</p>
-        <p className="choice-label-ar" lang="ar" dir="rtl">
-          المقبلات
-        </p>
+        <p className="choice-label">{fieldLabel("Starters", lang)}</p>
       </div>
       <p className="choice-note">
-        Pick {range}. Use + on a starter to choose it again.
+        {t.pick} {range}. {t.starterAgain}
       </p>
       {summary ? (
         <p className="choice-same" aria-live="polite">
@@ -541,17 +531,18 @@ function PartyStarters({
                 disabled={total >= max}
                 onClick={() => setCount(opt.id, 1)}
               >
-                {opt.name}
+                {show(opt)}
               </button>
             );
           }
+          const name = show(opt);
           return (
             <div key={opt.id} className="opt opt-on starter-opt">
-              <span>{opt.name}</span>
+              <span>{name}</span>
               <span className="starter-step">
                 <button
                   type="button"
-                  aria-label={`One fewer ${opt.name}`}
+                  aria-label={t.oneFewer(name)}
                   onClick={() => setCount(opt.id, count - 1)}
                 >
                   −
@@ -559,7 +550,7 @@ function PartyStarters({
                 <span aria-hidden="true">{count}</span>
                 <button
                   type="button"
-                  aria-label={`One more ${opt.name}`}
+                  aria-label={t.oneMore(name)}
                   disabled={total >= max}
                   onClick={() => setCount(opt.id, count + 1)}
                 >
@@ -583,13 +574,11 @@ function ExtraList({
   selected: string[];
   onToggle: (id: string) => void;
 }) {
+  const { lang } = useLocale();
   return (
     <div className="choice-block">
       <div className="choice-head">
-        <p className="choice-label">Add-ons</p>
-        <p className="choice-label-ar" lang="ar" dir="rtl">
-          إضافات
-        </p>
+        <p className="choice-label">{fieldLabel("Add-ons", lang)}</p>
       </div>
       <div className="extra-list">
         {extras.map((ex) => {
@@ -597,7 +586,7 @@ function ExtraList({
           return (
             <label key={ex.id} className={`extra ${on ? "extra-on" : ""}`}>
               <input type="checkbox" checked={on} onChange={() => onToggle(ex.id)} />
-              <span>{ex.name}</span>
+              <span>{pickName(ex, lang)}</span>
               <em>+{ex.priceQar} QAR</em>
             </label>
           );

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { LegalShell } from "@/components/LegalShell";
+import { ThankYouView } from "@/components/DocViews";
 import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -10,23 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function ThankYouPage() {
-  return (
-    <LegalShell title="Thank you">
-      <p>
-        If WhatsApp opened, send the ticket there. We will confirm items, time, and the total in
-        QAR before we start rolling.
-      </p>
-      <p>
-        WhatsApp{" "}
-        <a className="doc-cta" href={`https://wa.me/${SITE.whatsappE164}`}>
-          {SITE.whatsappDisplay}
-        </a>
-      </p>
-      <p>
-        <Link className="doc-cta" href="/">
-          Back to the menu
-        </Link>
-      </p>
-    </LegalShell>
-  );
+  return <ThankYouView />;
 }

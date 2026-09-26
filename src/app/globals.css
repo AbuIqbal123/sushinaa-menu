@@ -82,6 +82,8 @@ body {
   scroll-snap-stop: always;
   overflow: hidden;
   contain: layout paint;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 100svh;
   background: #1a1512;
 }
 
@@ -104,7 +106,10 @@ body {
 
 .slide.is-active .dish-photo:not(.dish-photo-pattern) {
   animation: kenburns 22s ease-in-out infinite alternate;
-  will-change: transform;
+}
+
+.feed.is-scrolling .dish-photo {
+  animation-play-state: paused;
 }
 
 .dish-photo-pattern {
@@ -200,12 +205,20 @@ body {
   color: #f0d9a8;
 }
 
-.dish-ar {
+.dish-ar,
+.dish-en {
   margin: 4px 0 0;
-  font-family: var(--font-arabic);
   font-size: 1.05rem;
   font-weight: 500;
   color: rgba(243, 228, 196, 0.82);
+}
+
+.dish-ar {
+  font-family: var(--font-arabic);
+}
+
+.dish-en {
+  font-family: var(--font-sans);
 }
 
 .tags {
@@ -472,13 +485,21 @@ body {
   color: #d52029;
 }
 
-.detail-ar {
+.detail-ar,
+.detail-en {
   margin: 2px 0 0;
-  font-family: var(--font-arabic);
   font-size: 1.1rem;
   font-weight: 500;
   color: #7a4a2a;
-  text-align: left;
+}
+
+.detail-ar {
+  font-family: var(--font-arabic);
+}
+
+.detail-en {
+  font-family: var(--font-sans);
+  direction: ltr;
 }
 
 .detail-desc {
@@ -758,6 +779,68 @@ body {
   padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 36px 16px;
   background: linear-gradient(to bottom, rgba(20, 17, 15, 0.5), transparent);
   pointer-events: none;
+}
+
+.chrome-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.lang-btn {
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(243, 228, 196, 0.45);
+  background: rgba(20, 17, 15, 0.55);
+  color: #f3e4c4;
+  font-family: var(--font-arabic), var(--font-sans), sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lang-btn-light {
+  height: 36px;
+  background: transparent;
+  color: #a3141c;
+  border-color: rgba(163, 20, 28, 0.35);
+}
+
+[dir="rtl"] .dish-name,
+[dir="rtl"] .section-label,
+[dir="rtl"] .dish-desc,
+[dir="rtl"] .slide-cta,
+[dir="rtl"] .chip,
+[dir="rtl"] .sticky-cta,
+[dir="rtl"] .opt,
+[dir="rtl"] .ticket,
+[dir="rtl"] .detail-sheet,
+[dir="rtl"] .detail-desc,
+[dir="rtl"] .ticket-title,
+[dir="rtl"] .choice-note,
+[dir="rtl"] .choice-label,
+[dir="rtl"] .line-name,
+[dir="rtl"] .line-meta,
+[dir="rtl"] .order-comment,
+[dir="rtl"] .order-comment textarea,
+[dir="rtl"] .doc-h1,
+[dir="rtl"] .doc-page,
+[dir="rtl"] .empty-filter,
+[dir="rtl"] .tap-hint,
+[dir="rtl"] .ticket-kicker,
+[dir="rtl"] .wa-btn,
+[dir="rtl"] .clear-ticket {
+  font-family: var(--font-arabic), Tahoma, sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+[dir="rtl"] .dish-price,
+[dir="rtl"] .detail-unit,
+[dir="rtl"] .line-total {
+  font-family: var(--font-sans), sans-serif;
 }
 
 .wordmark-img {

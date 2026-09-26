@@ -1,42 +1,49 @@
 "use client";
 
+import { memo } from "react";
 import Image from "next/image";
 import type { DietFilter, Dish } from "@/data/menu";
+import { useLocale } from "@/lib/locale";
+import { dishDescription, pickName, sectionName } from "@/lib/localize";
 import { formatQar } from "@/lib/money";
 import { hasPriceRange, imageFor, selectionForDiet, unitPrice } from "@/lib/price";
+import type { Copy } from "@/lib/copy";
 import { DietTags } from "./DietTags";
 
 type Props = {
   dish: Dish;
-  index: number;
   diet?: DietFilter;
   active?: boolean;
   eager?: boolean;
+  marked?: boolean;
   showHint?: boolean;
   onOpen: (dish: Dish) => void;
 };
 
-export function DishSlide({
+export const DishSlide = memo(function DishSlide({
   dish,
-  index,
   diet = "all",
   active = false,
   eager = false,
+  marked = false,
   showHint = false,
   onOpen,
 }: Props) {
+  const { lang, t } = useLocale();
   const sel = selectionForDiet(dish, diet);
   const from = hasPriceRange(dish);
   const price = unitPrice(dish, sel);
   const photo = imageFor(dish, sel);
+  const title = pickName(dish, lang);
+  const otherName = lang === "ar" ? dish.name : dish.nameAr;
   const patterned = photo.startsWith("/brand/");
   const showPhoto = eager || patterned;
-  const hint = hintFor(dish, sel);
+  const hint = hintFor(dish, sel, t);
 
   return (
     <article
       className={`slide${active ? " is-active" : ""}`}
-      id={`dish-${dish.id}`}
+      id={marked ? `dish-${dish.id}` : undefined}
       data-section={dish.section}
       aria-label={`${dish.name}, ${from ? "from " : ""}${formatQar(price)}. Tap for details.`}
     >
@@ -58,7 +65,7 @@ export function DishSlide({
             alt={`${dish.name}. ${dish.description}`}
             fill
             sizes="(max-width: 430px) 100vw, 430px"
-            priority={active || index < 2}
+            priority={active}
             unoptimized
             draggable={false}
             className="dish-photo"
@@ -71,47 +78,47 @@ export function DishSlide({
 
         {showHint ? (
           <p className="swipe-hint" aria-hidden="true">
-            Swipe up
+            {t.swipeUp}
             <span className="swipe-chevron">⌃</span>
           </p>
         ) : null}
 
         <div className="slide-copy">
-          <p className="section-label">{dish.section}</p>
+          <p className="section-label">{sectionName(dish.section, lang)}</p>
           <div className="title-row">
-            <h2 className="dish-name">{dish.name}</h2>
+            <h2 className="dish-name">{title}</h2>
             <p className="dish-price">
-              {from ? <span className="from">from </span> : null}
+              {from ? <span className="from">{t.from} </span> : null}
               {formatQar(price)}
             </p>
           </div>
-          <p className="dish-ar" lang="ar" dir="rtl">
-            {dish.nameAr}
+          <p className={lang === "ar" ? "dish-en" : "dish-ar"} lang={lang === "ar" ? "en" : "ar"} dir={lang === "ar" ? "ltr" : "rtl"}>
+            {otherName}
           </p>
           <DietTags tags={dish.tags} />
-          <p className="dish-desc dish-desc-feed">{dish.description}</p>
+          <p className="dish-desc dish-desc-feed">{dishDescription(dish, lang)}</p>
           {hint ? <p className="tap-hint">{hint}</p> : null}
-          <span className="slide-cta">Add to order</span>
+          <span className="slide-cta">{t.addToOrder}</span>
         </div>
       </button>
     </article>
   );
-}
+});
 
-function hintFor(dish: Dish, sel: { pieces?: number; sauce?: string }): string | null {
+function hintFor(dish: Dish, sel: { pieces?: number; sauce?: string }, t: Copy): string | null {
   const kind = dish.kind;
   if (kind.type === "roll") {
     const n = kind.proteins[0] ? Object.keys(kind.proteins[0].prices).length : 0;
     const proteins = kind.proteins.length;
-    if (proteins > 1) return "Protein & pieces";
-    if (n > 1) return `${Object.keys(kind.proteins[0].prices).join(" / ")} pcs`;
+    if (proteins > 1) return t.proteinPieces;
+    if (n > 1) return t.piecesHint(Object.keys(kind.proteins[0].prices).join(" / "));
   }
-  if (kind.type === "sauce-price") return "Sauce changes the price";
-  if (kind.type === "spicy-toggle") return "Spicy or regular";
-  if (kind.type === "deal-box") return "Pick starter & sushi";
-  if (kind.type === "party-box") return "Pick your starter";
-  if (kind.type === "addons") return "Add-ons available";
-  if (kind.type === "size-price") return "Size & flavour";
+  if (kind.type === "sauce-price") return t.sauceChanges;
+  if (kind.type === "spicy-toggle") return t.spicyOrRegular;
+  if (kind.type === "deal-box") return t.pickStarterSushi;
+  if (kind.type === "party-box") return t.pickStarter;
+  if (kind.type === "addons") return t.addonsAvailable;
+  if (kind.type === "size-price") return t.sizeFlavour;
   if (sel.sauce) return sel.sauce;
   return null;
 }

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { ContactForm } from "@/components/ContactForm";
-import { LegalShell } from "@/components/LegalShell";
+import { ContactView } from "@/components/DocViews";
 import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -10,14 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function ContactPage() {
-  return (
-    <LegalShell title="Contact">
-      <p>
-        You call, we roll. WhatsApp is the line:{" "}
-        <a href={`https://wa.me/${SITE.whatsappE164}`}>{SITE.whatsappDisplay}</a>.
-      </p>
-      <p>{SITE.addressLine}.</p>
-      <ContactForm />
-    </LegalShell>
-  );
+  return <ContactView />;
 }

@@ -11,6 +11,8 @@ import {
 } from "react";
 import { DISH_BY_ID, DISHES, type Dish } from "@/data/menu";
 import type { Selection } from "@/data/types";
+import { useLocale } from "./locale";
+import { pickName } from "./localize";
 import {
   parseSelection,
   selectionLabel,
@@ -87,6 +89,7 @@ function parseKey(key: string): { id: string; sel: Selection } {
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { lang } = useLocale();
   const [qtys, setQtys] = useState<Record<string, number>>({});
   const [comment, setCommentState] = useState("");
   const [ready, setReady] = useState(false);
@@ -165,7 +168,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const dish = DISH_BY_ID[id];
         if (!dish) return [];
         const unitQar = unitPrice(dish, sel);
-        const meta = selectionLabel(dish, sel);
+        const meta = selectionLabel(dish, sel, lang);
         return [
           {
             key,
@@ -174,12 +177,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
             qty,
             unitQar,
             lineTotal: unitQar * qty,
-            displayName: dish.name,
+            displayName: pickName(dish, lang),
             meta,
           },
         ];
       });
-  }, [qtys]);
+  }, [qtys, lang]);
 
   const itemCount = useMemo(
     () => Object.values(qtys).reduce((sum, n) => sum + n, 0),

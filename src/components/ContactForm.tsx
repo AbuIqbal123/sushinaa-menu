@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale } from "@/lib/locale";
 import { waLink } from "@/lib/site";
 
 type Errors = Partial<Record<"name" | "phone" | "message", string>>;
 
 export function ContactForm() {
   const router = useRouter();
+  const { t } = useLocale();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
@@ -17,10 +19,10 @@ export function ContactForm() {
 
   function validate(): Errors {
     const next: Errors = {};
-    if (name.trim().length < 2) next.name = "Enter your name.";
+    if (name.trim().length < 2) next.name = t.enterName;
     const digits = phone.replace(/\D/g, "");
-    if (digits.length < 8) next.phone = "Enter a valid phone number.";
-    if (message.trim().length < 8) next.message = "Tell us a little more.";
+    if (digits.length < 8) next.phone = t.enterPhone;
+    if (message.trim().length < 8) next.message = t.tellMore;
     return next;
   }
 
@@ -47,7 +49,7 @@ export function ContactForm() {
         </label>
       </div>
       <label className={errors.name ? "field field-err" : "field"}>
-        Name
+        {t.name}
         <input
           name="name"
           autoComplete="name"
@@ -58,7 +60,7 @@ export function ContactForm() {
         {errors.name ? <span className="field-msg">{errors.name}</span> : null}
       </label>
       <label className={errors.phone ? "field field-err" : "field"}>
-        Phone
+        {t.phone}
         <input
           name="phone"
           type="tel"
@@ -71,7 +73,7 @@ export function ContactForm() {
         {errors.phone ? <span className="field-msg">{errors.phone}</span> : null}
       </label>
       <label className={errors.message ? "field field-err" : "field"}>
-        Message
+        {t.message}
         <textarea
           name="message"
           rows={5}
@@ -82,7 +84,7 @@ export function ContactForm() {
         {errors.message ? <span className="field-msg">{errors.message}</span> : null}
       </label>
       <button type="submit" className="doc-cta" disabled={busy}>
-        {busy ? "Opening WhatsApp…" : "Send on WhatsApp"}
+        {busy ? t.openingWhatsApp : t.sendWhatsApp}
       </button>
     </form>
   );

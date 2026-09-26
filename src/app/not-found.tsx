@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { LegalShell } from "@/components/LegalShell";
+import { MissingView } from "@/components/DocViews";
 
 export const metadata: Metadata = {
   title: "Page not found",
@@ -8,14 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function NotFound() {
-  return (
-    <LegalShell title="This roll is missing">
-      <p>That link is not on the menu.</p>
-      <p>
-        <Link className="doc-cta" href="/">
-          Back to the menu
-        </Link>
-      </p>
-    </LegalShell>
-  );
+  return <MissingView />;
 }

@@ -11,6 +11,8 @@ import {
   type Section,
 } from "@/data/menu";
 import { CartProvider, useCart } from "@/lib/cart";
+import { LangButton, useLocale } from "@/lib/locale";
+import { sectionName } from "@/lib/localize";
 import { formatQar } from "@/lib/money";
 import { CartSheet } from "./CartSheet";
 import { DishDetailSheet } from "./DishDetailSheet";
@@ -18,6 +20,7 @@ import { DishSlide } from "./DishSlide";
 
 function FeedInner() {
   const { itemCount, totalQar } = useCart();
+  const { lang, t } = useLocale();
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<Dish | null>(null);
   const [pop, setPop] = useState(false);
@@ -70,7 +73,7 @@ function FeedInner() {
     if (!feed || skipSpy.current || !n) return;
     const h = feed.clientHeight;
     if (!h) return;
-    let visual = Math.round(feed.scrollTop / h);
+    const visual = Math.round(feed.scrollTop / h);
     if (visual < n) {
       skipSpy.current = true;
       feed.scrollTo({ top: (visual + n) * h });
@@ -86,23 +89,29 @@ function FeedInner() {
   useEffect(() => {
     const feed = feedRef.current;
     if (!feed) return;
+    const node = feed;
     let raf = 0;
     let wrapTimer = 0;
     function onScroll() {
+      node.classList.add("is-scrolling");
+      window.clearTimeout(wrapTimer);
+      wrapTimer = window.setTimeout(() => {
+        node.classList.remove("is-scrolling");
+        wrapLoop();
+      }, 140);
       if (raf) return;
       raf = window.requestAnimationFrame(() => {
         raf = 0;
         syncSectionFromScroll();
       });
-      window.clearTimeout(wrapTimer);
-      wrapTimer = window.setTimeout(wrapLoop, 140);
     }
-    feed.addEventListener("scroll", onScroll, { passive: true });
-    feed.addEventListener("scrollend", wrapLoop);
+    node.addEventListener("scroll", onScroll, { passive: true });
+    node.addEventListener("scrollend", wrapLoop);
     syncSectionFromScroll();
     return () => {
-      feed.removeEventListener("scroll", onScroll);
-      feed.removeEventListener("scrollend", wrapLoop);
+      node.classList.remove("is-scrolling");
+      node.removeEventListener("scroll", onScroll);
+      node.removeEventListener("scrollend", wrapLoop);
       if (raf) window.cancelAnimationFrame(raf);
       window.clearTimeout(wrapTimer);
     };
@@ -134,7 +143,7 @@ function FeedInner() {
     const chip = row.querySelector<HTMLElement>(`[data-chip="${cssAttr(activeSection)}"]`);
     if (!chip) return;
     const left = chip.offsetLeft - (row.clientWidth - chip.offsetWidth) / 2;
-    row.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
+    row.scrollTo({ left: Math.max(0, left) });
   }, [activeSection]);
 
   function jumpTo(id: Section) {
@@ -166,26 +175,25 @@ function FeedInner() {
     <div className={`shell${sheetOpen ? " is-sheet" : ""}`}>
       <header className="chrome-header">
         <img src="/brand/logotype-white.svg" alt="Sushinaa" className="wordmark-img" />
-        <button
-          type="button"
-          className={`cart-btn ${pop ? "cart-btn-pop" : ""}`}
-          onClick={() => setOpen(true)}
-          aria-label={
-            itemCount
-              ? `Open order, ${itemCount} ${itemCount === 1 ? "item" : "items"}`
-              : "Open order"
-          }
-        >
-          <TicketIcon />
-          {itemCount > 0 ? <span className="cart-badge">{itemCount}</span> : null}
-        </button>
+        <div className="chrome-actions">
+          <LangButton />
+          <button
+            type="button"
+            className={`cart-btn ${pop ? "cart-btn-pop" : ""}`}
+            onClick={() => setOpen(true)}
+            aria-label={t.openOrder(itemCount)}
+          >
+            <TicketIcon />
+            {itemCount > 0 ? <span className="cart-badge">{itemCount}</span> : null}
+          </button>
+        </div>
       </header>
 
-      <div className="filter-bar" role="toolbar" aria-label="Menu filters">
+      <div className="filter-bar" role="toolbar" aria-label={t.filters}>
         <div
           ref={catRowRef}
           className="chip-row"
-          aria-label="Category"
+          aria-label={t.category}
           onPointerDown={() => {
             rowDrag.current = false;
           }}
@@ -210,14 +218,14 @@ function FeedInner() {
                   jumpTo(chip.id);
                 }}
               >
-                {chip.label}
+                {sectionName(chip.id, lang)}
               </button>
             );
           })}
         </div>
         <div
           className="chip-row chip-row-diet"
-          aria-label="Dietary"
+          aria-label={t.dietary}
           onPointerDown={() => {
             rowDrag.current = false;
           }}
@@ -236,7 +244,7 @@ function FeedInner() {
                 setDiet(chip.id);
               }}
             >
-              {chip.label}
+              {t[chip.id]}
             </button>
           ))}
         </div>
@@ -247,14 +255,14 @@ function FeedInner() {
         id="main"
         className="feed"
         role="feed"
-        aria-label="Sushinaa menu"
+        aria-label={t.menuFeed}
         inert={sheetOpen ? true : undefined}
       >
         {dishes.length === 0 ? (
           <div className="empty-filter">
-            <p>No dishes match these filters.</p>
+            <p>{t.noMatch}</p>
             <button type="button" className="chip chip-on" onClick={() => setDiet("all")}>
-              Clear filters
+              {t.clearFilters}
             </button>
           </div>
         ) : (
@@ -264,14 +272,17 @@ function FeedInner() {
               Math.abs(item.real - activeIndex),
               n - Math.abs(item.real - activeIndex),
             );
+            const inView = item.copy === 1 && dist <= 2;
+            const seam =
+              (item.copy === 2 && item.real <= 1) || (item.copy === 0 && item.real >= n - 2);
             return (
               <DishSlide
                 key={item.key}
                 dish={item.dish}
-                index={item.real}
                 diet={diet}
-                active={item.real === activeIndex}
-                eager={dist <= 2}
+                marked={item.copy === 1}
+                active={item.copy === 1 && item.real === activeIndex}
+                eager={inView || seam}
                 showHint={item.copy === 1 && item.real === 0}
                 onOpen={setDetail}
               />
@@ -282,13 +293,13 @@ function FeedInner() {
 
       {itemCount > 0 && !sheetOpen ? (
         <button type="button" className="sticky-cta" onClick={() => setOpen(true)}>
-          View order · {formatQar(totalQar)}
+          {t.viewOrder} · {formatQar(totalQar)}
         </button>
       ) : null}
 
       <div className="sr-only" aria-live="polite">
-        {itemCount ? `${itemCount} ${itemCount === 1 ? "item" : "items"} in your order` : ""}
-        {activeSection ? ` ${activeSection}` : ""}
+        {itemCount ? t.inOrder(itemCount) : ""}
+        {activeSection ? ` ${sectionName(activeSection, lang)}` : ""}
       </div>
 
       <DishDetailSheet dish={detail} diet={diet} onClose={() => setDetail(null)} />

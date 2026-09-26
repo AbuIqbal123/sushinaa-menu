@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { LangButton, useLocale } from "@/lib/locale";
 import { SITE } from "@/lib/site";
 
 export function LegalShell({
@@ -8,17 +11,19 @@ export function LegalShell({
   title: string;
   children: React.ReactNode;
 }) {
+  const { t } = useLocale();
   return (
     <div className="doc-page">
       <header className="doc-nav">
         <Link href="/" className="doc-brand">
           <img src="/brand/logotype-red.svg" alt={SITE.name} className="doc-logo" />
         </Link>
-        <nav className="doc-links" aria-label="Site">
-          <Link href="/">Menu</Link>
-          <Link href="/contact">Contact</Link>
-          <Link href="/privacy">Privacy</Link>
-          <Link href="/terms">Terms</Link>
+        <nav className="doc-links" aria-label={t.menu}>
+          <Link href="/">{t.menu}</Link>
+          <Link href="/contact">{t.contact}</Link>
+          <Link href="/privacy">{t.privacy}</Link>
+          <Link href="/terms">{t.terms}</Link>
+          <LangButton tone="light" />
         </nav>
       </header>
       <main id="main" className="doc-main">
@@ -27,7 +32,7 @@ export function LegalShell({
       </main>
       <footer className="doc-foot">
         <p>
-          {SITE.name} · {SITE.addressLine}
+          {SITE.name} · {t.address}
         </p>
         <p>
           WhatsApp{" "}
@@ -36,11 +41,11 @@ export function LegalShell({
           <a href={SITE.instagram}>{SITE.instagramHandle}</a>
         </p>
         <p>
-          <Link href="/privacy">Privacy</Link>
+          <Link href="/privacy">{t.privacy}</Link>
           {" · "}
-          <Link href="/terms">Terms</Link>
+          <Link href="/terms">{t.terms}</Link>
           {" · "}
-          <Link href="/contact">Contact</Link>
+          <Link href="/contact">{t.contact}</Link>
         </p>
       </footer>
     </div>

@@ -6,6 +6,8 @@ import type {
   PiecePrices,
   Selection,
 } from "@/data/types";
+import { strings } from "./copy";
+import { pickName, type Lang } from "./localize";
 
 export function preferredPieces(prices: PiecePrices): PieceCount {
   if (prices[6] != null) return 6;
@@ -119,17 +121,19 @@ export function selectionForDiet(dish: Dish, diet: DietFilter): Selection {
 
 function countedChoiceNames(
   ids: string[],
-  choices: { id: string; name: string }[],
+  choices: { id: string; name: string; nameAr?: string }[],
+  lang: Lang,
 ): string {
   const counts = new Map<string, number>();
   for (const id of ids) counts.set(id, (counts.get(id) ?? 0) + 1);
   const names: string[] = [];
   for (const [id, n] of counts) {
-    const name = choices.find((choice) => choice.id === id)?.name;
-    if (!name) continue;
+    const choice = choices.find((item) => item.id === id);
+    if (!choice) continue;
+    const name = pickName(choice, lang);
     names.push(n > 1 ? `${name} × ${n}` : name);
   }
-  return names.join(", ");
+  return names.join(lang === "ar" ? "، " : ", ");
 }
 
 function extraTotal(extras: Extra[] | undefined, selected: string[] | undefined): number {
@@ -197,50 +201,51 @@ export function hasPriceRange(dish: Dish): boolean {
   }
 }
 
-export function selectionLabel(dish: Dish, sel: Selection): string {
+export function selectionLabel(dish: Dish, sel: Selection, lang: Lang = "en"): string {
   const bits: string[] = [];
   const kind = dish.kind;
+  const t = strings(lang);
 
   if (kind.type === "roll") {
     const protein = kind.proteins.find((p) => p.id === sel.protein);
-    if (protein && kind.proteins.length > 1) bits.push(protein.name);
-    if (sel.pieces) bits.push(`${sel.pieces} pcs`);
+    if (protein && kind.proteins.length > 1) bits.push(pickName(protein, lang));
+    if (sel.pieces) bits.push(`${sel.pieces} ${t.pcs}`);
     const topping = kind.topping?.options.find((o) => o.id === sel.topping);
-    if (topping && topping.id !== "none") bits.push(topping.name);
+    if (topping && topping.id !== "none") bits.push(pickName(topping, lang));
     const style = kind.style?.options.find((o) => o.id === sel.style);
-    if (style) bits.push(style.name);
+    if (style) bits.push(pickName(style, lang));
   }
 
   if (kind.type === "sauce-price") {
     const sauce = kind.sauces.find((s) => s.id === sel.sauce);
-    if (sauce) bits.push(sauce.name);
+    if (sauce) bits.push(pickName(sauce, lang));
   }
 
   if (kind.type === "spicy-toggle") {
-    bits.push(sel.spicy ? "Spicy" : "Regular");
+    bits.push(sel.spicy ? t.spicy : t.regular);
   }
 
   if (kind.type === "size-price") {
     const flavor = kind.flavors?.options.find((o) => o.id === sel.flavor);
-    if (flavor) bits.push(flavor.name);
+    if (flavor) bits.push(pickName(flavor, lang));
     const size = kind.sizes.find((s) => s.id === sel.size);
-    if (size) bits.push(size.name);
+    if (size) bits.push(pickName(size, lang));
   }
 
   if (kind.type === "deal-box") {
     const st = kind.starters.find((o) => o.id === sel.starter);
     const su = kind.sushi.find((o) => o.id === sel.sushi);
-    if (st) bits.push(st.name);
-    if (su) bits.push(su.name);
+    if (st) bits.push(pickName(st, lang));
+    if (su) bits.push(pickName(su, lang));
   }
 
   if (kind.type === "party-box" && sel.starters?.length) {
-    const names = countedChoiceNames(sel.starters, kind.starters);
+    const names = countedChoiceNames(sel.starters, kind.starters, lang);
     if (names) bits.push(names);
   }
 
   if (kind.type === "addons") {
-    if (kind.spicyOptional) bits.push(sel.spicy ? "Spicy" : "Regular");
+    if (kind.spicyOptional) bits.push(sel.spicy ? t.spicy : t.regular);
     kind.freeChoices?.forEach((g) => {
       const id =
         g.id === "cut"
@@ -253,21 +258,22 @@ export function selectionLabel(dish: Dish, sel: Selection): string {
                 ? sel.dip
                 : undefined;
       const opt = g.options.find((o) => o.id === id);
-      if (opt) bits.push(opt.name);
+      if (opt) bits.push(pickName(opt, lang));
     });
   }
 
   if (sel.dip) {
     const dip = dish.freeDips?.find((d) => d.id === sel.dip);
-    if (dip) bits.push(`Dip: ${dip.name}`);
+    if (dip) bits.push(`${t.dip}: ${pickName(dip, lang)}`);
   }
 
   const extraList = kind.type === "addons" ? kind.extras : dish.extras;
   if (sel.extras?.length && extraList) {
     const names = sel.extras
-      .map((id) => extraList.find((e) => e.id === id)?.name)
-      .filter(Boolean);
-    if (names.length) bits.push(names.join(", "));
+      .map((id) => extraList.find((e) => e.id === id))
+      .filter((extra): extra is Extra => Boolean(extra))
+      .map((extra) => pickName(extra, lang));
+    if (names.length) bits.push(names.join(lang === "ar" ? "، " : ", "));
   }
 
   return bits.join(" · ");

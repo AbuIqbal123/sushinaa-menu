@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
+import { cookies } from "next/headers";
+import { LocaleProvider, SkipLink } from "@/lib/locale";
+import type { Lang } from "@/lib/localize";
 import { SITE } from "@/lib/site";
 import "./globals.css";
 
@@ -84,7 +87,9 @@ export const viewport: Viewport = {
   themeColor: "#14110F",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const jar = await cookies();
+  const lang: Lang = jar.get("sushina-lang")?.value === "ar" ? "ar" : "en";
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Restaurant",
@@ -106,19 +111,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html
-      lang="en"
+      lang={lang}
+      dir={lang === "ar" ? "rtl" : "ltr"}
       className={`${display.variable} ${sans.variable} ${arabic.variable} h-full`}
     >
       <body className="min-h-full antialiased">
-        <a className="skip-link" href="#main">
-          Skip to menu
-        </a>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
-        {children}
-        <Analytics />
+        <LocaleProvider initial={lang}>
+          <SkipLink />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          />
+          {children}
+          <Analytics />
+        </LocaleProvider>
       </body>
     </html>
   );
