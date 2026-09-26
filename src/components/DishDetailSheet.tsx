@@ -324,23 +324,12 @@ function Configurator({
       ) : null}
 
       {kind.type === "party-box" ? (
-        <MultiRow
-          label={kind.starterMax > 1 ? `Starters (${kind.starterMin}–${kind.starterMax})` : "Starter"}
+        <PartyStarters
           options={kind.starters}
           selected={sel.starters ?? []}
+          min={kind.starterMin}
           max={kind.starterMax}
-          onToggle={(id) => {
-            const cur = sel.starters ?? [];
-            if (cur.includes(id)) {
-              setSel({ ...sel, starters: cur.filter((x) => x !== id) });
-              return;
-            }
-            if (cur.length >= kind.starterMax) {
-              setSel({ ...sel, starters: [...cur.slice(1), id] });
-              return;
-            }
-            setSel({ ...sel, starters: [...cur, id] });
-          }}
+          onChange={(starters) => setSel({ ...sel, starters })}
         />
       ) : null}
 
@@ -478,41 +467,106 @@ function ChoiceRow({
   );
 }
 
-function MultiRow({
-  label,
+function PartyStarters({
   options,
   selected,
+  min,
   max,
-  onToggle,
+  onChange,
 }: {
-  label: string;
   options: Choice[];
   selected: string[];
+  min: number;
   max: number;
-  onToggle: (id: string) => void;
+  onChange: (ids: string[]) => void;
 }) {
+  if (max <= 1) {
+    return (
+      <ChoiceRow
+        label="Starter"
+        labelAr="المقبلات"
+        options={options.map((opt) => ({ id: opt.id, name: opt.name, spicy: opt.spicy }))}
+        value={selected[0]}
+        onChange={(id) => onChange([id])}
+      />
+    );
+  }
+
+  const counts = new Map<string, number>();
+  for (const id of selected) counts.set(id, (counts.get(id) ?? 0) + 1);
+  const total = selected.length;
+  const range = min === max ? `${max}` : `${min} or ${max}`;
+  const summary =
+    total > 1
+      ? options
+          .filter((opt) => counts.get(opt.id))
+          .map((opt) => {
+            const n = counts.get(opt.id) ?? 0;
+            return n > 1 ? `${opt.name} × ${n}` : opt.name;
+          })
+          .join(", ")
+      : "";
+
+  function setCount(id: string, count: number) {
+    const rest = selected.filter((item) => item !== id);
+    const next = Math.max(0, Math.min(count, max - rest.length));
+    onChange([...rest, ...Array.from({ length: next }, () => id)]);
+  }
+
   return (
-    <div className="choice-block">
+    <div className="starter-picks">
       <div className="choice-head">
-        <p className="choice-label">{label}</p>
-        <p className="choice-count">
-          {selected.length}/{max}
+        <p className="choice-label">Starters</p>
+        <p className="choice-label-ar" lang="ar" dir="rtl">
+          المقبلات
         </p>
       </div>
+      <p className="choice-note">
+        Pick {range}. Use + on a starter to choose it again.
+      </p>
+      {summary ? (
+        <p className="choice-same" aria-live="polite">
+          {summary}
+        </p>
+      ) : null}
       <div className="choice-row">
         {options.map((opt) => {
-          const on = selected.includes(opt.id);
+          const count = counts.get(opt.id) ?? 0;
+          if (count === 0) {
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                className={`opt ${opt.spicy ? "opt-spicy" : ""}`}
+                disabled={total >= max}
+                onClick={() => setCount(opt.id, 1)}
+              >
+                {opt.name}
+              </button>
+            );
+          }
           return (
-            <button
-              key={opt.id}
-              type="button"
-              data-opt={opt.id}
-              className={`opt ${on ? "opt-on" : ""}`}
-              aria-pressed={on}
-              onClick={() => onToggle(opt.id)}
-            >
-              {opt.name}
-            </button>
+            <div key={opt.id} className="opt opt-on starter-opt">
+              <span>{opt.name}</span>
+              <span className="starter-step">
+                <button
+                  type="button"
+                  aria-label={`One fewer ${opt.name}`}
+                  onClick={() => setCount(opt.id, count - 1)}
+                >
+                  −
+                </button>
+                <span aria-hidden="true">{count}</span>
+                <button
+                  type="button"
+                  aria-label={`One more ${opt.name}`}
+                  disabled={total >= max}
+                  onClick={() => setCount(opt.id, count + 1)}
+                >
+                  +
+                </button>
+              </span>
+            </div>
           );
         })}
       </div>

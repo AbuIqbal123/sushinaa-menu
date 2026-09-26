@@ -170,7 +170,11 @@ function FeedInner() {
           type="button"
           className={`cart-btn ${pop ? "cart-btn-pop" : ""}`}
           onClick={() => setOpen(true)}
-          aria-label={itemCount ? `Open ticket, ${itemCount} items` : "Open ticket"}
+          aria-label={
+            itemCount
+              ? `Open order, ${itemCount} ${itemCount === 1 ? "item" : "items"}`
+              : "Open order"
+          }
         >
           <TicketIcon />
           {itemCount > 0 ? <span className="cart-badge">{itemCount}</span> : null}
@@ -278,12 +282,12 @@ function FeedInner() {
 
       {itemCount > 0 && !sheetOpen ? (
         <button type="button" className="sticky-cta" onClick={() => setOpen(true)}>
-          View ticket · {formatQar(totalQar)}
+          View order · {formatQar(totalQar)}
         </button>
       ) : null}
 
       <div className="sr-only" aria-live="polite">
-        {itemCount ? `${itemCount} ${itemCount === 1 ? "item" : "items"} on the ticket` : ""}
+        {itemCount ? `${itemCount} ${itemCount === 1 ? "item" : "items"} in your order` : ""}
         {activeSection ? ` ${activeSection}` : ""}
       </div>
 

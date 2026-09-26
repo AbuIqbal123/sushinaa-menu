@@ -594,6 +594,68 @@ body {
   color: #7a4a2a;
 }
 
+.choice-note {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  line-height: 1.35;
+  color: #3a2f22;
+}
+
+.starter-opt {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.starter-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.starter-step button {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  color: inherit;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.starter-step button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.choice-row .opt:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.starter-step span {
+  min-width: 14px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.choice-same {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #d52029;
+}
+
+.starter-picks {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
 .choice-row {
   display: flex;
   flex-wrap: wrap;
@@ -838,12 +900,31 @@ button {
   height: fit-content;
   max-height: min(88svh, 720px);
   overflow: auto;
-  padding: 18px 20px calc(18px + env(safe-area-inset-bottom, 0px));
+  padding: 8px 20px calc(18px + env(safe-area-inset-bottom, 0px));
+  overscroll-behavior: contain;
   background: #fbf4e6;
   color: #14110f;
   border-radius: 22px 22px 0 0;
   box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.35);
   animation: sheet-up 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  touch-action: pan-y;
+}
+
+.ticket.is-dragging {
+  transition: none;
+  overflow: hidden;
+}
+
+.ticket .sheet-grab {
+  position: relative;
+  top: auto;
+  height: 22px;
+  margin: 0 0 2px;
+}
+
+.sheet-grab-ink::after {
+  background: rgba(20, 17, 15, 0.28);
 }
 
 @keyframes sheet-up {

@@ -127,7 +127,7 @@ export const PARTY_BOXES: Dish[] = [
     nameAr: "بوكس سوشينا عادي",
     section: "Sushinaa box",
     description:
-      "Nine sushi types, two pieces of each, plus 1 or 2 starters of your choice. Serves 3–4. WhatsApp 55075933 for the mix.",
+      "Nine sushi types, two pieces of each, plus 1 or 2 starters of your choice. The same starter twice is fine. Serves 3–4. WhatsApp 55075933 for the mix.",
     image: IMG("sushinaa-box-regular.jpg"),
     tags: [],
     kind: {

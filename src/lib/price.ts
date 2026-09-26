@@ -115,6 +115,21 @@ export function selectionForDiet(dish: Dish, diet: DietFilter): Selection {
   return sel;
 }
 
+function countedChoiceNames(
+  ids: string[],
+  choices: { id: string; name: string }[],
+): string {
+  const counts = new Map<string, number>();
+  for (const id of ids) counts.set(id, (counts.get(id) ?? 0) + 1);
+  const names: string[] = [];
+  for (const [id, n] of counts) {
+    const name = choices.find((choice) => choice.id === id)?.name;
+    if (!name) continue;
+    names.push(n > 1 ? `${name} × ${n}` : name);
+  }
+  return names.join(", ");
+}
+
 function extraTotal(extras: Extra[] | undefined, selected: string[] | undefined): number {
   if (!extras?.length || !selected?.length) return 0;
   const map = new Map(extras.map((e) => [e.id, e.priceQar]));
@@ -218,10 +233,8 @@ export function selectionLabel(dish: Dish, sel: Selection): string {
   }
 
   if (kind.type === "party-box" && sel.starters?.length) {
-    const names = sel.starters
-      .map((id) => kind.starters.find((s) => s.id === id)?.name)
-      .filter(Boolean);
-    if (names.length) bits.push(names.join(", "));
+    const names = countedChoiceNames(sel.starters, kind.starters);
+    if (names) bits.push(names);
   }
 
   if (kind.type === "addons") {
