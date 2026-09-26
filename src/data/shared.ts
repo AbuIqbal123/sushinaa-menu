@@ -45,8 +45,8 @@ export const MAKI_FILLINGS: Choice[] = [
 ];
 
 export const SPICY_OR_NOT: Choice[] = [
-  { id: "not-spicy", name: "Not spicy", nameAr: "غير حار" },
   { id: "spicy", name: "Spicy", nameAr: "حار", spicy: true },
+  { id: "not-spicy", name: "Regular", nameAr: "عادي" },
 ];
 
 export const CALI_TOPPING: Choice[] = [

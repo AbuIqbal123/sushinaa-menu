@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <LegalShell title="Privacy policy">
-      <p>Last updated 20 September 2026.</p>
+      <p>Last updated 26 September 2026.</p>
       <p>
         {SITE.name} ({SITE.nameAr}) is a sushi kitchen in Qatar. This QR menu lets you build a
         ticket and send it to us on WhatsApp. We do not take payment on this website.
@@ -25,7 +25,7 @@ export default function PrivacyPage() {
       </p>
       <h2>What we store on your device</h2>
       <p>
-        Your ticket (dish names, options, quantities) is saved in the browser with{" "}
+        Your ticket (dish names, options, quantities, and any comment) is saved in the browser with{" "}
         <code>localStorage</code> so a refresh does not empty the order. That storage stays on
         your phone unless you clear the ticket or site data. It is necessary for the menu to
         work.

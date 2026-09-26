@@ -13,7 +13,7 @@ type Props = {
 };
 
 export function CartSheet({ open, onClose }: Props) {
-  const { lines, totalQar, inc, dec, clear } = useCart();
+  const { lines, totalQar, inc, dec, clear, comment, setComment } = useCart();
   const closeRef = useRef<HTMLButtonElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const drag = useRef({ start: 0, dy: 0, tracking: false, t: 0 });
@@ -41,14 +41,14 @@ export function CartSheet({ open, onClose }: Props) {
   if (!open) return null;
 
   const empty = lines.length === 0;
-  const wa = whatsappHref(lines, totalQar);
+  const wa = whatsappHref(lines, totalQar, comment);
 
   function onPointerDown(e: PointerEvent) {
     const sheet = sheetRef.current;
     if (!sheet || e.button !== 0) return;
     const target = e.target as HTMLElement;
     const onGrab = Boolean(target.closest(".sheet-grab"));
-    const onControl = Boolean(target.closest("button, a, input, label"));
+    const onControl = Boolean(target.closest("button, a, input, textarea, label"));
     if (onControl && !onGrab) return;
     if (!onGrab && sheet.scrollTop > 2) return;
     drag.current = { start: e.clientY, dy: 0, tracking: true, t: performance.now() };
@@ -158,6 +158,17 @@ export function CartSheet({ open, onClose }: Props) {
               ))}
             </ul>
 
+            <label className="order-comment">
+              <span>Comment</span>
+              <textarea
+                value={comment}
+                maxLength={400}
+                rows={3}
+                placeholder="Add a note for this order"
+                onChange={(e) => setComment(e.target.value)}
+              />
+            </label>
+
             <div className="ticket-sum">
               <span>Total</span>
               <strong>{formatQar(totalQar)}</strong>
@@ -195,7 +206,9 @@ export function CartSheet({ open, onClose }: Props) {
 function whatsappHref(
   lines: { qty: number; displayName: string; meta: string; lineTotal: number }[],
   total: number,
+  comment: string,
 ) {
+  const note = comment.trim();
   const body = [
     "Sushinaa ticket",
     "",
@@ -205,6 +218,7 @@ function whatsappHref(
     }),
     "",
     `Total: ${total} QAR`,
+    ...(note ? ["", `Comment: ${note}`] : []),
   ].join("\n");
   return waLink(body);
 }

@@ -227,8 +227,8 @@ function Configurator({
           label="Heat"
           labelAr="الحرارة"
           options={[
-            { id: "mild", name: "Not spicy", hint: `${kind.mildQar} QAR` },
             { id: "spicy", name: "Spicy", hint: `${kind.spicyQar} QAR`, spicy: true },
+            { id: "mild", name: "Regular", hint: `${kind.mildQar} QAR` },
           ]}
           value={sel.spicy ? "spicy" : "mild"}
           onChange={(id) => setSel({ ...sel, spicy: id === "spicy" })}
@@ -366,8 +366,8 @@ function Configurator({
           label="Heat"
           labelAr="الحرارة"
           options={[
-            { id: "mild", name: "Not spicy" },
             { id: "spicy", name: "Spicy", spicy: true },
+            { id: "mild", name: "Regular" },
           ]}
           value={sel.spicy ? "spicy" : "mild"}
           onChange={(id) => setSel({ ...sel, spicy: id === "spicy" })}

@@ -58,7 +58,9 @@ export function defaultSelection(dish: Dish): Selection {
         protein: protein.id,
         pieces: preferredPieces(protein.prices),
         topping: kind.topping?.options[0]?.id,
-        style: kind.style?.options[0]?.id,
+        style:
+          kind.style?.options.find((o) => o.id === "not-spicy" || o.id === "regular")?.id ??
+          kind.style?.options[0]?.id,
       });
     }
     case "deal-box":
@@ -215,7 +217,7 @@ export function selectionLabel(dish: Dish, sel: Selection): string {
   }
 
   if (kind.type === "spicy-toggle") {
-    bits.push(sel.spicy ? "Spicy" : "Not spicy");
+    bits.push(sel.spicy ? "Spicy" : "Regular");
   }
 
   if (kind.type === "size-price") {
@@ -238,7 +240,7 @@ export function selectionLabel(dish: Dish, sel: Selection): string {
   }
 
   if (kind.type === "addons") {
-    if (kind.spicyOptional) bits.push(sel.spicy ? "Spicy" : "Not spicy");
+    if (kind.spicyOptional) bits.push(sel.spicy ? "Spicy" : "Regular");
     kind.freeChoices?.forEach((g) => {
       const id =
         g.id === "cut"

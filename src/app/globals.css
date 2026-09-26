@@ -93,10 +93,15 @@ body {
 
 .dish-photo {
   object-fit: cover;
-  transform-origin: 50% 40%;
+  object-position: center 36%;
+  transform-origin: 50% 36%;
   user-select: none;
   pointer-events: none;
   transform: translateZ(0);
+  /* Lift the subject above the title and the order buttons. */
+  height: 118% !important;
+  top: -10% !important;
+  bottom: auto !important;
 }
 
 .slide.is-active .dish-photo:not(.dish-photo-pattern) {
@@ -107,6 +112,9 @@ body {
 .dish-photo-pattern {
   position: absolute;
   inset: 0;
+  height: 100% !important;
+  top: 0 !important;
+  bottom: 0 !important;
   animation: none;
   background-color: #14110f;
   background-size: 140px;
@@ -145,8 +153,28 @@ body {
   right: 0;
   bottom: 0;
   z-index: 2;
-  padding: 0 20px calc(88px + env(safe-area-inset-bottom, 0px));
+  padding: 0 20px calc(78px + env(safe-area-inset-bottom, 0px));
   pointer-events: none;
+}
+
+.slide-copy .section-label {
+  margin-bottom: 2px;
+}
+
+.slide-copy .dish-ar {
+  margin-top: 2px;
+}
+
+.slide-copy .tags {
+  margin: 4px 0 2px;
+}
+
+.slide-copy .dish-desc {
+  margin-bottom: 2px;
+}
+
+.slide-copy .slide-cta {
+  margin-top: 6px;
 }
 
 .section-label {
@@ -254,7 +282,7 @@ body {
 
 .dish-desc-feed {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -1057,6 +1085,38 @@ button {
   font-family: var(--font-sans);
   font-weight: 700;
   text-align: right;
+}
+
+.order-comment {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 14px 0 4px;
+}
+
+.order-comment span {
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #14110f;
+}
+
+.order-comment textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  padding: 10px 12px;
+  border: 1.5px solid rgba(20, 17, 15, 0.16);
+  border-radius: 12px;
+  background: #fff;
+  color: #14110f;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.order-comment textarea::placeholder {
+  color: #8a7358;
 }
 
 .ticket-sum {

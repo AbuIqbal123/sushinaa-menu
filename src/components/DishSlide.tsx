@@ -107,7 +107,7 @@ function hintFor(dish: Dish, sel: { pieces?: number; sauce?: string }): string |
     if (n > 1) return `${Object.keys(kind.proteins[0].prices).join(" / ")} pcs`;
   }
   if (kind.type === "sauce-price") return "Sauce changes the price";
-  if (kind.type === "spicy-toggle") return "Spicy or not";
+  if (kind.type === "spicy-toggle") return "Spicy or regular";
   if (kind.type === "deal-box") return "Pick starter & sushi";
   if (kind.type === "party-box") return "Pick your starter";
   if (kind.type === "addons") return "Add-ons available";

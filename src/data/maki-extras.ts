@@ -108,7 +108,7 @@ export const MAKI: Dish[] = [
     nameAr: "سوشي خضار",
     section: "Sushinaa maki",
     description:
-      "Bell pepper, carrot, lettuce, avocado, cucumber, rice, nori. Not spicy or crispy.",
+      "Bell pepper, carrot, lettuce, avocado, cucumber, rice, nori. Regular, or choose crispy.",
     image: IMG("vegi-roll.jpg"),
     tags: ["veg"],
     kind: {
@@ -118,7 +118,7 @@ export const MAKI: Dish[] = [
         id: "style",
         name: "Style",
         options: [
-          { id: "not-spicy", name: "Not spicy" },
+          { id: "not-spicy", name: "Regular" },
           { id: "crispy", name: "Crispy" },
         ],
       },

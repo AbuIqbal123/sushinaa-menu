@@ -20,6 +20,35 @@ import {
 
 const STORAGE_KEY = "sushina-menu-cart-v1";
 
+type StoredCart = {
+  lines: Record<string, number>;
+  comment: string;
+};
+
+function emptyStored(): StoredCart {
+  return { lines: {}, comment: "" };
+}
+
+function readStored(raw: string): StoredCart {
+  const parsed = JSON.parse(raw) as unknown;
+  if (!parsed || typeof parsed !== "object") return emptyStored();
+  const record = parsed as { lines?: unknown; comment?: unknown };
+  const source =
+    record.lines && typeof record.lines === "object"
+      ? (record.lines as Record<string, unknown>)
+      : (parsed as Record<string, unknown>);
+  const lines: Record<string, number> = {};
+  for (const [key, qty] of Object.entries(source)) {
+    if (key === "lines" || key === "comment") continue;
+    if (typeof qty !== "number" || !Number.isInteger(qty) || qty <= 0) continue;
+    const { id } = parseKey(key);
+    if (!DISH_BY_ID[id]) continue;
+    lines[key] = qty;
+  }
+  const comment = typeof record.comment === "string" ? record.comment.slice(0, 400) : "";
+  return { lines, comment };
+}
+
 export type CartLine = {
   key: string;
   dish: Dish;
@@ -37,6 +66,8 @@ type CartValue = {
   dec: (key: string) => void;
   remove: (key: string) => void;
   clear: () => void;
+  comment: string;
+  setComment: (value: string) => void;
   itemCount: number;
   lines: CartLine[];
   totalQar: number;
@@ -57,20 +88,16 @@ function parseKey(key: string): { id: string; sel: Selection } {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [qtys, setQtys] = useState<Record<string, number>>({});
+  const [comment, setCommentState] = useState("");
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as Record<string, number>;
-        const next: Record<string, number> = {};
-        for (const [key, qty] of Object.entries(parsed)) {
-          const { id } = parseKey(key);
-          if (!DISH_BY_ID[id] || !Number.isInteger(qty) || qty <= 0) continue;
-          next[key] = qty;
-        }
-        setQtys(next);
+        const stored = readStored(raw);
+        setQtys(stored.lines);
+        setCommentState(stored.comment);
       }
     } catch {
       /* ignore */
@@ -80,8 +107,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!ready) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(qtys));
-  }, [qtys, ready]);
+    const payload: StoredCart = { lines: qtys, comment };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  }, [qtys, comment, ready]);
 
   const add = useCallback((id: string, sel: Selection, count = 1) => {
     const n = Math.max(1, Math.floor(count));
@@ -113,7 +141,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const clear = useCallback(() => setQtys({}), []);
+  const clear = useCallback(() => {
+    setQtys({});
+    setCommentState("");
+  }, []);
+
+  const setComment = useCallback((value: string) => {
+    setCommentState(value.slice(0, 400));
+  }, []);
 
   const lines = useMemo<CartLine[]>(() => {
     const order = new Map<string, number>();
@@ -157,8 +192,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ add, inc, dec, remove, clear, itemCount, lines, totalQar }),
-    [add, inc, dec, remove, clear, itemCount, lines, totalQar],
+    () => ({ add, inc, dec, remove, clear, comment, setComment, itemCount, lines, totalQar }),
+    [add, inc, dec, remove, clear, comment, setComment, itemCount, lines, totalQar],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
