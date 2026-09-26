@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useRef, type PointerEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/lib/cart";
 import { useLocale } from "@/lib/locale";
 import { formatQar } from "@/lib/money";
+import { useSheetDismiss } from "@/lib/sheet-dismiss";
 import { waLink } from "@/lib/site";
 
 type Props = {
@@ -17,28 +18,19 @@ export function CartSheet({ open, onClose }: Props) {
   const { lines, totalQar, inc, dec, clear, comment, setComment } = useCart();
   const { lang, t } = useLocale();
   const closeRef = useRef<HTMLButtonElement>(null);
-  const sheetRef = useRef<HTMLDivElement>(null);
-  const drag = useRef({ start: 0, dy: 0, tracking: false, t: 0 });
-  const [dragY, setDragY] = useState(0);
-  const [dragging, setDragging] = useState(false);
   const router = useRouter();
-
-  function close() {
-    drag.current.tracking = false;
-    setDragging(false);
-    setDragY(0);
-    onClose();
-  }
+  const { sheetRef, backdropRef, trackPointer, movePointer, endPointer, requestClose } =
+    useSheetDismiss(open, onClose);
 
   useEffect(() => {
     if (!open) return;
     closeRef.current?.focus();
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") requestClose();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open, requestClose]);
 
   if (!open) return null;
 
@@ -47,61 +39,34 @@ export function CartSheet({ open, onClose }: Props) {
 
   function onPointerDown(e: PointerEvent) {
     const sheet = sheetRef.current;
-    if (!sheet || e.button !== 0) return;
+    if (!sheet) return;
     const target = e.target as HTMLElement;
     const onGrab = Boolean(target.closest(".sheet-grab"));
     const onControl = Boolean(target.closest("button, a, input, textarea, label"));
     if (onControl && !onGrab) return;
     if (!onGrab && sheet.scrollTop > 2) return;
-    drag.current = { start: e.clientY, dy: 0, tracking: true, t: performance.now() };
-  }
-
-  function onPointerMove(e: PointerEvent) {
-    if (!drag.current.tracking) return;
-    const sheet = sheetRef.current;
-    const dy = e.clientY - drag.current.start;
-    if (dy < -8 && drag.current.dy < 10) {
-      releaseDrag(e.pointerId);
-      return;
-    }
-    if (dy < 10) return;
-    if (sheet && !sheet.hasPointerCapture(e.pointerId)) sheet.setPointerCapture(e.pointerId);
-    e.preventDefault();
-    drag.current.dy = dy;
-    setDragging(true);
-    setDragY(dy);
-  }
-
-  function releaseDrag(pointerId: number) {
-    const sheet = sheetRef.current;
-    drag.current.tracking = false;
-    if (sheet?.hasPointerCapture(pointerId)) sheet.releasePointerCapture(pointerId);
-  }
-
-  function endDrag(e: PointerEvent) {
-    if (!drag.current.tracking) return;
-    const { dy, t } = drag.current;
-    const speed = dy / Math.max(1, performance.now() - t);
-    releaseDrag(e.pointerId);
-    setDragging(false);
-    setDragY(0);
-    if (dy > 88 || speed > 0.55) onClose();
+    trackPointer(e);
   }
 
   return (
     <div className="sheet-root">
-      <button type="button" className="sheet-backdrop" aria-label={t.closeTicket} onClick={close} />
+      <button
+        ref={backdropRef}
+        type="button"
+        className="sheet-backdrop"
+        aria-label={t.closeTicket}
+        onClick={requestClose}
+      />
       <div
         ref={sheetRef}
-        className={`ticket${dragging ? " is-dragging" : ""}`}
+        className="ticket"
         role="dialog"
         aria-modal="true"
         aria-labelledby="ticket-title"
-        style={{ transform: dragY ? `translate3d(0, ${dragY}px, 0)` : undefined }}
         onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
+        onPointerMove={movePointer}
+        onPointerUp={endPointer}
+        onPointerCancel={endPointer}
       >
         <div className="sheet-grab sheet-grab-ink" aria-hidden="true" />
         <div className="ticket-scallop" aria-hidden="true" />
@@ -112,7 +77,7 @@ export function CartSheet({ open, onClose }: Props) {
               {t.yourTicket}
             </h2>
           </div>
-          <button ref={closeRef} type="button" className="ticket-close" onClick={close}>
+          <button ref={closeRef} type="button" className="ticket-close" onClick={requestClose}>
             {t.close}
           </button>
         </header>

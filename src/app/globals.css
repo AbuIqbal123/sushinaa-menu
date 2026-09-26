@@ -55,7 +55,6 @@ body {
 
 .shell.is-sheet .dish-photo {
   animation-play-state: paused;
-  will-change: auto;
 }
 
 .feed {
@@ -395,14 +394,10 @@ body {
   color: #14110f;
   border-radius: 22px 22px 0 0;
   box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.35);
-  animation: sheet-up 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
-  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: sheet-up 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  transform: translateZ(0);
+  backface-visibility: hidden;
   touch-action: pan-y;
-}
-
-.detail-sheet.is-dragging {
-  transition: none;
-  overflow: hidden;
 }
 
 .sheet-grab {
@@ -434,6 +429,7 @@ body {
   overflow: hidden;
   border-radius: 22px 22px 0 0;
   background: #14110f;
+  touch-action: none;
 }
 
 .detail-photo {
@@ -955,14 +951,10 @@ button {
   color: #14110f;
   border-radius: 22px 22px 0 0;
   box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.35);
-  animation: sheet-up 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
-  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: sheet-up 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  transform: translateZ(0);
+  backface-visibility: hidden;
   touch-action: pan-y;
-}
-
-.ticket.is-dragging {
-  transition: none;
-  overflow: hidden;
 }
 
 .ticket .sheet-grab {

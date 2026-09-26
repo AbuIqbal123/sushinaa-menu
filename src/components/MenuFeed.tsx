@@ -134,7 +134,9 @@ function FeedInner() {
   useEffect(() => {
     const feed = feedRef.current;
     if (!feed) return;
+    const top = feed.scrollTop;
     feed.style.overflowY = sheetOpen ? "hidden" : "";
+    if (feed.scrollTop !== top) feed.scrollTop = top;
   }, [sheetOpen]);
 
   useEffect(() => {

@@ -8,6 +8,7 @@ import { useCart } from "@/lib/cart";
 import { useLocale } from "@/lib/locale";
 import { dishDescription, fieldLabel, pickName, sectionName } from "@/lib/localize";
 import { formatQar } from "@/lib/money";
+import { useSheetDismiss } from "@/lib/sheet-dismiss";
 import {
   imageFor,
   isSelectionComplete,
@@ -29,30 +30,30 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
   const [sel, setSel] = useState<Selection>({});
   const [pickQty, setPickQty] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
-  const [dragY, setDragY] = useState(0);
-  const [dragging, setDragging] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const sheetRef = useRef<HTMLDivElement>(null);
-  const drag = useRef({ start: 0, dy: 0, tracking: false, t: 0 });
+  const addedTimer = useRef(0);
+  const { sheetRef, backdropRef, trackPointer, movePointer, endPointer, requestClose } =
+    useSheetDismiss(Boolean(dish), onClose);
 
   useEffect(() => {
     if (!dish) return;
     setSel(selectionForDiet(dish, diet));
     setPickQty(1);
     setJustAdded(false);
-    setDragY(0);
-    setDragging(false);
+    window.clearTimeout(addedTimer.current);
   }, [dish, diet]);
 
   useEffect(() => {
     if (!dish) return;
     closeRef.current?.focus();
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") requestClose();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [dish, onClose]);
+  }, [dish, requestClose]);
+
+  useEffect(() => () => window.clearTimeout(addedTimer.current), []);
 
   if (!dish) return null;
   const current = dish;
@@ -62,10 +63,11 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
   const patterned = photo.startsWith("/brand/");
 
   function onAdd() {
-    if (!ready) return;
+    if (!ready || justAdded) return;
     add(current.id, sel, pickQty);
     setJustAdded(true);
-    window.setTimeout(() => onClose(), 700);
+    window.clearTimeout(addedTimer.current);
+    addedTimer.current = window.setTimeout(() => requestClose(), 280);
   }
 
   function onPointerDown(e: PointerEvent) {
@@ -73,48 +75,31 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
     if (!sheet) return;
     const target = e.target as HTMLElement;
     const onGrab = Boolean(target.closest(".sheet-grab, .detail-photo-wrap"));
+    const onControl = Boolean(target.closest("button, a, input, textarea, label"));
+    if (onControl && !onGrab) return;
     if (!onGrab && sheet.scrollTop > 2) return;
-    drag.current = { start: e.clientY, dy: 0, tracking: true, t: performance.now() };
-  }
-
-  function onPointerMove(e: PointerEvent) {
-    if (!drag.current.tracking) return;
-    const dy = e.clientY - drag.current.start;
-    if (!dragging && dy < 10) return;
-    if (dy < 0) return;
-    e.preventDefault();
-    drag.current.dy = dy;
-    setDragging(true);
-    setDragY(dy);
-  }
-
-  function endDrag() {
-    if (!drag.current.tracking) return;
-    const { dy, t } = drag.current;
-    const speed = dy / Math.max(1, performance.now() - t);
-    drag.current.tracking = false;
-    setDragging(false);
-    if (dy > 88 || speed > 0.55) {
-      onClose();
-      return;
-    }
-    setDragY(0);
+    trackPointer(e);
   }
 
   return (
     <div className="sheet-root">
-      <button type="button" className="sheet-backdrop" aria-label={t.closeDetails} onClick={onClose} />
+      <button
+        ref={backdropRef}
+        type="button"
+        className="sheet-backdrop"
+        aria-label={t.closeDetails}
+        onClick={requestClose}
+      />
       <div
         ref={sheetRef}
-        className={`detail-sheet${dragging ? " is-dragging" : ""}`}
+        className="detail-sheet"
         role="dialog"
         aria-modal="true"
         aria-labelledby="detail-title"
-        style={{ transform: dragY ? `translate3d(0, ${dragY}px, 0)` : undefined }}
         onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
+        onPointerMove={movePointer}
+        onPointerUp={endPointer}
+        onPointerCancel={endPointer}
       >
         <div className="detail-photo-wrap">
           <div className="sheet-grab" aria-hidden="true" />
@@ -137,7 +122,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
         </div>
         <header className="detail-kicker-row">
           <p className="ticket-kicker">{sectionName(current.section, lang)}</p>
-          <button ref={closeRef} type="button" className="ticket-close" onClick={onClose}>
+          <button ref={closeRef} type="button" className="ticket-close" onClick={requestClose}>
             {t.close}
           </button>
         </header>
