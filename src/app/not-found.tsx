@@ -1,10 +1,9 @@
-import type { Metadata } from "next";
 import { MissingView } from "@/components/DocViews";
+import { pageMeta } from "@/lib/page-meta";
 
-export const metadata: Metadata = {
-  title: "Page not found",
-  description: "This Sushinaa page does not exist. Head back to the QR menu.",
-};
+export function generateMetadata() {
+  return pageMeta((t) => t.missingTitle, (t) => t.missingBlurb);
+}
 
 export default function NotFound() {
   return <MissingView />;

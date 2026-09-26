@@ -35,7 +35,7 @@ export const DishSlide = memo(function DishSlide({
   const price = unitPrice(dish, sel);
   const photo = imageFor(dish, sel);
   const title = pickName(dish, lang);
-  const otherName = lang === "ar" ? dish.name : dish.nameAr;
+  const description = dishDescription(dish, lang);
   const patterned = photo.startsWith("/brand/");
   const showPhoto = eager || patterned;
   const hint = hintFor(dish, sel, t);
@@ -45,13 +45,13 @@ export const DishSlide = memo(function DishSlide({
       className={`slide${active ? " is-active" : ""}`}
       id={marked ? `dish-${dish.id}` : undefined}
       data-section={dish.section}
-      aria-label={`${dish.name}, ${from ? "from " : ""}${formatQar(price)}. Tap for details.`}
+      aria-label={`${title}, ${from ? `${t.from} ` : ""}${formatQar(price, lang)}. ${t.tapForDetails}`}
     >
       <button
         type="button"
         className="slide-hit"
         onClick={() => onOpen(dish)}
-        aria-label={`Open ${dish.name} details`}
+        aria-label={t.openDetails(title)}
       >
         {patterned ? (
           <div
@@ -62,7 +62,7 @@ export const DishSlide = memo(function DishSlide({
         ) : showPhoto ? (
           <Image
             src={photo}
-            alt={`${dish.name}. ${dish.description}`}
+            alt={`${title}. ${description}`}
             fill
             sizes="(max-width: 430px) 100vw, 430px"
             priority={active}
@@ -89,14 +89,11 @@ export const DishSlide = memo(function DishSlide({
             <h2 className="dish-name">{title}</h2>
             <p className="dish-price">
               {from ? <span className="from">{t.from} </span> : null}
-              {formatQar(price)}
+              {formatQar(price, lang)}
             </p>
           </div>
-          <p className={lang === "ar" ? "dish-en" : "dish-ar"} lang={lang === "ar" ? "en" : "ar"} dir={lang === "ar" ? "ltr" : "rtl"}>
-            {otherName}
-          </p>
           <DietTags tags={dish.tags} />
-          <p className="dish-desc dish-desc-feed">{dishDescription(dish, lang)}</p>
+          <p className="dish-desc dish-desc-feed">{description}</p>
           {hint ? <p className="tap-hint">{hint}</p> : null}
           <span className="slide-cta">{t.addToOrder}</span>
         </div>

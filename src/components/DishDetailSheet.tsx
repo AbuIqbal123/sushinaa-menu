@@ -146,16 +146,9 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
             <h2 id="detail-title" className="ticket-title">
               {pickName(current, lang)}
             </h2>
-            <p
-              className={lang === "ar" ? "detail-en" : "detail-ar"}
-              lang={lang === "ar" ? "en" : "ar"}
-              dir={lang === "ar" ? "ltr" : "rtl"}
-            >
-              {lang === "ar" ? current.name : current.nameAr}
-            </p>
           </div>
           <p className="detail-unit" aria-live="polite">
-            {formatQar(unit)}
+            {formatQar(unit, lang)}
           </p>
         </div>
         <DietTags tags={current.tags} />
@@ -192,7 +185,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
             onClick={onAdd}
             disabled={!ready}
           >
-            {justAdded ? t.added : `${t.addToOrder} · ${formatQar(unit * pickQty)}`}
+            {justAdded ? t.added : `${t.addToOrder} · ${formatQar(unit * pickQty, lang)}`}
           </button>
         </div>
       </div>
@@ -225,7 +218,7 @@ function Configurator({
           options={kind.sauces.map((s) => ({
             id: s.id,
             name: pickName(s, lang),
-            hint: `${s.priceQar} QAR`,
+            hint: formatQar(s.priceQar, lang),
             spicy: s.spicy,
           }))}
           value={sel.sauce}
@@ -237,8 +230,8 @@ function Configurator({
         <ChoiceRow
           label={label("Heat")}
           options={[
-            { id: "spicy", name: t.spicy, hint: `${kind.spicyQar} QAR`, spicy: true },
-            { id: "mild", name: t.regular, hint: `${kind.mildQar} QAR` },
+            { id: "spicy", name: t.spicy, hint: formatQar(kind.spicyQar, lang), spicy: true },
+            { id: "mild", name: t.regular, hint: formatQar(kind.mildQar, lang) },
           ]}
           value={sel.spicy ? "spicy" : "mild"}
           onChange={(id) => setSel({ ...sel, spicy: id === "spicy" })}
@@ -254,7 +247,7 @@ function Configurator({
                 id: p.id,
                 name: pickName(p, lang),
                 hint: p.prices[sel.pieces ?? preferredPieces(p.prices)]
-                  ? `${p.prices[sel.pieces ?? preferredPieces(p.prices)]} QAR`
+                  ? formatQar(p.prices[sel.pieces ?? preferredPieces(p.prices)] ?? 0, lang)
                   : undefined,
                 spicy: p.spicy,
               }))}
@@ -278,7 +271,7 @@ function Configurator({
                 return {
                   id: String(n),
                   name: `${n}`,
-                  hint: `${protein.prices[n]} QAR`,
+                  hint: formatQar(protein.prices[n] ?? 0, lang),
                 };
               },
             )}
@@ -346,7 +339,7 @@ function Configurator({
             options={kind.sizes.map((s) => ({
               id: s.id,
               name: pickName(s, lang),
-              hint: `${s.priceQar} QAR`,
+              hint: formatQar(s.priceQar, lang),
             }))}
             value={sel.size}
             onChange={(id) => setSel({ ...sel, size: id })}
@@ -414,13 +407,11 @@ function pieceOptions(protein: { prices: Partial<Record<PieceCount, number>> }):
 
 function ChoiceRow({
   label,
-  labelAr,
   options,
   value,
   onChange,
 }: {
   label: string;
-  labelAr?: string;
   options: { id: string; name: string; hint?: string; spicy?: boolean }[];
   value?: string;
   onChange: (id: string) => void;
@@ -429,11 +420,6 @@ function ChoiceRow({
     <div className="choice-block">
       <div className="choice-head">
         <p className="choice-label">{label}</p>
-        {labelAr ? (
-          <p className="choice-label-ar" lang="ar" dir="rtl">
-            {labelAr}
-          </p>
-        ) : null}
       </div>
       <div className="choice-row" role="radiogroup" aria-label={label}>
         {options.map((opt) => {
@@ -587,7 +573,7 @@ function ExtraList({
             <label key={ex.id} className={`extra ${on ? "extra-on" : ""}`}>
               <input type="checkbox" checked={on} onChange={() => onToggle(ex.id)} />
               <span>{pickName(ex, lang)}</span>
-              <em>+{ex.priceQar} QAR</em>
+              <em>+{formatQar(ex.priceQar, lang)}</em>
             </label>
           );
         })}

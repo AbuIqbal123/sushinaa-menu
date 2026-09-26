@@ -1,6 +1,6 @@
-export function formatQar(amount: number): string {
-  if (Number.isInteger(amount)) return `${amount} QAR`;
-  return `${amount.toFixed(2)} QAR`;
+export function formatQar(amount: number, lang: "en" | "ar" = "en"): string {
+  const n = Number.isInteger(amount) ? String(amount) : amount.toFixed(2);
+  return lang === "ar" ? `${n} ر.ق` : `${n} QAR`;
 }
 
 export function formatQarShort(amount: number): string {

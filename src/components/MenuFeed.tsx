@@ -174,7 +174,7 @@ function FeedInner() {
   return (
     <div className={`shell${sheetOpen ? " is-sheet" : ""}`}>
       <header className="chrome-header">
-        <img src="/brand/logotype-white.svg" alt="Sushinaa" className="wordmark-img" />
+        <img src="/brand/logotype-white.svg" alt={t.brand} className="wordmark-img" />
         <div className="chrome-actions">
           <LangButton />
           <button
@@ -293,7 +293,7 @@ function FeedInner() {
 
       {itemCount > 0 && !sheetOpen ? (
         <button type="button" className="sticky-cta" onClick={() => setOpen(true)}>
-          {t.viewOrder} · {formatQar(totalQar)}
+          {t.viewOrder} · {formatQar(totalQar, lang)}
         </button>
       ) : null}
 

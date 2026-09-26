@@ -33,9 +33,13 @@ export function ContactForm() {
     setErrors(next);
     if (Object.keys(next).length) return;
     setBusy(true);
-    const text = [`Contact from the menu`, `Name: ${name.trim()}`, `Phone: ${phone.trim()}`, "", message.trim()].join(
-      "\n",
-    );
+    const text = [
+      t.contactFrom,
+      `${t.name}: ${name.trim()}`,
+      `${t.phone}: ${phone.trim()}`,
+      "",
+      message.trim(),
+    ].join("\n");
     window.open(waLink(text), "_blank", "noopener,noreferrer");
     router.push("/thank-you");
   }
@@ -44,7 +48,7 @@ export function ContactForm() {
     <form className="contact-form" onSubmit={onSubmit} noValidate>
       <div className="hp" aria-hidden="true">
         <label>
-          Company
+          {t.company}
           <input tabIndex={-1} autoComplete="off" value={hp} onChange={(e) => setHp(e.target.value)} />
         </label>
       </div>

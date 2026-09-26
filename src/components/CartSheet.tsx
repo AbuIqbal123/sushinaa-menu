@@ -15,7 +15,7 @@ type Props = {
 
 export function CartSheet({ open, onClose }: Props) {
   const { lines, totalQar, inc, dec, clear, comment, setComment } = useCart();
-  const { t } = useLocale();
+  const { lang, t } = useLocale();
   const closeRef = useRef<HTMLButtonElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const drag = useRef({ start: 0, dy: 0, tracking: false, t: 0 });
@@ -43,7 +43,7 @@ export function CartSheet({ open, onClose }: Props) {
   if (!open) return null;
 
   const empty = lines.length === 0;
-  const wa = whatsappHref(lines, totalQar, comment, t);
+  const wa = whatsappHref(lines, totalQar, comment, t, lang);
 
   function onPointerDown(e: PointerEvent) {
     const sheet = sheetRef.current;
@@ -107,7 +107,7 @@ export function CartSheet({ open, onClose }: Props) {
         <div className="ticket-scallop" aria-hidden="true" />
         <header className="ticket-head">
           <div>
-            <p className="ticket-kicker">Sushinaa</p>
+            <p className="ticket-kicker">{t.brand}</p>
             <h2 id="ticket-title" className="ticket-title">
               {t.yourTicket}
             </h2>
@@ -130,7 +130,7 @@ export function CartSheet({ open, onClose }: Props) {
                     {line.meta ? <p className="line-meta">{line.meta}</p> : null}
                     {line.qty > 1 ? (
                       <p className="line-meta">
-                        {line.qty} × {formatQar(line.unitQar)}
+                        {line.qty} × {formatQar(line.unitQar, lang)}
                       </p>
                     ) : null}
                   </div>
@@ -155,7 +155,7 @@ export function CartSheet({ open, onClose }: Props) {
                       +
                     </button>
                   </div>
-                  <p className="line-total">{formatQar(line.lineTotal)}</p>
+                  <p className="line-total">{formatQar(line.lineTotal, lang)}</p>
                 </li>
               ))}
             </ul>
@@ -173,7 +173,7 @@ export function CartSheet({ open, onClose }: Props) {
 
             <div className="ticket-sum">
               <span>{t.total}</span>
-              <strong>{formatQar(totalQar)}</strong>
+              <strong>{formatQar(totalQar, lang)}</strong>
             </div>
 
             <button
@@ -210,6 +210,7 @@ function whatsappHref(
   total: number,
   comment: string,
   t: { ticketWord: string; total: string; commentWord: string },
+  lang: "en" | "ar",
 ) {
   const note = comment.trim();
   const body = [
@@ -217,10 +218,10 @@ function whatsappHref(
     "",
     ...lines.map((l) => {
       const meta = l.meta ? ` (${l.meta})` : "";
-      return `• ${l.qty}× ${l.displayName}${meta} — ${l.lineTotal} QAR`;
+      return `• ${l.qty}× ${l.displayName}${meta} — ${formatQar(l.lineTotal, lang)}`;
     }),
     "",
-    `${t.total}: ${total} QAR`,
+    `${t.total}: ${formatQar(total, lang)}`,
     ...(note ? ["", `${t.commentWord}: ${note}`] : []),
   ].join("\n");
   return waLink(body);

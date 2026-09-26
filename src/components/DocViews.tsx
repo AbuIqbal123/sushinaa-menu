@@ -46,7 +46,7 @@ export function PrivacyView() {
     <LegalShell title={t.privacyTitle}>
       <p>{t.updated}</p>
       <p>
-        {SITE.name} ({SITE.nameAr}) is a sushi kitchen in Qatar. This QR menu lets you build a
+        {SITE.name} is a sushi kitchen in Qatar. This QR menu lets you build a
         ticket and send it to us on WhatsApp. We do not take payment on this website.
       </p>
       <h2>Who we are</h2>
@@ -173,7 +173,7 @@ export function ThankYouView() {
     <LegalShell title={t.thankTitle}>
       <p>{t.thankBody}</p>
       <p>
-        WhatsApp{" "}
+        {t.whatsapp}{" "}
         <a className="doc-cta" href={`https://wa.me/${SITE.whatsappE164}`}>
           {SITE.whatsappDisplay}
         </a>

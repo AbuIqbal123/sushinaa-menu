@@ -1,12 +1,12 @@
-import { cookies } from "next/headers";
+import { strings } from "@/lib/copy";
+import { requestLang } from "@/lib/request-lang";
 
 export default async function Loading() {
-  const jar = await cookies();
-  const ar = jar.get("sushina-lang")?.value === "ar";
+  const lang = await requestLang();
   return (
     <div className="boot" role="status" aria-live="polite">
       <img src="/brand/logotype-white.svg" alt="" className="boot-logo" />
-      <p>{ar ? "جارٍ تحميل القائمة…" : "Loading the menu…"}</p>
+      <p>{strings(lang).loading}</p>
     </div>
   );
 }

@@ -1,12 +1,9 @@
-import type { Metadata } from "next";
 import { MenuFeed } from "@/components/MenuFeed";
-import { SITE } from "@/lib/site";
+import { pageMeta } from "@/lib/page-meta";
 
-export const metadata: Metadata = {
-  title: "Menu",
-  description: `${SITE.tagline}. Browse Sushinaa rolls, starters, bowls, and boxes. Prices in QAR update when you change protein, pieces, or sauce. Add to ticket — no payment on this page.`,
-  alternates: { canonical: SITE.url },
-};
+export function generateMetadata() {
+  return pageMeta((t) => t.menu, (t) => t.menuBlurb, "");
+}
 
 export default function Home() {
   return (

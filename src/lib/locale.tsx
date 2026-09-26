@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { strings, type Copy } from "./copy";
 import type { Lang } from "./localize";
@@ -15,6 +16,7 @@ type LocaleValue = {
 const LocaleContext = createContext<LocaleValue | null>(null);
 
 export function LocaleProvider({ initial, children }: { initial: Lang; children: ReactNode }) {
+  const router = useRouter();
   const [lang, setLangState] = useState<Lang>(initial);
 
   function setLang(next: Lang) {
@@ -22,6 +24,7 @@ export function LocaleProvider({ initial, children }: { initial: Lang; children:
     document.documentElement.lang = next;
     document.documentElement.dir = next === "ar" ? "rtl" : "ltr";
     document.cookie = `${COOKIE}=${next};path=/;max-age=31536000;SameSite=Lax`;
+    router.refresh();
   }
 
   return (

@@ -78,6 +78,7 @@ const OPTION_AR: Record<string, string> = {
   "Spicy edamame": "إدامامي حار",
   "Lettuce roll": "رول خس",
   "Avocado roll": "رول أفوكادو",
+  Avocado: "أفوكادو",
   "Veggie roll": "رول خضار",
   "Mario roll": "ماريو رول",
   Shrimp: "روبيان",

@@ -16,7 +16,7 @@ export function LegalShell({
     <div className="doc-page">
       <header className="doc-nav">
         <Link href="/" className="doc-brand">
-          <img src="/brand/logotype-red.svg" alt={SITE.name} className="doc-logo" />
+          <img src="/brand/logotype-red.svg" alt={t.brand} className="doc-logo" />
         </Link>
         <nav className="doc-links" aria-label={t.menu}>
           <Link href="/">{t.menu}</Link>
@@ -32,10 +32,10 @@ export function LegalShell({
       </main>
       <footer className="doc-foot">
         <p>
-          {SITE.name} · {t.address}
+          {t.brand} · {t.address}
         </p>
         <p>
-          WhatsApp{" "}
+          {t.whatsapp}{" "}
           <a href={`https://wa.me/${SITE.whatsappE164}`}>{SITE.whatsappDisplay}</a>
           {" · "}
           <a href={SITE.instagram}>{SITE.instagramHandle}</a>
