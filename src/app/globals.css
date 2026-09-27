@@ -167,8 +167,13 @@ body {
   right: 0;
   bottom: 0;
   z-index: 2;
-  padding: 0 20px calc(88px + env(safe-area-inset-bottom, 0px));
+  padding: 0 20px calc(28px + env(safe-area-inset-bottom, 0px));
   pointer-events: none;
+  transition: padding-bottom 0.28s ease;
+}
+
+.shell.has-order .slide-copy {
+  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
 }
 
 .section-label {

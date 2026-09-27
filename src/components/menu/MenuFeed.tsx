@@ -174,7 +174,7 @@ function FeedInner() {
   }
 
   return (
-    <div className={`shell${sheetOpen ? " is-sheet" : ""}`}>
+    <div className={`shell${sheetOpen ? " is-sheet" : ""}${itemCount > 0 ? " has-order" : ""}`}>
       <header className="chrome-header">
         <img src="/brand/logotype-white.svg" alt={t.brand} className="wordmark-img" />
         <div className="chrome-actions">
