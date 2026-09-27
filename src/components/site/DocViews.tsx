@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ContactForm } from "./ContactForm";
 import { LegalShell } from "./LegalShell";
-import { useLocale } from "@/lib/locale";
+import { useLocale } from "@/i18n/locale";
 import { SITE } from "@/lib/site";
 
 export function PrivacyView() {

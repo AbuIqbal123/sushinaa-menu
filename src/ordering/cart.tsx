@@ -9,10 +9,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { DISH_BY_ID, DISHES, type Dish } from "@/data/menu";
-import type { Selection } from "@/data/types";
-import { useLocale } from "./locale";
-import { pickName } from "./localize";
+import { DISH_BY_ID, DISHES, type Dish } from "@/catalog/menu";
+import type { Selection } from "@/catalog/types";
+import { useLocale } from "@/i18n/locale";
+import { pickName } from "@/i18n/localize";
 import {
   parseSelection,
   selectionLabel,

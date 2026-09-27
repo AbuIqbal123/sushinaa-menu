@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLocale } from "@/lib/locale";
+import { useLocale } from "@/i18n/locale";
 import { waLink } from "@/lib/site";
 
 type Errors = Partial<Record<"name" | "phone" | "message", string>>;

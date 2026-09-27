@@ -2,12 +2,12 @@
 
 import { memo } from "react";
 import Image from "next/image";
-import type { DietFilter, Dish } from "@/data/menu";
-import { useLocale } from "@/lib/locale";
-import { dishDescription, pickName, sectionName } from "@/lib/localize";
+import type { DietFilter, Dish } from "@/catalog/menu";
+import { useLocale } from "@/i18n/locale";
+import { dishDescription, pickName, sectionName } from "@/i18n/localize";
 import { formatQar } from "@/lib/money";
-import { hasPriceRange, imageFor, selectionForDiet, unitPrice } from "@/lib/price";
-import type { Copy } from "@/lib/copy";
+import { hasPriceRange, imageFor, selectionForDiet, unitPrice } from "@/ordering/price";
+import type { Copy } from "@/i18n/copy";
 import { DietTags } from "./DietTags";
 
 type Props = {

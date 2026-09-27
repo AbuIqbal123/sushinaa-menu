@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
-import { strings } from "@/lib/copy";
-import { requestLang } from "@/lib/request-lang";
+import { strings } from "@/i18n/copy";
+import { requestLang } from "@/i18n/request-lang";
 
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const lang = await requestLang();

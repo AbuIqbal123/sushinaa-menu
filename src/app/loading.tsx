@@ -1,5 +1,5 @@
-import { strings } from "@/lib/copy";
-import { requestLang } from "@/lib/request-lang";
+import { strings } from "@/i18n/copy";
+import { requestLang } from "@/i18n/request-lang";
 
 export default async function Loading() {
   const lang = await requestLang();

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LangButton, useLocale } from "@/lib/locale";
+import { LangButton, useLocale } from "@/i18n/locale";
 import { SITE } from "@/lib/site";
 
 export function LegalShell({

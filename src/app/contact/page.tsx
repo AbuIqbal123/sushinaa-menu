@@ -1,4 +1,4 @@
-import { ContactView } from "@/components/DocViews";
+import { ContactView } from "@/components/site/DocViews";
 import { pageMeta } from "@/lib/page-meta";
 
 export function generateMetadata() {

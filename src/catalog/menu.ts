@@ -1,11 +1,11 @@
 import type { CategoryFilter, DietFilter, Dish, Section } from "./types";
-import { NEW_DISHES } from "./new-menu";
+import { NEW_DISHES } from "./arrivals";
 import { STARTERS } from "./starters";
 import { FRIED_RICE, MAINS, NOODLES, POKE, SALADS } from "./bowls-mains";
 import { BURRITO, DEAL_BOXES, PARTY_BOXES } from "./boxes";
 import { ROLLS } from "./rolls";
 import { DRINKS, MAKI, SAUCES } from "./maki-extras";
-import { dishIsSeafood, dishIsSpicy, dishIsVeg, selectionForDiet } from "@/lib/price";
+import { dishIsSeafood, dishIsSpicy, dishIsVeg, selectionForDiet } from "@/ordering/price";
 
 export type { DietFilter, Dish, Section, CategoryFilter } from "./types";
 
@@ -74,5 +74,3 @@ export function matchesDiet(dish: Dish, filter: DietFilter): boolean {
   }
   return true;
 }
-
-export { SITE } from "@/lib/site";

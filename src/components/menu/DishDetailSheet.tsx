@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import Image from "next/image";
-import type { DietFilter, Dish } from "@/data/menu";
-import type { Choice, Extra, PieceCount, Selection } from "@/data/types";
-import { useCart } from "@/lib/cart";
-import { useLocale } from "@/lib/locale";
-import { dishDescription, fieldLabel, pickName, sectionName } from "@/lib/localize";
+import type { DietFilter, Dish } from "@/catalog/menu";
+import type { Choice, Extra, PieceCount, Selection } from "@/catalog/types";
+import { useCart } from "@/ordering/cart";
+import { useLocale } from "@/i18n/locale";
+import { dishDescription, fieldLabel, pickName, sectionName } from "@/i18n/localize";
 import { formatQar } from "@/lib/money";
 import { useSheetDismiss } from "@/lib/sheet-dismiss";
 import {
@@ -15,7 +15,7 @@ import {
   preferredPieces,
   selectionForDiet,
   unitPrice,
-} from "@/lib/price";
+} from "@/ordering/price";
 import { DietTags } from "./DietTags";
 
 type Props = {

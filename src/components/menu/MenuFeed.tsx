@@ -9,12 +9,12 @@ import {
   type DietFilter,
   type Dish,
   type Section,
-} from "@/data/menu";
-import { CartProvider, useCart } from "@/lib/cart";
-import { LangButton, useLocale } from "@/lib/locale";
-import { sectionName } from "@/lib/localize";
+} from "@/catalog/menu";
+import { CartProvider, useCart } from "@/ordering/cart";
+import { LangButton, useLocale } from "@/i18n/locale";
+import { sectionName } from "@/i18n/localize";
 import { formatQar } from "@/lib/money";
-import { CartSheet } from "./CartSheet";
+import { CartSheet } from "../order/CartSheet";
 import { DishDetailSheet } from "./DishDetailSheet";
 import { DishSlide } from "./DishSlide";
 

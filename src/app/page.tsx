@@ -1,4 +1,4 @@
-import { MenuFeed } from "@/components/MenuFeed";
+import { MenuFeed } from "@/components/menu/MenuFeed";
 import { pageMeta } from "@/lib/page-meta";
 
 export function generateMetadata() {

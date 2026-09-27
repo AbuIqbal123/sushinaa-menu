@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
-import { strings } from "@/lib/copy";
-import { LocaleProvider, SkipLink } from "@/lib/locale";
-import type { Lang } from "@/lib/localize";
-import { requestLang } from "@/lib/request-lang";
+import { strings } from "@/i18n/copy";
+import { LocaleProvider, SkipLink } from "@/i18n/locale";
+import type { Lang } from "@/i18n/localize";
+import { requestLang } from "@/i18n/request-lang";
 import { SITE } from "@/lib/site";
 import "./globals.css";
 

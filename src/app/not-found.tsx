@@ -1,4 +1,4 @@
-import { MissingView } from "@/components/DocViews";
+import { MissingView } from "@/components/site/DocViews";
 import { pageMeta } from "@/lib/page-meta";
 
 export function generateMetadata() {

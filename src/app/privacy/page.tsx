@@ -1,4 +1,4 @@
-import { PrivacyView } from "@/components/DocViews";
+import { PrivacyView } from "@/components/site/DocViews";
 import { pageMeta } from "@/lib/page-meta";
 
 export function generateMetadata() {

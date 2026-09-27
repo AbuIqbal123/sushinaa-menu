@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { strings, type Copy } from "./copy";
-import { requestLang } from "./request-lang";
+import { strings, type Copy } from "@/i18n/copy";
+import { requestLang } from "@/i18n/request-lang";
 import { SITE } from "./site";
 
 export async function pageMeta(

@@ -3,12 +3,16 @@ node_modules
 out
 .DS_Store
 *.log
+.vercel
+tsconfig.tsbuildinfo
+
+# Client source files. Not part of the site.
+reference/
 _excel_dump.json
 _photo_slugs.json
 Menu Photos/
 Sushinaa-Rebranding /
 SUSHINA MENU.pdf
 *.xlsx
-.vercel
-tsconfig.tsbuildinfo
+Berger and Gyoza/
 

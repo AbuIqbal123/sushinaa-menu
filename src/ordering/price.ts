@@ -5,9 +5,9 @@ import type {
   PieceCount,
   PiecePrices,
   Selection,
-} from "@/data/types";
-import { strings } from "./copy";
-import { pickName, type Lang } from "./localize";
+} from "@/catalog/types";
+import { strings } from "@/i18n/copy";
+import { pickName, type Lang } from "@/i18n/localize";
 
 export function preferredPieces(prices: PiecePrices): PieceCount {
   if (prices[6] != null) return 6;

@@ -3,8 +3,8 @@
 import { useEffect, useRef, type PointerEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useCart } from "@/lib/cart";
-import { useLocale } from "@/lib/locale";
+import { useCart } from "@/ordering/cart";
+import { useLocale } from "@/i18n/locale";
 import { formatQar } from "@/lib/money";
 import { useSheetDismiss } from "@/lib/sheet-dismiss";
 import { waLink } from "@/lib/site";

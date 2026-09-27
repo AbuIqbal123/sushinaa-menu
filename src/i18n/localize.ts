@@ -1,5 +1,5 @@
-import { DESC_AR } from "@/data/desc-ar";
-import type { Dish, Section } from "@/data/types";
+import { DESC_AR } from "@/catalog/desc-ar";
+import type { Dish, Section } from "@/catalog/types";
 
 export type Lang = "en" | "ar";
 

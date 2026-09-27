@@ -1,7 +1,7 @@
 "use client";
 
-import type { Tag } from "@/data/types";
-import { useLocale } from "@/lib/locale";
+import type { Tag } from "@/catalog/types";
+import { useLocale } from "@/i18n/locale";
 
 export function DietTags({ tags }: { tags: Tag[] }) {
   const { t } = useLocale();

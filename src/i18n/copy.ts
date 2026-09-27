@@ -1,5 +1,5 @@
 import type { Lang } from "./localize";
-import { SITE } from "./site";
+import { SITE } from "@/lib/site";
 
 const en = {
   langButton: "عربي",
