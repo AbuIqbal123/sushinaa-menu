@@ -84,7 +84,13 @@ export const DishSlide = memo(function DishSlide({
         ) : null}
 
         <div className="slide-copy">
-          <p className="section-label">{sectionName(dish.section, lang)}</p>
+          <p
+            className={
+              dish.section === "New" ? "section-label section-label-new" : "section-label"
+            }
+          >
+            {dish.section === "New" ? t.newOnMenu : sectionName(dish.section, lang)}
+          </p>
           <div className="title-row">
             <h2 className="dish-name">{title}</h2>
             <p className="dish-price">
@@ -114,6 +120,7 @@ function hintFor(dish: Dish, sel: { pieces?: number; sauce?: string }, t: Copy):
   if (kind.type === "spicy-toggle") return t.spicyOrRegular;
   if (kind.type === "deal-box") return t.pickStarterSushi;
   if (kind.type === "party-box") return t.pickStarter;
+  if (kind.type === "addons" && kind.includedPicks) return t.pickTwoSauces;
   if (kind.type === "addons") return t.addonsAvailable;
   if (kind.type === "size-price") return t.sizeFlavour;
   if (sel.sauce) return sel.sauce;

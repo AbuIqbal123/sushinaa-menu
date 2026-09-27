@@ -121,7 +121,13 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
           )}
         </div>
         <header className="detail-kicker-row">
-          <p className="ticket-kicker">{sectionName(current.section, lang)}</p>
+          <p
+            className={
+              current.section === "New" ? "ticket-kicker ticket-kicker-new" : "ticket-kicker"
+            }
+          >
+            {current.section === "New" ? t.newOnMenu : sectionName(current.section, lang)}
+          </p>
           <button ref={closeRef} type="button" className="ticket-close" onClick={requestClose}>
             {t.close}
           </button>
@@ -360,6 +366,17 @@ function Configurator({
           ))
         : null}
 
+      {kind.type === "addons" && kind.includedPicks ? (
+        <IncludedPicks
+          label={pickName(kind.includedPicks, lang)}
+          note={t.saucesIncluded}
+          options={kind.includedPicks.options}
+          selected={sel.picks ?? []}
+          max={kind.includedPicks.max}
+          onChange={(picks) => setSel({ ...sel, picks })}
+        />
+      ) : null}
+
       {dish.freeDips?.length ? (
         <ChoiceRow
           label={label("Dip")}
@@ -529,6 +546,56 @@ function PartyStarters({
                 </button>
               </span>
             </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function IncludedPicks({
+  label,
+  note,
+  options,
+  selected,
+  max,
+  onChange,
+}: {
+  label: string;
+  note: string;
+  options: Choice[];
+  selected: string[];
+  max: number;
+  onChange: (ids: string[]) => void;
+}) {
+  const { lang } = useLocale();
+
+  function toggle(id: string) {
+    if (selected.includes(id)) onChange(selected.filter((item) => item !== id));
+    else if (selected.length < max) onChange([...selected, id]);
+  }
+
+  return (
+    <div className="choice-block">
+      <div className="choice-head">
+        <p className="choice-label choice-label-plain">{label}</p>
+      </div>
+      <p className="choice-note">{note}</p>
+      <div className="choice-row" role="group" aria-label={label}>
+        {options.map((opt) => {
+          const on = selected.includes(opt.id);
+          const name = pickName(opt, lang);
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              aria-pressed={on}
+              className={`opt ${on ? "opt-on" : ""} ${opt.spicy ? "opt-spicy" : ""}`}
+              disabled={!on && selected.length >= max}
+              onClick={() => toggle(opt.id)}
+            >
+              {name}
+            </button>
           );
         })}
       </div>

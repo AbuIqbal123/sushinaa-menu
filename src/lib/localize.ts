@@ -20,6 +20,7 @@ export function sectionName(section: Section, lang: Lang): string {
 }
 
 const SECTION_EN: Record<Section, string> = {
+  New: "New",
   Starters: "Starters",
   "Fried rice": "Fried rice",
   "Poke bowls": "Poke",
@@ -36,6 +37,7 @@ const SECTION_EN: Record<Section, string> = {
 };
 
 const SECTION_AR: Record<Section, string> = {
+  New: "جديد",
   Starters: "المقبلات",
   "Fried rice": "أرز مقلي",
   "Poke bowls": "بوكي",
@@ -146,6 +148,7 @@ export const FIELD_AR: Record<string, string> = {
   Filling: "الحشوة",
   Topping: "الإضافة",
   "Add-ons": "إضافات",
+  Sauces: "الصوصات",
 };
 
 export function fieldLabel(label: string, lang: Lang): string {

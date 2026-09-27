@@ -1,4 +1,5 @@
 import type { CategoryFilter, DietFilter, Dish, Section } from "./types";
+import { NEW_DISHES } from "./new-menu";
 import { STARTERS } from "./starters";
 import { FRIED_RICE, MAINS, NOODLES, POKE, SALADS } from "./bowls-mains";
 import { BURRITO, DEAL_BOXES, PARTY_BOXES } from "./boxes";
@@ -9,6 +10,7 @@ import { dishIsSeafood, dishIsSpicy, dishIsVeg, selectionForDiet } from "@/lib/p
 export type { DietFilter, Dish, Section, CategoryFilter } from "./types";
 
 export const DISHES: Dish[] = [
+  ...NEW_DISHES,
   ...STARTERS,
   ...FRIED_RICE,
   ...POKE,
@@ -30,6 +32,7 @@ export const DISH_BY_ID = Object.fromEntries(DISHES.map((d) => [d.id, d])) as Re
 >;
 
 export const CATEGORY_CHIPS: { id: Section; label: string }[] = [
+  { id: "New", label: "New" },
   { id: "Starters", label: "Starters" },
   { id: "Fried rice", label: "Fried rice" },
   { id: "Poke bowls", label: "Poke" },

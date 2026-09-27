@@ -25,7 +25,7 @@ function FeedInner() {
   const [detail, setDetail] = useState<Dish | null>(null);
   const [pop, setPop] = useState(false);
   const [diet, setDiet] = useState<DietFilter>("all");
-  const [activeSection, setActiveSection] = useState<Section>("Starters");
+  const [activeSection, setActiveSection] = useState<Section>("New");
   const [activeIndex, setActiveIndex] = useState(0);
   const prevCount = useRef(itemCount);
   const feedRef = useRef<HTMLDivElement>(null);
@@ -124,7 +124,7 @@ function FeedInner() {
     const h = feed.clientHeight;
     feed.scrollTo({ top: origin * h });
     setActiveIndex(0);
-    setActiveSection(dishes[0]?.section ?? "Starters");
+    setActiveSection(dishes[0]?.section ?? "New");
     const t = window.setTimeout(() => {
       skipSpy.current = false;
     }, 80);
@@ -211,7 +211,7 @@ function FeedInner() {
                 key={chip.id}
                 type="button"
                 data-chip={chip.id}
-                className={`chip ${on ? "chip-on" : ""}`}
+                className={`chip${chip.id === "New" ? " chip-new" : ""}${on ? " chip-on" : ""}`}
                 aria-pressed={on}
                 aria-current={on ? "true" : undefined}
                 disabled={empty}

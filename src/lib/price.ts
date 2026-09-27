@@ -246,6 +246,13 @@ export function selectionLabel(dish: Dish, sel: Selection, lang: Lang = "en"): s
 
   if (kind.type === "addons") {
     if (kind.spicyOptional) bits.push(sel.spicy ? t.spicy : t.regular);
+    if (kind.includedPicks && sel.picks?.length) {
+      const chosen = new Set(sel.picks);
+      const names = kind.includedPicks.options
+        .filter((option) => chosen.has(option.id))
+        .map((option) => pickName(option, lang));
+      if (names.length) bits.push(names.join(lang === "ar" ? "، " : ", "));
+    }
     kind.freeChoices?.forEach((g) => {
       const id =
         g.id === "cut"
@@ -306,6 +313,14 @@ export function isSelectionComplete(dish: Dish, sel: Selection): boolean {
     if (!sel.size) return false;
     if (kind.flavors && !sel.flavor) return false;
   }
+  if (kind.type === "addons" && kind.includedPicks) {
+    const ids = sel.picks ?? [];
+    const allowed = new Set(kind.includedPicks.options.map((option) => option.id));
+    const unique = new Set(ids);
+    if (unique.size !== ids.length) return false;
+    if (ids.some((id) => !allowed.has(id))) return false;
+    if (ids.length < kind.includedPicks.min || ids.length > kind.includedPicks.max) return false;
+  }
   if (dish.freeDips?.length && !sel.dip) return false;
   return true;
 }
@@ -322,6 +337,7 @@ export function serializeSelection(sel: Selection): string {
   if (sel.sushi) parts.push(`su:${sel.sushi}`);
   if (sel.starters?.length) parts.push(`sts:${[...sel.starters].sort().join(",")}`);
   if (sel.extras?.length) parts.push(`x:${[...sel.extras].sort().join(",")}`);
+  if (sel.picks?.length) parts.push(`pk:${[...sel.picks].sort().join(",")}`);
   if (sel.topping) parts.push(`t:${sel.topping}`);
   if (sel.style) parts.push(`styl:${sel.style}`);
   if (sel.cut) parts.push(`c:${sel.cut}`);
@@ -343,6 +359,7 @@ export function parseSelection(raw: string): Selection {
     else if (part.startsWith("su:")) sel.sushi = part.slice(3);
     else if (part.startsWith("sts:")) sel.starters = part.slice(4).split(",").filter(Boolean);
     else if (part.startsWith("x:")) sel.extras = part.slice(2).split(",").filter(Boolean);
+    else if (part.startsWith("pk:")) sel.picks = part.slice(3).split(",").filter(Boolean);
     else if (part.startsWith("t:")) sel.topping = part.slice(2);
     else if (part.startsWith("styl:")) sel.style = part.slice(5);
     else if (part.startsWith("c:")) sel.cut = part.slice(2);

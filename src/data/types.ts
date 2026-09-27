@@ -1,4 +1,5 @@
 export type Section =
+  | "New"
   | "Starters"
   | "Fried rice"
   | "Poke bowls"
@@ -40,6 +41,14 @@ export type ChoiceGroup = {
   id: string;
   name: string;
   nameAr?: string;
+  options: Choice[];
+};
+
+export type IncludedPicks = {
+  name: string;
+  nameAr?: string;
+  min: number;
+  max: number;
   options: Choice[];
 };
 
@@ -107,6 +116,7 @@ export type DishKind =
       extras: Extra[];
       spicyOptional?: boolean;
       freeChoices?: ChoiceGroup[];
+      includedPicks?: IncludedPicks;
     };
 
 export type Dish = {
@@ -135,6 +145,7 @@ export type Selection = {
   sushi?: string;
   starters?: string[];
   extras?: string[];
+  picks?: string[];
   topping?: string;
   style?: string;
   cut?: string;

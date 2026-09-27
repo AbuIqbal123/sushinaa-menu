@@ -12,7 +12,9 @@ const csp = [
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
-  "upgrade-insecure-requests",
+  // Safari upgrades http://localhost assets to https when this is set, so the
+  // dev menu loses its stylesheet and photos. Production stays on HTTPS.
+  ...(isDev ? [] : ["upgrade-insecure-requests"]),
 ].join("; ");
 
 const securityHeaders = [
