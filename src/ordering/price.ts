@@ -71,7 +71,7 @@ export function defaultSelection(dish: Dish): Selection {
         sushi: kind.sushi[0]?.id,
       });
     case "party-box":
-      return withDip({ starters: kind.starters[0] ? [kind.starters[0].id] : [] });
+      return withDip({ starters: [] });
     case "size-price":
       return withDip({
         size: kind.sizes[0]?.id,
@@ -91,6 +91,12 @@ export function defaultSelection(dish: Dish): Selection {
       return withDip(sel);
     }
   }
+}
+
+export function configuresEach(dish: Dish): boolean {
+  const kind = dish.kind;
+  if (kind.type === "simple") return Boolean(dish.freeDips?.length || dish.extras?.length);
+  return true;
 }
 
 export function selectionForDiet(dish: Dish, diet: DietFilter): Selection {
@@ -247,11 +253,8 @@ export function selectionLabel(dish: Dish, sel: Selection, lang: Lang = "en"): s
   if (kind.type === "addons") {
     if (kind.spicyOptional) bits.push(sel.spicy ? t.spicy : t.regular);
     if (kind.includedPicks && sel.picks?.length) {
-      const chosen = new Set(sel.picks);
-      const names = kind.includedPicks.options
-        .filter((option) => chosen.has(option.id))
-        .map((option) => pickName(option, lang));
-      if (names.length) bits.push(names.join(lang === "ar" ? "، " : ", "));
+      const names = countedChoiceNames(sel.picks, kind.includedPicks.options, lang);
+      if (names) bits.push(names);
     }
     kind.freeChoices?.forEach((g) => {
       const id =
@@ -316,8 +319,6 @@ export function isSelectionComplete(dish: Dish, sel: Selection): boolean {
   if (kind.type === "addons" && kind.includedPicks) {
     const ids = sel.picks ?? [];
     const allowed = new Set(kind.includedPicks.options.map((option) => option.id));
-    const unique = new Set(ids);
-    if (unique.size !== ids.length) return false;
     if (ids.some((id) => !allowed.has(id))) return false;
     if (ids.length < kind.includedPicks.min || ids.length > kind.includedPicks.max) return false;
   }

@@ -638,33 +638,15 @@ body {
   color: #3a2f22;
 }
 
-.starter-opt {
+.opt.opt-line {
   flex-direction: row;
-  align-items: center;
-  gap: 8px;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
 }
 
-.starter-step {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-}
-
-.starter-step button {
-  width: 28px;
-  height: 28px;
-  border: 0;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.22);
-  color: inherit;
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.starter-step button:disabled {
-  opacity: 0.4;
-  cursor: default;
+.opt-times {
+  font-weight: 700;
 }
 
 .choice-row .opt:disabled {
@@ -672,18 +654,10 @@ body {
   cursor: default;
 }
 
-.starter-step span {
-  min-width: 14px;
-  text-align: center;
-  font-weight: 700;
-}
-
-.choice-same {
-  margin: 0;
-  font-family: var(--font-sans);
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #d52029;
+.unit-picks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .starter-picks {

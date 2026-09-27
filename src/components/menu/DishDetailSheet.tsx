@@ -10,10 +10,12 @@ import { dishDescription, fieldLabel, pickName, sectionName } from "@/i18n/local
 import { formatQar } from "@/lib/money";
 import { useSheetDismiss } from "@/lib/sheet-dismiss";
 import {
+  configuresEach,
   imageFor,
   isSelectionComplete,
   preferredPieces,
   selectionForDiet,
+  serializeSelection,
   unitPrice,
 } from "@/ordering/price";
 import { DietTags } from "./DietTags";
@@ -27,8 +29,8 @@ type Props = {
 export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
   const { add } = useCart();
   const { lang, t } = useLocale();
-  const [sel, setSel] = useState<Selection>({});
-  const [pickQty, setPickQty] = useState(1);
+  const [units, setUnits] = useState<Selection[]>([{}]);
+  const [activeUnit, setActiveUnit] = useState(0);
   const [justAdded, setJustAdded] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
   const addedTimer = useRef(0);
@@ -37,8 +39,8 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
 
   useEffect(() => {
     if (!dish) return;
-    setSel(selectionForDiet(dish, diet));
-    setPickQty(1);
+    setUnits([selectionForDiet(dish, diet)]);
+    setActiveUnit(0);
     setJustAdded(false);
     window.clearTimeout(addedTimer.current);
   }, [dish, diet]);
@@ -57,14 +59,47 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
 
   if (!dish) return null;
   const current = dish;
-  const unit = unitPrice(current, sel);
-  const ready = isSelectionComplete(current, sel);
-  const photo = imageFor(current, sel);
+  const own = configuresEach(current);
+  const shown = units[Math.min(activeUnit, units.length - 1)] ?? {};
+  const total = own
+    ? units.reduce((sum, item) => sum + unitPrice(current, item), 0)
+    : unitPrice(current, units[0] ?? {}) * units.length;
+  const ready = own
+    ? units.every((item) => isSelectionComplete(current, item))
+    : isSelectionComplete(current, units[0] ?? {});
+  const photo = imageFor(current, shown);
   const patterned = photo.startsWith("/brand/");
+
+  function setShown(next: Selection) {
+    setUnits((prev) => prev.map((item, index) => (index === activeUnit ? next : item)));
+  }
+
+  function changeQty(next: number) {
+    const count = Math.max(1, Math.min(20, next));
+    setUnits((prev) => {
+      if (count === prev.length) return prev;
+      if (count < prev.length) return prev.slice(0, count);
+      const seed = prev[prev.length - 1] ?? {};
+      const extra = Array.from({ length: count - prev.length }, () => cloneSelection(seed));
+      return [...prev, ...extra];
+    });
+    setActiveUnit((index) => Math.min(index, count - 1));
+  }
 
   function onAdd() {
     if (!ready || justAdded) return;
-    add(current.id, sel, pickQty);
+    if (!own) {
+      add(current.id, units[0] ?? {}, units.length);
+    } else {
+      const grouped = new Map<string, { sel: Selection; count: number }>();
+      for (const item of units) {
+        const key = serializeSelection(item);
+        const found = grouped.get(key);
+        if (found) found.count += 1;
+        else grouped.set(key, { sel: item, count: 1 });
+      }
+      for (const group of grouped.values()) add(current.id, group.sel, group.count);
+    }
     setJustAdded(true);
     window.clearTimeout(addedTimer.current);
     addedTimer.current = window.setTimeout(() => requestClose(), 280);
@@ -139,13 +174,37 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
             </h2>
           </div>
           <p className="detail-unit" aria-live="polite">
-            {formatQar(unit, lang)}
+            {formatQar(unitPrice(current, shown), lang)}
           </p>
         </div>
         <DietTags tags={current.tags} />
         <p className="detail-desc">{dishDescription(current, lang)}</p>
 
-        <Configurator dish={current} sel={sel} setSel={setSel} />
+        {own && units.length > 1 ? (
+          <div className="unit-picks">
+            <p className="choice-label">{t.eachOne}</p>
+            <div className="choice-row" role="tablist" aria-label={t.eachOne}>
+              {units.map((item, index) => {
+                const on = index === activeUnit;
+                const done = isSelectionComplete(current, item);
+                return (
+                  <button
+                    key={index}
+                    type="button"
+                    role="tab"
+                    aria-selected={on}
+                    className={`opt ${on ? "opt-on" : ""} ${done ? "" : "opt-spicy"}`}
+                    onClick={() => setActiveUnit(index)}
+                  >
+                    {index + 1}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
+        <Configurator dish={current} sel={shown} setSel={setShown} />
 
         <div className="detail-foot">
           <div className="line-qty">
@@ -153,19 +212,19 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
               type="button"
               className="qty-btn"
               aria-label={t.fewer}
-              disabled={pickQty <= 1}
-              onClick={() => setPickQty((n) => Math.max(1, n - 1))}
+              disabled={units.length <= 1}
+              onClick={() => changeQty(units.length - 1)}
             >
               −
             </button>
             <span className="qty-num" aria-live="polite">
-              {pickQty}
+              {units.length}
             </span>
             <button
               type="button"
               className="qty-btn"
               aria-label={t.more}
-              onClick={() => setPickQty((n) => Math.min(20, n + 1))}
+              onClick={() => changeQty(units.length + 1)}
             >
               +
             </button>
@@ -176,7 +235,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
             onClick={onAdd}
             disabled={!ready}
           >
-            {justAdded ? t.added : `${t.addToOrder} · ${formatQar(unit * pickQty, lang)}`}
+            {justAdded ? t.added : `${t.addToOrder} · ${formatQar(total, lang)}`}
           </button>
         </div>
       </div>
@@ -403,6 +462,15 @@ function Configurator({
   );
 }
 
+function cloneSelection(sel: Selection): Selection {
+  return {
+    ...sel,
+    starters: sel.starters ? [...sel.starters] : undefined,
+    extras: sel.extras ? [...sel.extras] : undefined,
+    picks: sel.picks ? [...sel.picks] : undefined,
+  };
+}
+
 function pieceOptions(protein: { prices: Partial<Record<PieceCount, number>> }): PieceCount[] {
   return ([4, 6, 8, 12, 24] as PieceCount[]).filter((n) => protein.prices[n] != null);
 }
@@ -475,23 +543,23 @@ function PartyStarters({
   const counts = new Map<string, number>();
   for (const id of selected) counts.set(id, (counts.get(id) ?? 0) + 1);
   const total = selected.length;
-  const range = min === max ? `${max}` : `${min} ${t.or} ${max}`;
-  const summary =
-    total > 1
-      ? options
-          .filter((opt) => counts.get(opt.id))
-          .map((opt) => {
-            const n = counts.get(opt.id) ?? 0;
-            const name = show(opt);
-            return n > 1 ? `${name} × ${n}` : name;
-          })
-          .join(lang === "ar" ? "، " : ", ")
-      : "";
+  const note =
+    total === 0
+      ? `${t.pick} ${min === max ? max : `${min} ${t.or} ${max}`}`
+      : t.ofCount(total, max);
 
-  function setCount(id: string, count: number) {
-    const rest = selected.filter((item) => item !== id);
-    const next = Math.max(0, Math.min(count, max - rest.length));
-    onChange([...rest, ...Array.from({ length: next }, () => id)]);
+  function toggle(id: string) {
+    const count = counts.get(id) ?? 0;
+    if (count === 0) {
+      if (total >= max) return;
+      onChange([...selected, id]);
+      return;
+    }
+    if (count === 1 && total < max) {
+      onChange([...selected, id]);
+      return;
+    }
+    onChange(selected.filter((item) => item !== id));
   }
 
   return (
@@ -499,53 +567,26 @@ function PartyStarters({
       <div className="choice-head">
         <p className="choice-label">{fieldLabel("Starters", lang)}</p>
       </div>
-      <p className="choice-note">
-        {t.pick} {range}. {t.starterAgain}
+      <p className="choice-note" aria-live="polite">
+        {note}
       </p>
-      {summary ? (
-        <p className="choice-same" aria-live="polite">
-          {summary}
-        </p>
-      ) : null}
       <div className="choice-row">
         {options.map((opt) => {
           const count = counts.get(opt.id) ?? 0;
-          if (count === 0) {
-            return (
-              <button
-                key={opt.id}
-                type="button"
-                className={`opt ${opt.spicy ? "opt-spicy" : ""}`}
-                disabled={total >= max}
-                onClick={() => setCount(opt.id, 1)}
-              >
-                {show(opt)}
-              </button>
-            );
-          }
           const name = show(opt);
           return (
-            <div key={opt.id} className="opt opt-on starter-opt">
+            <button
+              key={opt.id}
+              type="button"
+              aria-pressed={count > 0}
+              aria-label={count > 1 ? `${name} × ${count}` : name}
+              className={`opt opt-line ${count > 0 ? "opt-on" : ""} ${opt.spicy ? "opt-spicy" : ""}`}
+              disabled={count === 0 && total >= max}
+              onClick={() => toggle(opt.id)}
+            >
               <span>{name}</span>
-              <span className="starter-step">
-                <button
-                  type="button"
-                  aria-label={t.oneFewer(name)}
-                  onClick={() => setCount(opt.id, count - 1)}
-                >
-                  −
-                </button>
-                <span aria-hidden="true">{count}</span>
-                <button
-                  type="button"
-                  aria-label={t.oneMore(name)}
-                  disabled={total >= max}
-                  onClick={() => setCount(opt.id, count + 1)}
-                >
-                  +
-                </button>
-              </span>
-            </div>
+              {count > 1 ? <span className="opt-times">× {count}</span> : null}
+            </button>
           );
         })}
       </div>
@@ -568,33 +609,49 @@ function IncludedPicks({
   max: number;
   onChange: (ids: string[]) => void;
 }) {
-  const { lang } = useLocale();
+  const { lang, t } = useLocale();
+  const counts = new Map<string, number>();
+  for (const id of selected) counts.set(id, (counts.get(id) ?? 0) + 1);
+  const total = selected.length;
 
   function toggle(id: string) {
-    if (selected.includes(id)) onChange(selected.filter((item) => item !== id));
-    else if (selected.length < max) onChange([...selected, id]);
+    const count = counts.get(id) ?? 0;
+    if (count === 0) {
+      if (total >= max) return;
+      onChange([...selected, id]);
+      return;
+    }
+    if (count === 1 && total < max) {
+      onChange([...selected, id]);
+      return;
+    }
+    onChange(selected.filter((item) => item !== id));
   }
 
   return (
     <div className="choice-block">
       <div className="choice-head">
-        <p className="choice-label choice-label-plain">{label}</p>
+        <p className="choice-label">{label}</p>
       </div>
-      <p className="choice-note">{note}</p>
+      <p className="choice-note" aria-live="polite">
+        {total === 0 ? note : t.ofCount(total, max)}
+      </p>
       <div className="choice-row" role="group" aria-label={label}>
         {options.map((opt) => {
-          const on = selected.includes(opt.id);
+          const count = counts.get(opt.id) ?? 0;
           const name = pickName(opt, lang);
           return (
             <button
               key={opt.id}
               type="button"
-              aria-pressed={on}
-              className={`opt ${on ? "opt-on" : ""} ${opt.spicy ? "opt-spicy" : ""}`}
-              disabled={!on && selected.length >= max}
+              aria-pressed={count > 0}
+              aria-label={count > 1 ? `${name} × ${count}` : name}
+              className={`opt opt-line ${count > 0 ? "opt-on" : ""} ${opt.spicy ? "opt-spicy" : ""}`}
+              disabled={count === 0 && total >= max}
               onClick={() => toggle(opt.id)}
             >
-              {name}
+              <span>{name}</span>
+              {count > 1 ? <span className="opt-times">× {count}</span> : null}
             </button>
           );
         })}
