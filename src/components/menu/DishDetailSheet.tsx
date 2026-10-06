@@ -31,6 +31,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
   const { lang, t } = useLocale();
   const [units, setUnits] = useState<Selection[]>([{}]);
   const [activeUnit, setActiveUnit] = useState(0);
+  const [note, setNote] = useState("");
   const [justAdded, setJustAdded] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
   const addedTimer = useRef(0);
@@ -42,6 +43,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
     setUnits([selectionForDiet(dish, diet)]);
     setActiveUnit(0);
     setJustAdded(false);
+    setNote("");
     window.clearTimeout(addedTimer.current);
   }, [dish, diet]);
 
@@ -89,7 +91,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
   function onAdd() {
     if (!ready || justAdded) return;
     if (!own) {
-      add(current.id, units[0] ?? {}, units.length);
+      add(current.id, units[0] ?? {}, units.length, note);
     } else {
       const grouped = new Map<string, { sel: Selection; count: number }>();
       for (const item of units) {
@@ -98,7 +100,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
         if (found) found.count += 1;
         else grouped.set(key, { sel: item, count: 1 });
       }
-      for (const group of grouped.values()) add(current.id, group.sel, group.count);
+      for (const group of grouped.values()) add(current.id, group.sel, group.count, note);
     }
     setJustAdded(true);
     window.clearTimeout(addedTimer.current);
@@ -206,6 +208,12 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
 
         <Configurator dish={current} sel={shown} setSel={setShown} />
 
+        <label className="order-comment">
+          <span>{t.comment}</span>
+          <textarea value={note} maxLength={400} rows={3} placeholder={t.commentPlaceholder}
+            onChange={(e) => setNote(e.target.value)} />
+        </label>
+        <p className="choice-note">{t.viewOnlyNotice}</p>
         <div className="detail-foot">
           <div className="line-qty">
             <button
