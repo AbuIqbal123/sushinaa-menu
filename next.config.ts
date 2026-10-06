@@ -28,6 +28,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  // Opt in to the exact LAN address used for local phone previews.
+  allowedDevOrigins: process.env.SUSHINAA_PREVIEW_HOST
+    ? [process.env.SUSHINAA_PREVIEW_HOST]
+    : [],
   poweredByHeader: false,
   images: {
     unoptimized: true,
