@@ -24,11 +24,10 @@ const STORAGE_KEY = "sushina-menu-cart-v1";
 
 type StoredCart = {
   lines: Record<string, number>;
-  comment: string;
 };
 
 function emptyStored(): StoredCart {
-  return { lines: {}, comment: "" };
+  return { lines: {} };
 }
 
 function readStored(raw: string): StoredCart {
@@ -47,8 +46,7 @@ function readStored(raw: string): StoredCart {
     if (!DISH_BY_ID[id]) continue;
     lines[key] = qty;
   }
-  const comment = typeof record.comment === "string" ? record.comment.slice(0, 400) : "";
-  return { lines, comment };
+  return { lines };
 }
 
 export type CartLine = {
@@ -60,16 +58,16 @@ export type CartLine = {
   lineTotal: number;
   displayName: string;
   meta: string;
+  note: string;
 };
 
 type CartValue = {
-  add: (id: string, sel: Selection, count?: number) => void;
+  add: (id: string, sel: Selection, count?: number, note?: string) => void;
   inc: (key: string) => void;
   dec: (key: string) => void;
   remove: (key: string) => void;
   clear: () => void;
-  comment: string;
-  setComment: (value: string) => void;
+
   itemCount: number;
   lines: CartLine[];
   totalQar: number;
@@ -77,21 +75,27 @@ type CartValue = {
 
 const CartContext = createContext<CartValue | null>(null);
 
-function lineKey(id: string, sel: Selection): string {
+function lineKey(id: string, sel: Selection, note: string): string {
   const extra = serializeSelection(sel);
-  return extra ? `${id}::${extra}` : id;
+  const base = extra ? `${id}::${extra}` : id;
+  return note ? `${base}::note=${encodeURIComponent(note)}` : base;
 }
 
-function parseKey(key: string): { id: string; sel: Selection } {
+function parseKey(key: string): { id: string; sel: Selection; note: string } {
+  const noteIndex = key.indexOf("::note=");
+  let note = "";
+  if (noteIndex >= 0) {
+    try { note = decodeURIComponent(key.slice(noteIndex + 7)).slice(0, 400); } catch { /* ignore malformed note */ }
+    key = key.slice(0, noteIndex);
+  }
   const i = key.indexOf("::");
-  if (i === -1) return { id: key, sel: {} };
-  return { id: key.slice(0, i), sel: parseSelection(key.slice(i + 2)) };
+  if (i === -1) return { id: key, sel: {}, note };
+  return { id: key.slice(0, i), sel: parseSelection(key.slice(i + 2)), note };
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const { lang } = useLocale();
   const [qtys, setQtys] = useState<Record<string, number>>({});
-  const [comment, setCommentState] = useState("");
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -100,7 +104,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (raw) {
         const stored = readStored(raw);
         setQtys(stored.lines);
-        setCommentState(stored.comment);
       }
     } catch {
       /* ignore */
@@ -110,13 +113,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!ready) return;
-    const payload: StoredCart = { lines: qtys, comment };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }, [qtys, comment, ready]);
+    const payload: StoredCart = { lines: qtys };
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); } catch { /* storage may be unavailable */ }
+  }, [qtys, ready]);
 
-  const add = useCallback((id: string, sel: Selection, count = 1) => {
+  const add = useCallback((id: string, sel: Selection, count = 1, note = "") => {
     const n = Math.max(1, Math.floor(count));
-    const key = lineKey(id, sel);
+    const key = lineKey(id, sel, note.trim().slice(0, 400));
     setQtys((prev) => ({ ...prev, [key]: (prev[key] ?? 0) + n }));
   }, []);
 
@@ -146,11 +149,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clear = useCallback(() => {
     setQtys({});
-    setCommentState("");
-  }, []);
-
-  const setComment = useCallback((value: string) => {
-    setCommentState(value.slice(0, 400));
   }, []);
 
   const lines = useMemo<CartLine[]>(() => {
@@ -164,7 +162,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return ia - ib || a[0].localeCompare(b[0]);
       })
       .flatMap(([key, qty]) => {
-        const { id, sel } = parseKey(key);
+        const { id, sel, note } = parseKey(key);
         const dish = DISH_BY_ID[id];
         if (!dish) return [];
         const unitQar = unitPrice(dish, sel);
@@ -179,6 +177,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             lineTotal: unitQar * qty,
             displayName: pickName(dish, lang),
             meta,
+            note,
           },
         ];
       });
@@ -195,8 +194,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ add, inc, dec, remove, clear, comment, setComment, itemCount, lines, totalQar }),
-    [add, inc, dec, remove, clear, comment, setComment, itemCount, lines, totalQar],
+    () => ({ add, inc, dec, remove, clear, itemCount, lines, totalQar }),
+    [add, inc, dec, remove, clear, itemCount, lines, totalQar],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
