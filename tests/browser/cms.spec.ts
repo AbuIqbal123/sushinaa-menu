@@ -143,8 +143,8 @@ test("authenticated CMS CRUD, persistence, uploads and public integration", asyn
     expect(pub.menu.categories[0].id).toBe(cat.id);
     await page.goto("/");
     await page
-      .getByRole("button", { name: "Test category", exact: true })
-      .click();
+      .getByRole("combobox", { name: "Category", exact: true })
+      .selectOption({ label: "Test category" });
     await page
       .locator("#dish-" + dish.id)
       .getByRole("button")
@@ -212,7 +212,7 @@ test("public menu works at mobile and desktop widths in both languages", async (
     await expect(page.locator("#dish-sushinaa-burger")).toBeVisible();
     await page.locator("#dish-sushinaa-burger .slide-hit").click();
     await expect(page.getByRole("dialog")).toContainText("Sushinaa burger");
-    await page.getByRole("button", { name: /Add to order ·/ }).click();
+    await page.getByRole("button", { name: /Save item ·/ }).click();
     await expect(page.locator(".sticky-cta")).toContainText("53");
     await page.locator(".sticky-cta").click();
     await expect(page.getByRole("dialog")).toContainText("Sushinaa burger");
