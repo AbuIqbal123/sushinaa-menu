@@ -102,9 +102,8 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const {menu:fullMenu}=await getMenu();
-  const menu=publicMenu(fullMenu);
-  const SITE=menu.settings;
+  const { menu } = await getMenu();
+  const SITE = menu.settings;
   const lang: Lang = await requestLang();
   const ar = lang === "ar";
   const brand = strings(lang,menu.copy).brand;
@@ -136,15 +135,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       className={`${display.variable} ${sans.variable} ${arabic.variable} h-full`}
     >
       <body className="min-h-full antialiased">
-        <MenuProvider menu={menu}><LocaleProvider initial={lang}>
-          <SkipLink />
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g,"\\u003c") }}
-          />
-          {children}
-          <Analytics />
-        </LocaleProvider></MenuProvider>
+        {/* Dishes ship only with the menu page (src/app/page.tsx). */}
+        <MenuProvider menu={{ ...publicMenu(menu), dishes: [] }}>
+          <LocaleProvider initial={lang}>
+            <SkipLink />
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+            />
+            {children}
+            <Analytics />
+          </LocaleProvider>
+        </MenuProvider>
       </body>
     </html>
   );
