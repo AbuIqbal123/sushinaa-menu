@@ -7,6 +7,7 @@ export function TextField({
   multiline = false,
   type = "text",
   disabled = false,
+  lang,
 }: {
   label: string;
   value: string | number;
@@ -14,13 +15,18 @@ export function TextField({
   multiline?: boolean;
   type?: string;
   disabled?: boolean;
+  lang?: "ar";
 }) {
+  // An Arabic field mirrors as a whole: label, caret and text run right to left.
+  const dir = lang === "ar" ? "rtl" : undefined;
   return (
-    <label className="admin-field">
-      {label}
+    <label className="admin-field" dir={dir}>
+      <bdi>{label}</bdi>
       {multiline ? (
         <textarea
           aria-label={label}
+          lang={lang}
+          dir={dir}
           rows={3}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -28,6 +34,8 @@ export function TextField({
       ) : (
         <input
           aria-label={label}
+          lang={lang}
+          dir={dir}
           type={type}
           step={type === "number" ? "0.01" : undefined}
           value={value}

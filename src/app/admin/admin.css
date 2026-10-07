@@ -8,10 +8,10 @@
   background: #f5f7fa;
   color: var(--ink);
   font:
-    14px/1.5 Arial,
+    14px/1.5 var(--font-sans),
     sans-serif;
   direction: ltr;
-  text-align: left;
+  text-align: start;
   overflow: auto;
 }
 .admin * {
@@ -56,7 +56,6 @@
 .admin h1 {
   font-size: 28px;
   font-weight: 700;
-  letter-spacing: -0.7px;
   margin: 0 0 6px;
 }
 .admin h2 {
@@ -71,6 +70,11 @@
 }
 .admin p {
   margin: 0 0 14px;
+}
+/* Greta Arabic ships one weight (500); never ask it for a faux bold. */
+.admin [lang="ar"] {
+  font-family: var(--font-arabic), var(--font-sans), sans-serif;
+  font-weight: 500;
 }
 .admin small,
 .admin .muted {
@@ -187,6 +191,9 @@
   flex-direction: column;
   gap: 6px;
   font-weight: 500;
+}
+.admin label[dir="rtl"] > bdi {
+  align-self: flex-start;
 }
 .admin label.check {
   flex-direction: row;

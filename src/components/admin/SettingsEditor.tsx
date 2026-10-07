@@ -68,6 +68,7 @@ export function SettingsEditor({
                 }
                 value={Array.isArray(value) ? value.join("\n") : value}
                 multiline={Array.isArray(value) || key === "addressLine"}
+                lang={key.endsWith("Ar") ? "ar" : undefined}
                 onChange={(v) =>
                   setDraft({
                     ...draft,
@@ -104,6 +105,7 @@ export function SettingsEditor({
                     <TextField
                       key={lang}
                       label={lang === "en" ? "English" : "Arabic"}
+                      lang={lang === "ar" ? "ar" : undefined}
                       value={draft.copy[lang][key]}
                       multiline
                       onChange={(v) =>
@@ -135,6 +137,7 @@ export function SettingsEditor({
               />
               <TextField
                 label={`${key} (Arabic)`}
+                lang="ar"
                 value={value.nameAr}
                 onChange={(nameAr) =>
                   setDraft({

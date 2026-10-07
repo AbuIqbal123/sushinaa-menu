@@ -31,6 +31,7 @@ export function MenuList({
     <>
       <div className="admin-toolbar">
         <input
+          dir="auto"
           aria-label="Search menu"
           placeholder="Search names or descriptions…"
           value={query}
@@ -91,7 +92,8 @@ export function MenuList({
                 <div className="grow">
                   <strong>{d.name}</strong>
                   <small>
-                    {d.nameAr} · {minPriceOf(d)} {menu.settings.currencyEn}
+                    <bdi lang="ar">{d.nameAr}</bdi> · {minPriceOf(d)}{" "}
+                    {menu.settings.currencyEn}
                   </small>
                 </div>
                 <span

@@ -60,6 +60,7 @@ export function CategoryEditor({
           />
           <TextField
             label="Name (Arabic)"
+            lang="ar"
             value={draft.nameAr || ""}
             onChange={(nameAr) => setDraft({ ...draft, nameAr })}
           />

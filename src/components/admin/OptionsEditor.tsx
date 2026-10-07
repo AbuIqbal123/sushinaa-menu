@@ -405,6 +405,7 @@ function ObjectFields({
             key={f.key}
             label={f.label}
             type={f.type === "number" ? "number" : "text"}
+            lang={f.key.endsWith("Ar") ? "ar" : undefined}
             value={(val ?? "") as string | number}
             onChange={(s) =>
               set(

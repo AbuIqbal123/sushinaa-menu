@@ -20,7 +20,7 @@ export function CategoryList({
           <div className="grow">
             <strong>{c.name}</strong>
             <small>
-              {c.nameAr} · {sorted(c.id).length} items ·{" "}
+              <bdi lang="ar">{c.nameAr}</bdi> · {sorted(c.id).length} items ·{" "}
               {c.visible ? "Visible" : "Hidden"}
             </small>
           </div>

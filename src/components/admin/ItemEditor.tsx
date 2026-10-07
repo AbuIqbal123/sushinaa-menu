@@ -94,6 +94,7 @@ export function ItemEditor({
                 />
                 <TextField
                   label="Name (Arabic)"
+                  lang="ar"
                   value={draft.nameAr}
                   onChange={(nameAr) => patch({ nameAr })}
                 />
@@ -119,6 +120,7 @@ export function ItemEditor({
               />
               <TextField
                 label="Description (Arabic)"
+                lang="ar"
                 multiline
                 value={draft.descriptionAr || ""}
                 onChange={(descriptionAr) => patch({ descriptionAr })}
@@ -178,6 +180,7 @@ export function ItemEditor({
               />
               <TextField
                 label="Image description (Arabic, optional)"
+                lang="ar"
                 value={draft.imageAltAr}
                 onChange={(imageAltAr) => patch({ imageAltAr })}
               />
