@@ -282,14 +282,29 @@ export function selectionLabel(dish: Dish, sel: Selection, lang: Lang, t:Copy): 
   return bits.join(" · ");
 }
 
-export function imageFor(dish: Dish, sel: Selection): string {
+function variantImage(dish: Dish, sel: Selection): string | undefined {
   if (dish.kind.type === "roll") {
     const style = dish.kind.style?.options.find((o) => o.id === sel.style);
     if (style?.image) return style.image;
     const protein = dish.kind.proteins.find((p) => p.id === sel.protein);
     if (protein?.image) return protein.image;
   }
-  return dish.image;
+}
+
+/** The card photo: the chosen variant's, else the dish's tall photo. */
+export function imageFor(dish: Dish, sel: Selection): string {
+  return variantImage(dish, sel) ?? dish.image;
+}
+
+/** The options-sheet photo: the variant's, else the wide options photo, else the card photo. */
+export function sheetImageFor(dish: Dish, sel: Selection): string {
+  return variantImage(dish, sel) ?? dish.optionsImage ?? dish.image;
+}
+
+/** object-position for a photo: the dish's focal point applies to its own card photo only. */
+export function photoPosition(dish: Dish, photo: string): string | undefined {
+  const f = dish.imageFocus;
+  return f && photo === dish.image ? `${f.x}% ${f.y}%` : undefined;
 }
 
 export function isSelectionComplete(dish: Dish, sel: Selection): boolean {

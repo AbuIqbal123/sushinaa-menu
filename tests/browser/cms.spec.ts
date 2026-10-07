@@ -78,7 +78,7 @@ test("authenticated CMS CRUD, persistence, uploads and public integration", asyn
       .fill("CMS description");
     await page.getByRole("tab", { name: "Images", exact: true }).click();
     await page
-      .getByLabel("Photo", { exact: true })
+      .getByLabel("Card photo (tall)", { exact: true })
       .setInputFiles("public/dishes/sushinaa-burger.jpg");
     await expect(page.locator("dialog[open] .admin-image img")).toHaveAttribute(
       "src",
@@ -568,4 +568,78 @@ test("changing how an item is priced explains itself and confirms inline", async
   expect(prompts).toEqual([]);
   await page.getByRole("button", { name: "Close", exact: true }).click();
   expect(prompts).toEqual(["Discard unsaved changes?"]);
+});
+test("card focal point and options photo round-trip to the public menu", async ({
+  page,
+  baseURL,
+}) => {
+  const headers = { Origin: baseURL! };
+  await page.request.post("/api/admin/session", {
+    headers,
+    data: { username: "admin", password: "admin" },
+  });
+  const original: MenuSnapshot = await (
+    await page.request.get("/api/admin/menu")
+  ).json();
+  try {
+    await page.goto("/admin?q=sushinaa%20burger");
+    await page
+      .locator(".admin-row")
+      .first()
+      .getByRole("button", { name: "Edit", exact: true })
+      .click();
+    await page.getByRole("tab", { name: "Images", exact: true }).click();
+    const focus = page.getByRole("slider", { name: "Card focal point" });
+    await expect(focus).toHaveAttribute(
+      "aria-valuetext",
+      "50% across, 50% down",
+    );
+    await focus.focus();
+    await page.keyboard.press("Shift+ArrowLeft");
+    await page.keyboard.press("Shift+ArrowLeft");
+    await page.keyboard.press("ArrowDown");
+    await expect(focus).toHaveAttribute(
+      "aria-valuetext",
+      "30% across, 51% down",
+    );
+    await expect(page.locator(".admin-focus-preview img")).toHaveCSS(
+      "object-position",
+      "30% 51%",
+    );
+    await page
+      .getByLabel("Options photo", { exact: true })
+      .setInputFiles("public/dishes/crispy-calamari.jpg");
+    await expect(
+      page.locator(".admin-image-field").nth(1).locator("img"),
+    ).toHaveAttribute("src", /^\/api\/media\//);
+    await page.getByRole("button", { name: "Save item", exact: true }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    const saved: MenuSnapshot = await (
+      await page.request.get("/api/admin/menu")
+    ).json();
+    const burger = saved.menu.dishes.find((d) => d.id === "sushinaa-burger")!;
+    expect(burger.imageFocus).toEqual({ x: 30, y: 51 });
+    expect(burger.optionsImage).toMatch(/^\/api\/media\//);
+    expect(burger.image).toBe("/dishes/sushinaa-burger.jpg");
+    await page.goto("/");
+    const card = page.locator("#dish-sushinaa-burger img.dish-photo");
+    await expect(card).toHaveCSS("object-position", "30% 51%");
+    await page.locator("#dish-sushinaa-burger .slide-hit").click();
+    await expect(page.locator(".detail-photo")).toHaveAttribute(
+      "src",
+      burger.optionsImage!,
+    );
+    await expect(page.locator(".detail-photo")).toHaveCSS(
+      "object-position",
+      "50% 50%",
+    );
+  } finally {
+    const now: MenuSnapshot = await (
+      await page.request.get("/api/admin/menu")
+    ).json();
+    await page.request.put("/api/admin/menu", {
+      headers,
+      data: { menu: original.menu, revision: now.revision },
+    });
+  }
 });

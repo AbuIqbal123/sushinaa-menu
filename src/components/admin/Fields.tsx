@@ -173,6 +173,7 @@ export function ImageField({
   optional = false,
   preset,
   path,
+  hint,
 }: {
   label: string;
   value?: string;
@@ -180,6 +181,7 @@ export function ImageField({
   optional?: boolean;
   preset?: { url: string; label: string };
   path?: string;
+  hint?: string;
 }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -254,7 +256,7 @@ export function ImageField({
           {error}
         </p>
       )}
-      <small>JPEG, PNG or WebP, up to 5 MB.</small>
+      <small>{hint && `${hint} `}JPEG, PNG or WebP, up to 5 MB.</small>
     </fieldset>
   );
 }

@@ -7,7 +7,7 @@ import { useLocale } from "@/i18n/locale";
 import { dishDescription, pickName, sectionName as categoryName, type Lang } from "@/i18n/localize";
 import { formatQar as money } from "@/lib/money";
 import { useMenu } from "@/cms/context";
-import { hasPriceRange, imageFor, selectionForDiet, unitPrice } from "@/ordering/price";
+import { hasPriceRange, imageFor, photoPosition, selectionForDiet, unitPrice } from "@/ordering/price";
 import type { Copy } from "@/i18n/copy";
 import { DietTags } from "./DietTags";
 
@@ -74,6 +74,7 @@ export const DishSlide = memo(function DishSlide({
             unoptimized
             draggable={false}
             className="dish-photo"
+            style={{ objectPosition: photoPosition(dish, photo) }}
             fetchPriority={active ? "high" : "low"}
           />
         ) : (

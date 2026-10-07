@@ -151,6 +151,8 @@ const kindSchema = z
     (k) => k.type !== "party-box" || k.starterMin <= k.starterMax,
     "Minimum starters cannot exceed maximum",
   );
+// Where the tall card crop keeps its focus, as percentages of the photo.
+const percent = z.number().finite().min(0).max(100);
 export const dishSchema = z
   .object({
     ...named,
@@ -159,6 +161,8 @@ export const dishSchema = z
     description: text,
     descriptionAr: text.optional(),
     image,
+    optionsImage: image.optional(),
+    imageFocus: z.object({ x: percent, y: percent }).strict().optional(),
     imageAlt: text,
     imageAltAr: text,
     tags: z

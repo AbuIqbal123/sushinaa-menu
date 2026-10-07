@@ -346,6 +346,67 @@
   opacity: 0;
   cursor: pointer;
 }
+/* Focal point: the whole photo (tap target) beside a 9:16 card preview. */
+.admin-focus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+  margin: 0 0 18px;
+}
+.admin-focus-photo {
+  position: relative;
+  width: min(240px, 100%);
+  line-height: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: crosshair;
+  touch-action: none;
+}
+.admin-focus-photo img {
+  width: 100%;
+  height: auto;
+  user-select: none;
+}
+.admin-focus-photo:focus-visible {
+  outline: 2px solid #b5233155;
+  outline-offset: 2px;
+}
+.admin-focus-marker {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 1px #0006,
+    0 1px 4px #0005;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.admin-focus-preview {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  margin: 0;
+}
+.admin-focus-preview img {
+  width: 90px;
+  aspect-ratio: 9 / 16;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.admin-focus-preview figcaption {
+  color: var(--muted);
+  font-size: 12px;
+}
+.admin-focus-note {
+  display: flex;
+  flex-basis: 100%;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+}
 .admin-tabs {
   display: flex;
   gap: 4px;

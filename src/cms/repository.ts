@@ -13,7 +13,7 @@ async function validateImages(input: unknown) {
     else if (v && typeof v === "object")
       for (const [key, value] of Object.entries(v)) {
         if (
-          ["image", "logo", "documentLogo"].includes(key) &&
+          ["image", "optionsImage", "logo", "documentLogo"].includes(key) &&
           typeof value === "string"
         )
           paths.add(value);

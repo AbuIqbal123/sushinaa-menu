@@ -17,6 +17,7 @@ import {
   focusFirstInvalid,
 } from "./Fields";
 import { OptionsEditor, OtherOptions } from "./OptionsEditor";
+import { FocusPicker } from "./FocusPicker";
 import { fillIds, uniqueId } from "@/cms/ids";
 export function ItemEditor({
   item,
@@ -200,10 +201,29 @@ export function ItemEditor({
             {tab === "Images" && (
               <>
                 <ImageField
-                  label="Photo"
+                  label="Card photo (tall)"
                   path="image"
+                  hint="Best at 1080 × 1920 (9:16)."
                   value={draft.image}
-                  onChange={(image) => patch({ image: image || "" })}
+                  // A new photo has its own composition: start from the centre.
+                  onChange={(image) =>
+                    patch({ image: image || "", imageFocus: undefined })
+                  }
+                />
+                {draft.image && (
+                  <FocusPicker
+                    src={draft.image}
+                    value={draft.imageFocus}
+                    onChange={(imageFocus) => patch({ imageFocus })}
+                  />
+                )}
+                <ImageField
+                  label="Options photo"
+                  path="optionsImage"
+                  optional
+                  hint="Wide, shown above the options: about 1290 × 504. Without one, the options use the card photo."
+                  value={draft.optionsImage}
+                  onChange={(optionsImage) => patch({ optionsImage })}
                 />
                 <TextField
                   label="Image description (English, optional)"

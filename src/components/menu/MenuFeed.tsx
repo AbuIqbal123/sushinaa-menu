@@ -7,7 +7,7 @@ import { useMenu } from "@/cms/context";
 import { CartProvider, useCart } from "@/ordering/cart";
 import { LangButton, useLocale } from "@/i18n/locale";
 import { pickName, sectionName as categoryName, type Lang } from "@/i18n/localize";
-import { hasPriceRange, imageFor, unitPrice, selectionForDiet } from "@/ordering/price";
+import { hasPriceRange, imageFor, photoPosition, unitPrice, selectionForDiet } from "@/ordering/price";
 import { formatQar } from "@/lib/money";
 import { CartSheet } from "../order/CartSheet";
 import { DishDetailSheet } from "./DishDetailSheet";
@@ -183,12 +183,16 @@ function FeedInner() {
           <button type="button" className="chip chip-on" onClick={clearFilters}>{t.clearFilters}</button></div>
           : search ? <div className="search-results">
             <p className="search-summary">{t.searchResults(dishes.length)}</p>
-            {dishes.map((dish) => <button type="button" className="search-result" key={dish.id} onClick={() => setDetail(dish)}>
-              <Image className="search-thumbnail" src={imageFor(dish, selectionForDiet(dish, diet))}
-                width={52} height={52} sizes="52px" alt="" unoptimized />
-              <span className="search-result-name"><strong>{pickName(dish, lang)}</strong><small>{sectionName(dish.section, lang)}</small></span>
-              <span>{`${hasPriceRange(dish) ? t.from + " " : ""}${formatQar(unitPrice(dish, selectionForDiet(dish, diet)), lang, menu.settings)}`}</span>
-            </button>)}
+            {dishes.map((dish) => {
+              const sel = selectionForDiet(dish, diet);
+              const thumb = imageFor(dish, sel);
+              return <button type="button" className="search-result" key={dish.id} onClick={() => setDetail(dish)}>
+                <Image className="search-thumbnail" src={thumb} width={52} height={52} sizes="52px" alt="" unoptimized
+                  style={{ objectPosition: photoPosition(dish, thumb) }} />
+                <span className="search-result-name"><strong>{pickName(dish, lang)}</strong><small>{sectionName(dish.section, lang)}</small></span>
+                <span>{`${hasPriceRange(dish) ? t.from + " " : ""}${formatQar(unitPrice(dish, sel), lang, menu.settings)}`}</span>
+              </button>;
+            })}
           </div> : looped.map((item) => {
             const n = dishes.length;
             const distance = Math.min(Math.abs(item.real - activeIndex), n - Math.abs(item.real - activeIndex));

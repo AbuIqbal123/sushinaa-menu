@@ -17,8 +17,9 @@ import { formatQar as money } from "@/lib/money";
 import { useMenu } from "@/cms/context";
 import { useSheetDismiss } from "@/lib/sheet-dismiss";
 import {
-  imageFor,
   isSelectionComplete,
+  photoPosition,
+  sheetImageFor,
   preferredPieces,
   selectionForDiet,
   unitPrice,
@@ -63,7 +64,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
   const shown = units[Math.min(activeUnit, units.length - 1)] ?? {};
   const total = units.reduce((sum, item) => sum + unitPrice(current, item), 0);
   const ready = units.every((item) => isSelectionComplete(current, item));
-  const photo = imageFor(current, shown);
+  const photo = sheetImageFor(current, shown);
   const patterned = photo.startsWith("/brand/");
   const featured = menu.categories.find((c) => c.id === current.section)?.featured;
 
@@ -139,6 +140,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
               sizes="(max-width: 430px) 100vw, 430px"
               unoptimized
               className="detail-photo"
+              style={{ objectPosition: photoPosition(current, photo) }}
             />
           )}
         </div>

@@ -111,7 +111,12 @@ export type Dish = {
   section: Section;
   description: string;
   descriptionAr?: string;
+  /** Tall card photo (9:16). */
   image: string;
+  /** Optional wide photo for the options sheet; falls back to `image`. */
+  optionsImage?: string;
+  /** Focal point of `image` in percent; the card crop keeps it in view. */
+  imageFocus?: { x: number; y: number };
   tags: Tag[];
   kind: DishKind;
   extras?: Extra[];
