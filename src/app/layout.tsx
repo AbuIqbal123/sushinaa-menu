@@ -48,8 +48,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const brand = strings(lang, menu.copy).brand;
   const title = ar ? `${brand} · قائمة` : `${brand} · QR menu`;
   const description = ar
-    ? `${brand}. قائمة سوشي في قطر. اختر البروتين وعدد القطع والصوص، ثم أرسل الطلب عبر واتساب ${SITE.whatsappDisplay}.`
-    : `${SITE.tagline}. Sushinaa QR menu in Qatar. Pick protein, pieces, and sauces, then send the ticket on WhatsApp ${SITE.whatsappDisplay}.`;
+    ? `${brand}. قائمة سوشي في قطر. اختر البروتين وعدد القطع والصوص، واحفظ اختياراتك لتعرضها على الموظفين. واتساب ${SITE.whatsappDisplay}.`
+    : `${SITE.tagline}. Sushinaa QR menu in Qatar. Pick protein, pieces, and sauces, and save your selections to show staff. WhatsApp ${SITE.whatsappDisplay}.`;
   return {
     metadataBase: new URL(SITE.url),
     title: { default: title, template: `%s · ${brand}` },
@@ -74,8 +74,8 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: brand,
       title,
       description: ar
-        ? "اطلب السوشي في قطر من القائمة. لا يتم الدفع على هذه الصفحة."
-        : `${SITE.tagline}. Order sushi in Qatar from the QR menu. No payment on this page.`,
+        ? "تصفح قائمة السوشي في قطر. لا يتم الدفع على هذه الصفحة."
+        : `${SITE.tagline}. Browse the Sushinaa QR menu in Qatar. No payment on this page.`,
       images: [{ url: "/og.jpg", width: 1200, height: 630, alt: ar ? `قائمة ${brand}` : `${brand} QR menu` }],
     },
     twitter: {

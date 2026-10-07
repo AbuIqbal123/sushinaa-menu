@@ -16,8 +16,8 @@ export function PrivacyView() {
       <LegalShell title={t.privacyTitle}>
         <p>{t.updated}</p>
         <p>
-          سوشينا مطبخ سوشي في قطر. هذه القائمة تتيح لك تجهيز طلب وإرساله إلينا على واتساب. لا يتم
-          الدفع على هذا الموقع.
+          سوشينا مطبخ سوشي في قطر. هذه القائمة تتيح لك تصفح الأطباق وحفظ اختياراتك لتعرضها على
+          الموظفين. لا تُرسل الاختيارات إلينا، ولا يتم الدفع على هذا الموقع.
         </p>
         <h2>من نحن</h2>
         <p>
@@ -27,20 +27,20 @@ export function PrivacyView() {
         </p>
         <h2>ماذا يُحفظ على جهازك</h2>
         <p>
-          طلبك (أسماء الأطباق والخيارات والكميات وأي ملاحظة) يُحفظ في المتصفح حتى لا يفرغ عند
-          تحديث الصفحة. يبقى على هاتفك إلى أن تمسح الطلب أو بيانات الموقع. هذا ضروري لعمل القائمة.
+          اختياراتك (أسماء الأطباق والخيارات والكميات وأي ملاحظة) تُحفظ في المتصفح حتى لا تفرغ عند
+          تحديث الصفحة. تبقى على هاتفك إلى أن تمسح الاختيارات أو بيانات الموقع. هذا ضروري لعمل القائمة.
         </p>
         <h2>التحليلات</h2>
         <p>نستخدم تحليلات فيرسل لعدد الزيارات والأداء بشكل مجهول. لا تُعرّفك بالاسم.</p>
         <h2>واتساب</h2>
         <p>
-          إرسال الطلب يفتح واتساب برسالة جاهزة. واتساب منتج من ميتا. بعد الإرسال تصبح المحادثة بينك
-          وبين سوشينا وفق شروط واتساب.
+          مراسلتنا تفتح واتساب. واتساب منتج من ميتا. بعد الإرسال تصبح المحادثة بينك وبين سوشينا وفق
+          شروط واتساب.
         </p>
         <h2>نموذج التواصل</h2>
         <p>صفحة التواصل تفتح واتساب باسمك ورقمك ورسالتك فقط. لا نشغّل بريداً خاصاً على هذا الموقع.</p>
         <h2>خياراتك</h2>
-        <p>امسح الطلب من القائمة، أو امسح بيانات الموقع من المتصفح، أو راسلنا على واتساب عن طلب أرسلته.</p>
+        <p>امسح الاختيارات من القائمة، أو امسح بيانات الموقع من المتصفح، أو راسلنا على واتساب عن طلب أرسلته.</p>
       </LegalShell>
     );
   }
@@ -48,8 +48,9 @@ export function PrivacyView() {
     <LegalShell title={t.privacyTitle}>
       <p>{t.updated}</p>
       <p>
-        {SITE.name} is a sushi kitchen in Qatar. This QR menu lets you build a
-        ticket and send it to us on WhatsApp. We do not take payment on this website.
+        {SITE.name} is a sushi kitchen in Qatar. This QR menu lets you browse dishes and save your
+        selections to show staff. Selections are not sent to us, and we do not take payment on this
+        website.
       </p>
       <h2>Who we are</h2>
       <p>
@@ -59,16 +60,16 @@ export function PrivacyView() {
       </p>
       <h2>What we store on your device</h2>
       <p>
-        Your ticket (dish names, options, quantities, and any comment) is saved in the browser with{" "}
-        <code>localStorage</code> so a refresh does not empty the order. That storage stays on your
-        phone unless you clear the ticket or site data. It is necessary for the menu to work.
+        Your selections (dish names, options, quantities, and any item notes) are saved in the browser
+        with <code>localStorage</code> so a refresh does not empty them. That storage stays on your
+        phone unless you clear your selections or site data. It is necessary for the menu to work.
       </p>
       <h2>Analytics</h2>
       <p>We use Vercel Analytics for anonymous page views and performance. It does not identify you by name.</p>
       <h2>WhatsApp</h2>
       <p>
-        Sending a ticket opens WhatsApp with a pre-filled message. WhatsApp is Meta’s product. Once
-        you send, that conversation is between you and {SITE.name} on WhatsApp’s terms.
+        Messaging us opens WhatsApp. WhatsApp is Meta’s product. Once you send, that conversation is
+        between you and {SITE.name} on WhatsApp’s terms.
       </p>
       <h2>Contact form</h2>
       <p>
@@ -77,7 +78,7 @@ export function PrivacyView() {
       </p>
       <h2>Your choices</h2>
       <p>
-        Clear the ticket in the menu, clear site data in the browser, or message us on WhatsApp to
+        Clear your selections in the menu, clear site data in the browser, or message us on WhatsApp to
         ask about an order you already sent.
       </p>
     </LegalShell>
@@ -93,8 +94,8 @@ export function TermsView() {
       <LegalShell title={t.termsTitle}>
         <p>{t.termsUpdated}</p>
         <p>
-          هذا الموقع قائمة رقمية لسوشينا. ليس صفحة دفع. إضافة الأصناف إلى الطلب لا تنشئ طلباً مدفوعاً
-          إلى أن يؤكده الفريق على واتساب أو عند الكاشير.
+          هذا الموقع قائمة رقمية لسوشينا. ليس صفحة دفع. حفظ الأصناف في اختياراتك لا ينشئ طلباً. يؤكد
+          الفريق الطلبات على واتساب أو عند الكاشير.
         </p>
         <h2>الأسعار</h2>
         <p>
@@ -124,8 +125,8 @@ export function TermsView() {
     <LegalShell title={t.termsTitle}>
       <p>{t.termsUpdated}</p>
       <p>
-        This site is a digital menu for {SITE.name}. It is not a checkout. Adding items to a ticket
-        does not create a paid order until our team confirms it on WhatsApp or at the counter.
+        This site is a digital menu for {SITE.name}. It is not a checkout. Saving items to your
+        selections does not place an order. Our team confirms orders on WhatsApp or at the counter.
       </p>
       <h2>Prices</h2>
       <p>
@@ -136,7 +137,7 @@ export function TermsView() {
       <h2>Availability</h2>
       <p>
         Dishes can sell out. We may refuse or change an order if an item is unavailable, if the
-        ticket is incomplete, or if we cannot deliver to your area at that time.
+        order is incomplete, or if we cannot deliver to your area at that time.
       </p>
       <h2>Allergens</h2>
       <p>
