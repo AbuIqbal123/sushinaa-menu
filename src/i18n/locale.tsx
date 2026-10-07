@@ -49,11 +49,11 @@ export function LangButton({ tone = "dark" }: { tone?: "dark" | "light" }) {
   return (
     <button
       type="button"
-      className={`lang-btn lang-btn-${tone}`}
+      className={tone === "dark" ? "cart-btn lang-btn" : "lang-btn"}
       onClick={() => setLang(next)}
       aria-label={t.langButtonLabel}
     >
-      {t.langButton}
+      <span lang={next}>{t.langButton}</span>
     </button>
   );
 }

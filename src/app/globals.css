@@ -717,24 +717,22 @@ body {
   pointer-events: auto;
 }
 
+/* The label names the other language, so its face follows the label's own
+   lang: Latin in the sans, Arabic in the Arabic face (Medium is its only weight). */
 .lang-btn {
-  height: 44px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(243, 228, 196, 0.45);
-  background: rgba(20, 17, 15, 0.55);
-  color: #f3e4c4;
-  font-family: var(--font-arabic), var(--font-sans), sans-serif;
-  font-size: 0.95rem;
+  font-family: var(--font-sans);
   font-weight: 700;
   cursor: pointer;
 }
 
-.lang-btn-light {
-  height: 36px;
-  background: transparent;
-  color: #a3141c;
-  border-color: rgba(163, 20, 28, 0.35);
+.lang-btn [lang="ar"] {
+  font-family: var(--font-arabic), var(--font-sans), sans-serif;
+  font-weight: 500;
+}
+
+.chrome-actions .lang-btn {
+  padding: 0 14px;
+  font-size: var(--text-caption);
 }
 
 [dir="rtl"] .dish-name,
@@ -784,7 +782,7 @@ body {
   position: relative;
   display: grid;
   place-items: center;
-  width: 44px;
+  min-width: 44px;
   height: 44px;
   border: 1px solid rgba(213, 32, 41, 0.55);
   border-radius: 999px;
@@ -1223,15 +1221,25 @@ button {
 .doc-links {
   display: flex;
   flex-wrap: wrap;
+  align-items: baseline;
   gap: 14px;
   font-size: 0.9rem;
   font-weight: 700;
 }
 .doc-links a,
+.doc-links .lang-btn,
 .doc-foot a,
 .prose a {
   color: #a3141c;
   text-decoration: underline;
+}
+.doc-links .lang-btn {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: inherit;
 }
 .doc-main {
   max-width: 44rem;
