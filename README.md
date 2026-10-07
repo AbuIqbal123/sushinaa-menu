@@ -15,8 +15,7 @@ npm run dev
 
 - Public menu: http://localhost:3005
 - Administration: http://localhost:3005/admin
-- Temporary username: `admin`
-- Temporary password: `admin`
+- Local sign-in: `admin` / `admin` from `.env.example`. Sign-in is disabled when `CMS_ADMIN_USERNAME` or `CMS_ADMIN_PASSWORD` is missing.
 
 For phone testing on the same Wi-Fi, allow the computer's exact LAN address:
 
@@ -47,8 +46,8 @@ For **Vercel**, set a remote libSQL database before deployment:
 ```text
 CMS_DATABASE_URL=libsql://your-database.turso.io
 CMS_DATABASE_AUTH_TOKEN=your-database-token
-CMS_ADMIN_USERNAME=admin
-CMS_ADMIN_PASSWORD=admin
+CMS_ADMIN_USERNAME=choose-a-username
+CMS_ADMIN_PASSWORD=choose-a-long-unique-password
 ```
 
 Use those same database environment variables locally and run `npm run cms:seed` once before deploying. The CLI reads `.env.local`/`.env` like Next.js. Do not put database tokens in `NEXT_PUBLIC_*` variables. The application deliberately rejects a local-file database on Vercel, where filesystem changes are not durable. No cloud database has been provisioned by this branch.
