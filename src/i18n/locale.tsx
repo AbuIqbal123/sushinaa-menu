@@ -2,7 +2,7 @@
 
 import { useMenu } from "@/cms/context";
 import { useRouter } from "next/navigation";
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import { strings, type Copy } from "./copy";
 import type { Lang } from "./localize";
 
@@ -20,6 +20,7 @@ export function LocaleProvider({ initial, children }: { initial: Lang; children:
   const router = useRouter();
   const { copy } = useMenu();
   const [lang, setLangState] = useState<Lang>(initial);
+  const t = useMemo(() => strings(lang, copy), [lang, copy]);
 
   function setLang(next: Lang) {
     setLangState(next);
@@ -30,7 +31,7 @@ export function LocaleProvider({ initial, children }: { initial: Lang; children:
   }
 
   return (
-    <LocaleContext.Provider value={{ lang, t: strings(lang, copy), setLang }}>
+    <LocaleContext.Provider value={{ lang, t, setLang }}>
       {children}
     </LocaleContext.Provider>
   );
