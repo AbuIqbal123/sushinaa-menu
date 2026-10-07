@@ -3449,7 +3449,7 @@
       "nameAr": "ريد بُل",
       "section": "Drinks",
       "description": "250ml.",
-      "image": "/dishes/redbull.jpg",
+      "image": "/dishes/card/redbull.webp",
       "tags": [],
       "kind": {
         "type": "simple",
@@ -3460,7 +3460,8 @@
       "visible": true,
       "available": true,
       "imageAlt": "",
-      "imageAltAr": ""
+      "imageAltAr": "",
+      "optionsImage": "/dishes/redbull.jpg"
     },
     {
       "id": "water",
@@ -3468,7 +3469,7 @@
       "nameAr": "مياه معدنية",
       "section": "Drinks",
       "description": "Small 330ml or big 500ml.",
-      "image": "/dishes/still-water.jpg",
+      "image": "/dishes/card/still-water.webp",
       "tags": [],
       "kind": {
         "type": "size-price",
@@ -3492,7 +3493,8 @@
       "visible": true,
       "available": true,
       "imageAlt": "",
-      "imageAltAr": ""
+      "imageAltAr": "",
+      "optionsImage": "/dishes/still-water.jpg"
     },
     {
       "id": "kinza",
@@ -3500,7 +3502,7 @@
       "nameAr": "كينزا",
       "section": "Drinks",
       "description": "Small 185ml or big 250ml. Pick a flavour.",
-      "image": "/dishes/kinza.jpg",
+      "image": "/dishes/card/kinza.webp",
       "tags": [],
       "kind": {
         "type": "size-price",
@@ -3566,7 +3568,8 @@
       "visible": true,
       "available": true,
       "imageAlt": "",
-      "imageAltAr": ""
+      "imageAltAr": "",
+      "optionsImage": "/dishes/kinza.jpg"
     },
     {
       "id": "shani",
@@ -3574,7 +3577,7 @@
       "nameAr": "شاني",
       "section": "Drinks",
       "description": "250ml.",
-      "image": "/dishes/shani.jpg",
+      "image": "/dishes/card/shani.webp",
       "tags": [],
       "kind": {
         "type": "simple",
@@ -3585,7 +3588,8 @@
       "visible": true,
       "available": true,
       "imageAlt": "",
-      "imageAltAr": ""
+      "imageAltAr": "",
+      "optionsImage": "/dishes/shani.jpg"
     }
   ],
   "settings": {
