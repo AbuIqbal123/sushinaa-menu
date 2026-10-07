@@ -9,6 +9,22 @@ import {
   moveEntry,
   Tabs,
 } from "./Fields";
+const settingLabels: Record<string, string> = {
+  name: "Restaurant name (English)",
+  nameAr: "Restaurant name (Arabic)",
+  tagline: "Tagline",
+  url: "Website address",
+  whatsappE164: "WhatsApp number (digits with country code)",
+  whatsappDisplay: "WhatsApp number as shown",
+  instagram: "Instagram link",
+  instagramHandle: "Instagram handle",
+  country: "Country",
+  founded: "Year founded",
+  areas: "Delivery areas (one per line)",
+  addressLine: "Address",
+  currencyEn: "Currency (English)",
+  currencyAr: "Currency (Arabic)",
+};
 export function SettingsEditor({
   menu,
   onSave,
@@ -64,12 +80,7 @@ export function SettingsEditor({
             ) : (
               <TextField
                 key={key}
-                label={
-                  key
-                    .replace(/([A-Z])/g, " $1")
-                    .replace(/^./, (s) => s.toUpperCase()) +
-                  (Array.isArray(value) ? " (one per line)" : "")
-                }
+                label={settingLabels[key] ?? key}
                 value={Array.isArray(value) ? value.join("\n") : value}
                 multiline={Array.isArray(value) || key === "addressLine"}
                 lang={key.endsWith("Ar") ? "ar" : undefined}

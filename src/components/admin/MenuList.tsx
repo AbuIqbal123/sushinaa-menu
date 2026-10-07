@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { MenuData, CmsDish, Category } from "@/cms/schema";
 import { minPriceOf } from "@/ordering/price";
 import { MoveButtons, moveEntry } from "./Fields";
@@ -9,7 +10,6 @@ export function MenuList({
   onAdd,
   onEdit,
   onEditCategory,
-  onCategories,
   onChange,
 }: {
   menu: MenuData;
@@ -17,16 +17,55 @@ export function MenuList({
   onAdd: (id: string) => void;
   onEdit: (d: CmsDish) => void;
   onEditCategory: (c: Category) => void;
-  onCategories: () => void;
   onChange: (m: MenuData) => Promise<void>;
 }) {
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState("all");
   const categories = [...menu.categories].sort((a, b) => a.order - b.order);
+  // Filters live in the URL (?category=&show=&q=) so a reload or shared link
+  // keeps them; unknown values fall back to "all".
+  const params = useSearchParams();
+  const [query, setQuery] = useState(params.get("q") ?? "");
+  const [category, setCategory] = useState(() => {
+    const id = params.get("category");
+    return categories.some((c) => c.id === id) ? id! : "";
+  });
+  const [show, setShow] = useState(() => {
+    const s = params.get("show");
+    return s === "active" || s === "hidden" ? s : "";
+  });
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (category) next.set("category", category);
+    if (show) next.set("show", show);
+    if (query) next.set("q", query);
+    // history.replaceState updates the URL without a server round trip per keystroke.
+    const path = window.location.pathname;
+    window.history.replaceState(null, "", `${next}` ? `${path}?${next}` : path);
+    return () => window.history.replaceState(null, "", path);
+  }, [category, show, query]);
   const sorted = (id: string) =>
     menu.dishes
       .filter((d) => d.section === id)
       .sort((a, b) => a.order - b.order);
+  const needle = query.trim().toLowerCase();
+  const matches = (d: CmsDish, c: Category) =>
+    [d.name, d.nameAr, d.description, d.descriptionAr]
+      .join(" ")
+      .toLowerCase()
+      .includes(needle) &&
+    (!show || (show === "active") === (d.visible && d.available && c.visible));
+  const filtering = Boolean(needle || show);
+  const groups = categories
+    .filter(
+      (c) =>
+        !category ||
+        c.id === category ||
+        !categories.some((x) => x.id === category),
+    )
+    .map((c) => {
+      const all = sorted(c.id);
+      return { c, all, dishes: all.filter((d) => matches(d, c)) };
+    })
+    .filter((g) => !filtering || g.dishes.length);
   return (
     <>
       <div className="admin-toolbar">
@@ -38,35 +77,43 @@ export function MenuList({
           onChange={(e) => setQuery(e.target.value)}
         />
         <select
-          aria-label="Filter status"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          style={{ width: "auto" }}
+          aria-label="Filter by category"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
         >
-          <option value="all">All items</option>
-          <option value="active">Active</option>
-          <option value="inactive">Hidden / unavailable</option>
+          <option value="">All categories</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {/* Isolate the name so its direction never reorders the count. */}
+              {`\u2068${c.name}\u2069 · ${sorted(c.id).length}`}
+            </option>
+          ))}
         </select>
-        <button
-          onClick={() => {
-            onCategories();
-          }}
+        <select
+          aria-label="Filter by visibility"
+          value={show}
+          onChange={(e) => setShow(e.target.value)}
         >
-          Manage categories
-        </button>
+          <option value="">All items</option>
+          <option value="active">Active</option>
+          <option value="hidden">Hidden or unavailable</option>
+        </select>
       </div>
-      {categories.map((c) => {
-        const all = sorted(c.id);
-        const dishes = all.filter(
-          (d) =>
-            (d.name + d.nameAr + d.description)
-              .toLowerCase()
-              .includes(query.toLowerCase()) &&
-            (filter === "all" ||
-              (filter === "active"
-                ? d.visible && d.available && c.visible
-                : !d.visible || !d.available || !c.visible)),
-        );
+      {filtering && !groups.length && (
+        <p className="admin-empty">
+          No items match.{" "}
+          <button
+            onClick={() => {
+              setQuery("");
+              setShow("");
+              setCategory("");
+            }}
+          >
+            Clear search and filters
+          </button>
+        </p>
+      )}
+      {groups.map(({ c, all, dishes }) => {
         return (
           <details open className="admin-card admin-group" key={c.id}>
             <summary>
@@ -82,9 +129,7 @@ export function MenuList({
               <button onClick={() => onEditCategory(c)}>Edit category</button>
             </div>
             {dishes.length === 0 && (
-              <p className="admin-empty">
-                No items here. Add an item or adjust your search.
-              </p>
+              <p className="admin-empty">No items in this category yet.</p>
             )}
             {dishes.map((d) => (
               <div className="admin-row" key={d.id}>

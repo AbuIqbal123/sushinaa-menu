@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   type MenuSnapshot,
   type MenuData,
@@ -14,7 +15,11 @@ import { MenuList } from "./MenuList";
 import { Dashboard } from "./Dashboard";
 export function Admin({ initial }: { initial: MenuSnapshot }) {
   const [snapshot, setSnapshot] = useState(initial);
-  const [section, setSection] = useState("Dashboard");
+  const params = useSearchParams();
+  // A filtered menu link (?category=&show=&q=) opens straight on the Menu.
+  const [section, setSection] = useState(() =>
+    ["category", "show", "q"].some((k) => params.has(k)) ? "Menu" : "Dashboard",
+  );
   const [item, setItem] = useState<CmsDish | null>(null);
   const [category, setCategory] = useState<Category | null>(null);
   const [error, setError] = useState("");
@@ -91,6 +96,7 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
           <button
             key={s}
             className={section === s ? "active" : ""}
+            aria-current={section === s ? "page" : undefined}
             onClick={() => {
               setSection(s);
               setError("");
@@ -165,7 +171,6 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
               onAdd={newItem}
               onEdit={setItem}
               onEditCategory={setCategory}
-              onCategories={() => setSection("Categories")}
               onChange={run}
             />
           )}

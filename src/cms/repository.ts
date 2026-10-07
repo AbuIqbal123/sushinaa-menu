@@ -47,7 +47,7 @@ export async function readMenu(): Promise<MenuSnapshot> {
     "SELECT revision,content FROM menu WHERE id=1",
   );
   if (!result.rows[0])
-    throw new Error("Menu is not initialized. Run npm run cms:seed.");
+    throw new Error("Menu is not initialised. Run npm run cms:seed.");
   return {
     revision: Number(result.rows[0].revision),
     menu: menuSchema.parse(JSON.parse(String(result.rows[0].content))),

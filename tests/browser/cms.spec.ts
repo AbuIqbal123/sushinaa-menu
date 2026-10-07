@@ -400,3 +400,36 @@ test("admin controls edit, reorder and delete content and options", async ({
     expect(r.status()).toBe(200);
   }
 });
+test("menu filters combine and survive a reload through the URL", async ({
+  page,
+  baseURL,
+}) => {
+  await page.request.post("/api/admin/session", {
+    headers: { Origin: baseURL! },
+    data: { username: "admin", password: "admin" },
+  });
+  const rows = page.locator(".admin-group .admin-row");
+  await page.goto("/admin?category=Starters&show=active&q=shrimp");
+  await expect(page.getByRole("heading", { name: "Your menu" })).toBeVisible();
+  await expect(page.getByLabel("Search menu")).toHaveValue("shrimp");
+  await expect(page.getByLabel("Filter by category")).toHaveValue("Starters");
+  await expect(page.locator(".admin-group")).toHaveCount(1);
+  const filtered = await rows.count();
+  expect(filtered).toBeGreaterThan(0);
+  await page.getByLabel("Search menu").fill("");
+  await expect(page).toHaveURL(/\?category=Starters&show=active$/);
+  expect(await rows.count()).toBeGreaterThanOrEqual(filtered);
+  await page.getByLabel("Filter by category").selectOption("");
+  await page.getByLabel("Filter by visibility").selectOption("");
+  await expect(page).toHaveURL(/\/admin$/);
+  await page.goto("/admin?category=nope&show=bogus");
+  await expect(page.getByLabel("Filter by category")).toHaveValue("");
+  await expect(page.getByLabel("Filter by visibility")).toHaveValue("");
+  await expect(page.locator(".admin-group").first()).toBeVisible();
+  await page.getByLabel("Search menu").fill("no dish is called this");
+  await expect(page.locator(".admin-group")).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Clear search and filters", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/admin$/);
+});
