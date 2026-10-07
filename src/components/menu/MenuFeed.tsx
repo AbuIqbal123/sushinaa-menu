@@ -2,9 +2,6 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
-  CATEGORY_CHIPS,
-  DIET_CHIPS,
-  DISHES,
   matchesDiet,
   type DietFilter,
   type Dish,
@@ -12,27 +9,33 @@ import {
 } from "@/catalog/menu";
 import { CartProvider, useCart } from "@/ordering/cart";
 import { LangButton, useLocale } from "@/i18n/locale";
-import { sectionName } from "@/i18n/localize";
+import { useMenu } from "@/cms/context";
+import { sectionName as getSectionName } from "@/i18n/localize";
 import { formatQar } from "@/lib/money";
 import { CartSheet } from "../order/CartSheet";
 import { DishDetailSheet } from "./DishDetailSheet";
 import { DishSlide } from "./DishSlide";
 
 function FeedInner() {
+  const menu=useMenu();
+  const DISHES=menu.dishes;
+  const CATEGORY_CHIPS=menu.categories;
+  const DIET_CHIPS=menu.filters.filter(f=>f.visible).sort((a,b)=>a.order-b.order);
+  const sectionName=(id:string,lang:"en"|"ar")=>getSectionName(id,lang,menu.categories);
   const { itemCount, totalQar } = useCart();
   const { lang, t } = useLocale();
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<Dish | null>(null);
   const [pop, setPop] = useState(false);
   const [diet, setDiet] = useState<DietFilter>("all");
-  const [activeSection, setActiveSection] = useState<Section>("New");
+  const [activeSection, setActiveSection] = useState<Section>(CATEGORY_CHIPS[0]?.id ?? "");
   const [activeIndex, setActiveIndex] = useState(0);
   const prevCount = useRef(itemCount);
   const feedRef = useRef<HTMLDivElement>(null);
   const catRowRef = useRef<HTMLDivElement>(null);
   const skipSpy = useRef(false);
 
-  const dishes = useMemo(() => DISHES.filter((d) => matchesDiet(d, diet)), [diet]);
+  const dishes = useMemo(() => DISHES.filter((d) => matchesDiet(d, diet)), [diet,DISHES]);
   const looped = useMemo(() => {
     if (dishes.length === 0) return [];
     return [0, 1, 2].flatMap((copy) =>
@@ -124,7 +127,7 @@ function FeedInner() {
     const h = feed.clientHeight;
     feed.scrollTo({ top: origin * h });
     setActiveIndex(0);
-    setActiveSection(dishes[0]?.section ?? "New");
+    setActiveSection(dishes[0]?.section ?? "");
     const t = window.setTimeout(() => {
       skipSpy.current = false;
     }, 80);
@@ -176,7 +179,7 @@ function FeedInner() {
   return (
     <div className={`shell${sheetOpen ? " is-sheet" : ""}${itemCount > 0 ? " has-order" : ""}`}>
       <header className="chrome-header">
-        <img src="/brand/logotype-white.svg" alt={t.brand} className="wordmark-img" />
+        <img src={menu.settings.logo} alt={t.brand} className="wordmark-img" />
         <div className="chrome-actions">
           <LangButton />
           <button
@@ -211,7 +214,7 @@ function FeedInner() {
                 key={chip.id}
                 type="button"
                 data-chip={chip.id}
-                className={`chip${chip.id === "New" ? " chip-new" : ""}${on ? " chip-on" : ""}`}
+                className={`chip${chip.featured ? " chip-new" : ""}${on ? " chip-on" : ""}`}
                 aria-pressed={on}
                 aria-current={on ? "true" : undefined}
                 disabled={empty}
@@ -295,7 +298,7 @@ function FeedInner() {
 
       {itemCount > 0 && !sheetOpen ? (
         <button type="button" className="sticky-cta" onClick={() => setOpen(true)}>
-          {t.viewOrder} · {formatQar(totalQar, lang)}
+          {t.viewOrder} · {formatQar(totalQar, lang,menu.settings)}
         </button>
       ) : null}
 
@@ -304,7 +307,7 @@ function FeedInner() {
         {activeSection ? ` ${sectionName(activeSection, lang)}` : ""}
       </div>
 
-      <DishDetailSheet dish={detail} diet={diet} onClose={() => setDetail(null)} />
+      {detail ? <DishDetailSheet key={`${detail.id}-${diet}`} dish={detail} diet={diet} onClose={() => setDetail(null)} /> : null}
       <CartSheet open={open} onClose={() => setOpen(false)} />
     </div>
   );

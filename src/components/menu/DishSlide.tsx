@@ -4,8 +4,9 @@ import { memo } from "react";
 import Image from "next/image";
 import type { DietFilter, Dish } from "@/catalog/menu";
 import { useLocale } from "@/i18n/locale";
-import { dishDescription, pickName, sectionName } from "@/i18n/localize";
-import { formatQar } from "@/lib/money";
+import { dishDescription, pickName, sectionName as categoryName } from "@/i18n/localize";
+import { formatQar as money } from "@/lib/money";
+import { useMenu } from "@/cms/context";
 import { hasPriceRange, imageFor, selectionForDiet, unitPrice } from "@/ordering/price";
 import type { Copy } from "@/i18n/copy";
 import { DietTags } from "./DietTags";
@@ -30,6 +31,9 @@ export const DishSlide = memo(function DishSlide({
   onOpen,
 }: Props) {
   const { lang, t } = useLocale();
+  const menu=useMenu();
+  const formatQar=(n:number,l:"en"|"ar")=>money(n,l,menu.settings);
+  const sectionName=(id:string,l:"en"|"ar")=>categoryName(id,l,menu.categories);
   const sel = selectionForDiet(dish, diet);
   const from = hasPriceRange(dish);
   const price = unitPrice(dish, sel);
@@ -62,7 +66,7 @@ export const DishSlide = memo(function DishSlide({
         ) : showPhoto ? (
           <Image
             src={photo}
-            alt={`${title}. ${description}`}
+            alt={(lang==="ar"?dish.imageAltAr:dish.imageAlt)||`${title}. ${description}`}
             fill
             sizes="(max-width: 430px) 100vw, 430px"
             priority={active}
@@ -86,10 +90,10 @@ export const DishSlide = memo(function DishSlide({
         <div className="slide-copy">
           <p
             className={
-              dish.section === "New" ? "section-label section-label-new" : "section-label"
+              menu.categories.find(c=>c.id===dish.section)?.featured ? "section-label section-label-new" : "section-label"
             }
           >
-            {dish.section === "New" ? t.newOnMenu : sectionName(dish.section, lang)}
+            {menu.categories.find(c=>c.id===dish.section)?.featured ? t.newOnMenu : sectionName(dish.section, lang)}
           </p>
           <div className="title-row">
             <h2 className="dish-name">{title}</h2>

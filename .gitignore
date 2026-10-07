@@ -16,3 +16,10 @@ SUSHINA MENU.pdf
 *.xlsx
 Berger and Gyoza/
 
+
+# Persistent local CMS state and browser reports
+data/*.db*
+.env*
+!.env.example
+test-results/
+playwright-report/

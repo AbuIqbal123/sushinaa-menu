@@ -6,8 +6,9 @@ import type { DietFilter, Dish } from "@/catalog/menu";
 import type { Choice, Extra, PieceCount, Selection } from "@/catalog/types";
 import { useCart } from "@/ordering/cart";
 import { useLocale } from "@/i18n/locale";
-import { dishDescription, fieldLabel, pickName, sectionName } from "@/i18n/localize";
-import { formatQar } from "@/lib/money";
+import { dishDescription, fieldLabel as getFieldLabel, pickName, sectionName as categoryName } from "@/i18n/localize";
+import { formatQar as money } from "@/lib/money";
+import { useMenu } from "@/cms/context";
 import { useSheetDismiss } from "@/lib/sheet-dismiss";
 import {
   configuresEach,
@@ -29,21 +30,16 @@ type Props = {
 export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
   const { add } = useCart();
   const { lang, t } = useLocale();
-  const [units, setUnits] = useState<Selection[]>([{}]);
+  const menu=useMenu();
+  const formatQar=(n:number,l:"en"|"ar")=>money(n,l,menu.settings);
+  const sectionName=(id:string,l:"en"|"ar")=>categoryName(id,l,menu.categories);
+  const [units, setUnits] = useState<Selection[]>(()=>[dish?selectionForDiet(dish,diet):{}]);
   const [activeUnit, setActiveUnit] = useState(0);
   const [justAdded, setJustAdded] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
   const addedTimer = useRef(0);
   const { sheetRef, backdropRef, trackPointer, movePointer, endPointer, requestClose } =
     useSheetDismiss(Boolean(dish), onClose);
-
-  useEffect(() => {
-    if (!dish) return;
-    setUnits([selectionForDiet(dish, diet)]);
-    setActiveUnit(0);
-    setJustAdded(false);
-    window.clearTimeout(addedTimer.current);
-  }, [dish, diet]);
 
   useEffect(() => {
     if (!dish) return;
@@ -147,7 +143,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
           ) : (
             <Image
               src={photo}
-              alt={`${pickName(current, lang)}. ${dishDescription(current, lang)}`}
+              alt={(lang==="ar"?current.imageAltAr:current.imageAlt)||`${pickName(current, lang)}. ${dishDescription(current, lang)}`}
               fill
               sizes="(max-width: 430px) 100vw, 430px"
               unoptimized
@@ -158,10 +154,10 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
         <header className="detail-kicker-row">
           <p
             className={
-              current.section === "New" ? "ticket-kicker ticket-kicker-new" : "ticket-kicker"
+              menu.categories.find(c=>c.id===current.section)?.featured ? "ticket-kicker ticket-kicker-new" : "ticket-kicker"
             }
           >
-            {current.section === "New" ? t.newOnMenu : sectionName(current.section, lang)}
+            {menu.categories.find(c=>c.id===current.section)?.featured ? t.newOnMenu : sectionName(current.section, lang)}
           </p>
           <button ref={closeRef} type="button" className="ticket-close" onClick={requestClose}>
             {t.close}
@@ -253,6 +249,9 @@ function Configurator({
   setSel: (s: Selection) => void;
 }) {
   const { lang, t } = useLocale();
+  const menu=useMenu();
+  const formatQar=(n:number,l:"en"|"ar")=>money(n,l,menu.settings);
+  const fieldLabel=(s:string,l:"en"|"ar")=>getFieldLabel(s,l,menu.fields);
   const kind = dish.kind;
   const label = (name: string) => fieldLabel(name, lang);
   const named = <T extends { id: string; name: string; nameAr?: string; spicy?: boolean }>(
@@ -330,7 +329,7 @@ function Configurator({
           />
           {kind.topping ? (
             <ChoiceRow
-              label={label(kind.topping.name)}
+              label={pickName(kind.topping,lang)}
               options={named(kind.topping.options)}
               value={sel.topping}
               onChange={(id) => setSel({ ...sel, topping: id })}
@@ -338,7 +337,7 @@ function Configurator({
           ) : null}
           {kind.style ? (
             <ChoiceRow
-              label={label(kind.style.name)}
+              label={pickName(kind.style,lang)}
               options={named(kind.style.options)}
               value={sel.style}
               onChange={(id) => setSel({ ...sel, style: id })}
@@ -378,7 +377,7 @@ function Configurator({
         <>
           {kind.flavors ? (
             <ChoiceRow
-              label={label(kind.flavors.name)}
+              label={pickName(kind.flavors,lang)}
               options={named(kind.flavors.options)}
               value={sel.flavor}
               onChange={(id) => setSel({ ...sel, flavor: id })}
@@ -413,12 +412,13 @@ function Configurator({
         ? kind.freeChoices?.map((g) => (
             <ChoiceRow
               key={g.id}
-              label={label(g.name)}
+              label={pickName(g,lang)}
               options={named(g.options)}
-              value={g.id === "cut" ? sel.cut : g.id === "style" ? sel.style : sel.topping}
+              value={sel[g.id as "cut"|"style"|"topping"|"dip"]}
               onChange={(id) => {
                 if (g.id === "cut") setSel({ ...sel, cut: id });
                 else if (g.id === "style") setSel({ ...sel, style: id });
+                else if(g.id === "dip") setSel({...sel,dip:id});
                 else setSel({ ...sel, topping: id });
               }}
             />
@@ -528,6 +528,8 @@ function PartyStarters({
   onChange: (ids: string[]) => void;
 }) {
   const { lang, t } = useLocale();
+  const menu=useMenu();
+  const fieldLabel=(s:string,l:"en"|"ar")=>getFieldLabel(s,l,menu.fields);
   const show = (opt: Choice) => pickName(opt, lang);
   if (max <= 1) {
     return (
@@ -670,6 +672,9 @@ function ExtraList({
   onToggle: (id: string) => void;
 }) {
   const { lang } = useLocale();
+  const menu=useMenu();
+  const formatQar=(n:number,l:"en"|"ar")=>money(n,l,menu.settings);
+  const fieldLabel=(s:string,l:"en"|"ar")=>getFieldLabel(s,l,menu.fields);
   return (
     <div className="choice-block">
       <div className="choice-head">
