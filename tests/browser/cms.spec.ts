@@ -76,7 +76,7 @@ test("authenticated CMS CRUD, persistence, uploads and public integration", asyn
     await page
       .getByLabel("Description (English)", { exact: true })
       .fill("CMS description");
-    await page.getByRole("button", { name: "Images", exact: true }).click();
+    await page.getByRole("tab", { name: "Images", exact: true }).click();
     await page
       .getByLabel("Photo", { exact: true })
       .setInputFiles("public/dishes/sushinaa-burger.jpg");
@@ -84,7 +84,7 @@ test("authenticated CMS CRUD, persistence, uploads and public integration", asyn
       "src",
       /^\/api\/media\//,
     );
-    await page.getByRole("button", { name: "Options", exact: true }).click();
+    await page.getByRole("tab", { name: "Options", exact: true }).click();
     await page.getByLabel("Base price", { exact: true }).fill("12.5");
     await page.getByRole("button", { name: "Save item", exact: true }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -205,7 +205,7 @@ test("authenticated CMS CRUD, persistence, uploads and public integration", asyn
     await publish();
   }
   await page.goto("/admin");
-  await page.getByRole("button", { name: "Logout", exact: true }).click();
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/login/);
   expect((await api.get("/api/admin/menu")).status()).toBe(401);
 });
@@ -285,7 +285,7 @@ test("admin controls edit, reorder and delete content and options", async ({
       has: page.locator("strong", { hasText: /^Sushinaa burger$/ }),
     });
     await burger.getByRole("button", { name: "Edit", exact: true }).click();
-    await page.getByRole("button", { name: "Options", exact: true }).click();
+    await page.getByRole("tab", { name: "Options", exact: true }).click();
     await page.getByLabel("Base price", { exact: true }).fill("54");
     await page
       .getByLabel("Additional price", { exact: true })
@@ -310,7 +310,7 @@ test("admin controls edit, reorder and delete content and options", async ({
       has: page.locator("strong", { hasText: /^Mario roll$/ }),
     });
     await mario.getByRole("button", { name: "Edit", exact: true }).click();
-    await page.getByRole("button", { name: "Options", exact: true }).click();
+    await page.getByRole("tab", { name: "Options", exact: true }).click();
     await page
       .locator(".admin-list-entry")
       .first()
@@ -327,7 +327,7 @@ test("admin controls edit, reorder and delete content and options", async ({
       expect(roll.kind.proteins[1].image).toBeTruthy();
     }
     await burger.getByRole("button", { name: "Edit", exact: true }).click();
-    await page.getByRole("button", { name: "Options", exact: true }).click();
+    await page.getByRole("tab", { name: "Options", exact: true }).click();
     await page
       .locator(".admin-list-entry")
       .first()
@@ -352,9 +352,7 @@ test("admin controls edit, reorder and delete content and options", async ({
       )
       .toBe(true);
     await page.getByRole("button", { name: "Settings", exact: true }).click();
-    await page
-      .getByRole("button", { name: "Menu wording", exact: true })
-      .click();
+    await page.getByRole("tab", { name: "Menu wording", exact: true }).click();
     await page.getByLabel("Find wording").fill("addToOrder");
     await page
       .getByRole("textbox", { name: "English", exact: true })

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { dishSchema, type CmsDish, type Category } from "@/cms/schema";
-import { TextField, Check, ImageField } from "./Fields";
+import { TextField, Check, ImageField, Tabs } from "./Fields";
 import { OptionsEditor, OtherOptions } from "./OptionsEditor";
 import { fillIds, uniqueId } from "@/cms/ids";
 export function ItemEditor({
@@ -77,18 +77,11 @@ export function ItemEditor({
           </button>
         </header>
         <div className="admin-dialog-body">
-          <div className="admin-tabs">
-            {["Details", "Images", "Options"].map((t) => (
-              <button
-                type="button"
-                key={t}
-                className={tab === t ? "active" : ""}
-                onClick={() => setTab(t)}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
+          <Tabs
+            tabs={["Details", "Images", "Options"]}
+            value={tab}
+            onChange={setTab}
+          />
           {tab === "Details" && (
             <>
               <div className="admin-grid">

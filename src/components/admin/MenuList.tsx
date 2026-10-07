@@ -92,8 +92,10 @@ export function MenuList({
                 <div className="grow">
                   <strong>{d.name}</strong>
                   <small>
-                    <bdi lang="ar">{d.nameAr}</bdi> · {minPriceOf(d)}{" "}
-                    {menu.settings.currencyEn}
+                    <bdi>
+                      {minPriceOf(d)} {menu.settings.currencyEn}
+                    </bdi>{" "}
+                    · <bdi lang="ar">{d.nameAr}</bdi>
                   </small>
                 </div>
                 <span

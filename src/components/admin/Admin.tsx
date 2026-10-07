@@ -86,10 +86,7 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
   return (
     <>
       <aside className="admin-sidebar">
-        <div className="admin-brand">
-          {menu.settings.name}
-          <small>Menu workspace</small>
-        </div>
+        <div className="admin-brand">{menu.settings.name}</div>
         {["Dashboard", "Menu", "Categories", "Settings"].map((s) => (
           <button
             key={s}
@@ -116,26 +113,13 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
             }
           }}
         >
-          Logout
+          Sign out
         </button>
       </aside>
       <div className="admin-main">
-        <header className="admin-top">
-          <span>{section}</span>
-          <span className="muted">Administrator · Live menu</span>
-        </header>
         <main className="admin-content">
           <div className="admin-heading">
-            <div>
-              <h1>{section === "Menu" ? "Your menu" : section}</h1>
-              <p className="muted">
-                {section === "Dashboard"
-                  ? "Manage what your guests see and order."
-                  : section === "Settings"
-                    ? "Restaurant details, language and menu controls."
-                    : "Organize and update your restaurant menu."}
-              </p>
-            </div>
+            <h1>{section === "Menu" ? "Your menu" : section}</h1>
             {section === "Menu" && (
               <button className="primary" onClick={() => newItem()}>
                 Add item

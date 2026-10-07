@@ -26,7 +26,6 @@ export function Login() {
         }}
       >
         <h1>Welcome back</h1>
-        <p className="muted">Sign in to manage your restaurant menu.</p>
         <label>
           Username
           <input name="username" autoComplete="username" required autoFocus />

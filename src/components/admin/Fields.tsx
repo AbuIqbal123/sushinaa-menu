@@ -153,6 +153,48 @@ export function ImageField({
     </fieldset>
   );
 }
+// Underline-on-active tabs with tablist semantics and arrow/Home/End keys.
+export function Tabs({
+  tabs,
+  value,
+  onChange,
+}: {
+  tabs: string[];
+  value: string;
+  onChange: (t: string) => void;
+}) {
+  return (
+    <div className="admin-tabs" role="tablist">
+      {tabs.map((t, i) => (
+        <button
+          type="button"
+          role="tab"
+          key={t}
+          aria-selected={t === value}
+          tabIndex={t === value ? 0 : -1}
+          onClick={() => onChange(t)}
+          onKeyDown={(e) => {
+            const last = tabs.length - 1;
+            const to = {
+              ArrowRight: i === last ? 0 : i + 1,
+              ArrowLeft: i === 0 ? last : i - 1,
+              Home: 0,
+              End: last,
+            }[e.key];
+            if (to === undefined) return;
+            e.preventDefault();
+            onChange(tabs[to]);
+            (
+              e.currentTarget.parentElement?.children[to] as HTMLElement
+            )?.focus();
+          }}
+        >
+          {t}
+        </button>
+      ))}
+    </div>
+  );
+}
 export function MoveButtons({
   index,
   length,

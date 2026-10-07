@@ -1,7 +1,14 @@
 "use client";
 import { useState } from "react";
 import type { MenuData } from "@/cms/schema";
-import { TextField, ImageField, Check, MoveButtons, moveEntry } from "./Fields";
+import {
+  TextField,
+  ImageField,
+  Check,
+  MoveButtons,
+  moveEntry,
+  Tabs,
+} from "./Fields";
 export function SettingsEditor({
   menu,
   onSave,
@@ -30,18 +37,11 @@ export function SettingsEditor({
         }
       }}
     >
-      <div className="admin-tabs">
-        {["Restaurant", "Menu wording", "Filters"].map((t) => (
-          <button
-            type="button"
-            key={t}
-            className={tab === t ? "active" : ""}
-            onClick={() => setTab(t)}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        tabs={["Restaurant", "Menu wording", "Filters"]}
+        value={tab}
+        onChange={setTab}
+      />
       {tab === "Restaurant" && (
         <div className="admin-card">
           {Object.entries(draft.settings).map(([key, value]) =>
