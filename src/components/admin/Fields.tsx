@@ -8,6 +8,7 @@ import {
   type KeyboardEvent,
   type RefObject,
 } from "react";
+import { characters } from "@/cms/limits";
 // Field-level validation messages, keyed by dotted path ("kind.sauces.0.name").
 export const FieldErrors = createContext<Record<string, string>>({});
 export function FieldError({ path, id }: { path: string; id?: string }) {
@@ -103,6 +104,7 @@ export function TextField({
   disabled = false,
   lang,
   path,
+  limit,
 }: {
   label: string;
   value: string | number;
@@ -112,6 +114,8 @@ export function TextField({
   disabled?: boolean;
   lang?: "ar";
   path?: string;
+  /** Character limit: a quiet count appears near it; nothing is cut off. */
+  limit?: number;
 }) {
   // An Arabic field mirrors as a whole: label, caret and text run right to left.
   const dir = lang === "ar" ? "rtl" : undefined;
@@ -142,8 +146,20 @@ export function TextField({
           onChange={(e) => onChange(e.target.value)}
         />
       )}
+      {limit !== undefined && <Count value={String(value)} limit={limit} />}
       {path && <FieldError path={path} id={invalid.id} />}
     </label>
+  );
+}
+// Shown from 80% of the limit; past it, in the error colour. The field error
+// carries the message, so the count itself stays out of the accessibility tree.
+function Count({ value, limit }: { value: string; limit: number }) {
+  const n = characters(value);
+  if (n < limit * 0.8) return null;
+  return (
+    <small className="admin-count" data-over={n > limit || undefined} aria-hidden="true">
+      {n} / {limit}
+    </small>
   );
 }
 export function Check({

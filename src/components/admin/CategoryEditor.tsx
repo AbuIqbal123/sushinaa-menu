@@ -13,6 +13,7 @@ import {
   SaveNote,
   focusFirstInvalid,
 } from "./Fields";
+import { categoryLimitIssues, LIMITS } from "@/cms/limits";
 import { uniqueId } from "@/cms/ids";
 export function CategoryEditor({
   category,
@@ -34,9 +35,9 @@ export function CategoryEditor({
   const dirty = JSON.stringify(draft) !== JSON.stringify(category);
   useUnsaved(dirty);
   const validate = () =>
-    categorySchema.safeParse(
-      draft.id ? draft : { ...draft, id: uniqueId(draft.name, taken) },
-    );
+    categorySchema
+      .superRefine((c, ctx) => categoryLimitIssues(c, category).forEach((i) => ctx.addIssue(i)))
+      .safeParse(draft.id ? draft : { ...draft, id: uniqueId(draft.name, taken) });
   const current = checked ? validate() : null;
   const errors =
     current && !current.success ? fieldErrors(current.error.issues) : {};
@@ -88,6 +89,7 @@ export function CategoryEditor({
             <TextField
               label="Name (English)"
               path="name"
+              limit={LIMITS.category.en}
               value={draft.name}
               onChange={(name) => setDraft({ ...draft, name })}
             />
@@ -95,6 +97,7 @@ export function CategoryEditor({
               label="Name (Arabic)"
               path="nameAr"
               lang="ar"
+              limit={LIMITS.category.ar}
               value={draft.nameAr || ""}
               onChange={(nameAr) => setDraft({ ...draft, nameAr })}
             />

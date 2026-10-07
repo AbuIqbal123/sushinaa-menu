@@ -242,6 +242,7 @@
 }
 .admin-row .grow strong {
   display: block;
+  overflow-wrap: anywhere;
 }
 .admin-actions {
   display: flex;
@@ -449,6 +450,16 @@
   align-items: center;
   justify-content: space-between;
 }
+.admin-dialog-head {
+  gap: 12px;
+}
+.admin-dialog-head h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.admin-dialog-head button {
+  flex: none;
+}
 /* The one hairline: it separates the sticky footer from content scrolling under it. */
 .admin-dialog-foot {
   border-top: 1px solid var(--line);
@@ -475,6 +486,16 @@
   border-radius: 8px;
   margin: 12px 0;
   white-space: pre-wrap;
+}
+/* Character count: quiet, at the end of the field (the left in Arabic). */
+.admin .admin-count {
+  display: block;
+  margin-top: 4px;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+.admin .admin-count[data-over] {
+  color: #a01725;
 }
 .admin .admin-field-error {
   color: #a01725;

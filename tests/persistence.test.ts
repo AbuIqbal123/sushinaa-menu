@@ -29,6 +29,13 @@ test("seed is idempotent; writes persist on a new connection; stale writes fail"
       "Persistence test",
     );
     reopened.close();
+    // The server refuses new text over a limit and saves nothing.
+    const now = await readMenu();
+    now.menu.dishes[0].name = "x".repeat(80);
+    await assert.rejects(saveMenu(now.menu, now.revision), (e: Error) =>
+      e.message.includes("Keep it to 36 characters or fewer."),
+    );
+    assert.equal((await readMenu()).revision, now.revision);
   } finally {
     db.close();
     rmSync(dir, { recursive: true, force: true });

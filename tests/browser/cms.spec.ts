@@ -670,3 +670,106 @@ test("the options photo opens full screen and closes back to the sheet", async (
   await page.locator(".viewer-close").click();
   await expect(viewer).toHaveCount(0);
 });
+
+// break-ui stress: the longest text the limits allow, an unbroken word,
+// 4-digit prices and big quantities, at the narrowest phone in both languages.
+test("the longest allowed text and 4-digit prices keep the card and sheet intact", async ({
+  page,
+  baseURL,
+}) => {
+  const headers = { Origin: baseURL! };
+  await page.request.post("/api/admin/session", {
+    headers,
+    data: { username: "admin", password: "admin" },
+  });
+  const original: MenuSnapshot = await (
+    await page.request.get("/api/admin/menu")
+  ).json();
+  const stress = structuredClone(original.menu);
+  const fill = (s: string, n: number) =>
+    s.repeat(Math.ceil(n / s.length)).slice(0, n);
+  const burger = stress.dishes.find((d) => d.id === "sushinaa-burger")!;
+  burger.name = fill("Supercalifragilistic", 36); // one unbroken word
+  burger.nameAr = fill("برجر سوشينا المقرمش الكبير ", 42);
+  burger.description = fill(
+    "Crispy shrimp, crab stick and avocado with spicy mayo. ",
+    200,
+  );
+  burger.descriptionAr = fill(
+    "روبيان مقرمش وكابوريا وأفوكادو مع مايونيز حار. ",
+    220,
+  );
+  if (burger.kind.type !== "addons") throw new Error("burger has add-ons");
+  burger.kind.priceQar = 9999;
+  burger.kind.extras[0].name = fill("Extra spicy crunchy topping ", 28);
+  burger.kind.extras[0].nameAr = fill("إضافة صوص حار مقرمش جدا ", 28);
+  burger.kind.extras[0].priceQar = 1250;
+  const section = stress.categories.find((c) => c.id === burger.section)!;
+  section.name = fill("Chef specials today ", 20);
+  section.nameAr = fill("أطباق الشيف اليوم ", 20);
+  const saved = await page.request.put("/api/admin/menu", {
+    headers,
+    data: { menu: stress, revision: original.revision },
+  });
+  expect(saved.status()).toBe(200);
+  try {
+    await page.setViewportSize({ width: 360, height: 740 });
+    await page.addInitScript(() => localStorage.clear());
+    for (const lang of ["en", "ar"]) {
+      await page.goto("/");
+      if (lang === "ar")
+        await page.getByRole("button", { name: "Switch to Arabic" }).click();
+      const card = page.locator("#dish-sushinaa-burger");
+      const name = card.locator(".dish-name");
+      const lines = await name.evaluate(
+        (e) => e.clientHeight / parseFloat(getComputedStyle(e).lineHeight),
+      );
+      expect(Math.round(lines)).toBeLessThanOrEqual(2);
+      const fits = (e: Element) => e.scrollWidth <= e.clientWidth;
+      expect(await card.locator(".slide-copy").evaluate(fits)).toBe(true);
+      await card.locator(".slide-hit").click();
+      const plus = page.locator(".detail-foot .qty-btn").last();
+      for (let i = 1; i < 20; i++) await plus.click();
+      const add = page.locator(".detail-add");
+      await expect(add).toContainText("199980");
+      // One line: no wrapping and nothing spilling out of the button.
+      expect(
+        await add.evaluate((e) => e.getBoundingClientRect().height),
+      ).toBeLessThanOrEqual(48);
+      expect(await add.evaluate(fits)).toBe(true);
+      expect(await page.locator(".detail-sheet").evaluate(fits)).toBe(true);
+      const page_ = await page.evaluate(
+        () =>
+          document.scrollingElement!.scrollWidth -
+          document.scrollingElement!.clientWidth,
+      );
+      expect(page_).toBe(0);
+      await page
+        .getByRole("button", {
+          name: lang === "en" ? "Close" : "إغلاق",
+          exact: true,
+        })
+        .click();
+    }
+    // The admin list and editor take the same text without spilling.
+    await page.goto("/admin?q=super");
+    const row = page.locator(".admin-row").first();
+    expect(await row.evaluate((e) => e.scrollWidth <= e.clientWidth)).toBe(
+      true,
+    );
+    await row.getByRole("button", { name: "Edit", exact: true }).click();
+    const head = page.locator(".admin-dialog-head");
+    expect(await head.evaluate((e) => e.scrollWidth <= e.clientWidth)).toBe(
+      true,
+    );
+    await expect(page.locator(".admin-count").first()).toHaveText("36 / 36");
+  } finally {
+    const now: MenuSnapshot = await (
+      await page.request.get("/api/admin/menu")
+    ).json();
+    await page.request.put("/api/admin/menu", {
+      headers,
+      data: { menu: original.menu, revision: now.revision },
+    });
+  }
+});

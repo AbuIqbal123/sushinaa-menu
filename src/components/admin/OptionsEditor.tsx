@@ -9,6 +9,7 @@ import {
   moveEntry,
   FieldError,
 } from "./Fields";
+import { limitOf } from "@/cms/limits";
 // One typed field description drives repeated option forms; administrators never edit JSON.
 type Value =
   string | number | boolean | undefined | Record<string, unknown> | unknown[];
@@ -416,6 +417,7 @@ function ObjectFields({
             label={f.label}
             type={f.type === "number" ? "number" : "text"}
             lang={f.key.endsWith("Ar") ? "ar" : undefined}
+            limit={f.key.startsWith("name") ? limitOf("option", f.key) : undefined}
             path={at(f.key)}
             value={(val ?? "") as string | number}
             onChange={(s) =>

@@ -2,6 +2,8 @@ import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { db, initDb } from "./db";
 import { menuSchema, type MenuSnapshot } from "./schema";
+import { menuLimitIssues } from "./limits";
+import { ZodError } from "zod";
 import shipped from "./static-images.json";
 const staticImages = new Set(shipped);
 export class ConflictError extends Error {}
@@ -64,6 +66,10 @@ export async function saveMenu(
 ): Promise<MenuSnapshot> {
   const menu = menuSchema.parse(input);
   await initDb();
+  // Only new or changed text has to fit; what is already saved stays valid.
+  const stored = await readMenu().catch(() => undefined);
+  const over = menuLimitIssues(menu, stored?.menu);
+  if (over.length) throw new ZodError(over);
   await validateImages(menu);
   const result = await db.execute({
     sql: "UPDATE menu SET content=?,revision=revision+1 WHERE id=1 AND revision=?",

@@ -19,6 +19,7 @@ import {
 import { OptionsEditor, OtherOptions } from "./OptionsEditor";
 import { FocusPicker } from "./FocusPicker";
 import { fillIds, uniqueId } from "@/cms/ids";
+import { dishLimitIssues, LIMITS } from "@/cms/limits";
 export function ItemEditor({
   item,
   categories,
@@ -51,7 +52,9 @@ export function ItemEditor({
         ready.name,
         dishes.map((d) => d.id),
       );
-    return dishSchema.safeParse(ready);
+    return dishSchema
+      .superRefine((d, ctx) => dishLimitIssues(d, item).forEach((i) => ctx.addIssue(i)))
+      .safeParse(ready);
   };
   const errors = checked ? errorsOf(validate()) : {};
   const tabsWithErrors = [...new Set(Object.keys(errors).map(tabOf))];
@@ -116,6 +119,7 @@ export function ItemEditor({
                   <TextField
                     label="Name (English)"
                     path="name"
+                    limit={LIMITS.name.en}
                     value={draft.name}
                     onChange={(name) => patch({ name })}
                   />
@@ -123,6 +127,7 @@ export function ItemEditor({
                     label="Name (Arabic)"
                     path="nameAr"
                     lang="ar"
+                    limit={LIMITS.name.ar}
                     value={draft.nameAr}
                     onChange={(nameAr) => patch({ nameAr })}
                   />
@@ -144,6 +149,7 @@ export function ItemEditor({
                   label="Description (English)"
                   path="description"
                   multiline
+                  limit={LIMITS.description.en}
                   value={draft.description}
                   onChange={(description) => patch({ description })}
                 />
@@ -152,6 +158,7 @@ export function ItemEditor({
                   path="descriptionAr"
                   lang="ar"
                   multiline
+                  limit={LIMITS.description.ar}
                   value={draft.descriptionAr || ""}
                   onChange={(descriptionAr) => patch({ descriptionAr })}
                 />
