@@ -79,7 +79,7 @@ Authenticated /admin → validated API → libSQL menu document + media
 - `src/i18n`: language handling and interpolation of database-managed wording.
 - `data/initial-menu.json`: deterministic original-menu seed, including resolved Arabic fallbacks.
 
-Category and dish order are explicit numeric fields; nested choice arrays are deliberately ordered sequences. Stable IDs preserve relationships through renames. The complete document is validated on the server and saved atomically with a revision comparison. Public reads are shared within a server request; the customer bundle never imports the migration dataset.
+Category and dish order are explicit numeric fields; nested choice arrays are deliberately ordered sequences. Stable IDs preserve relationships through renames. The complete document is validated on the server and saved atomically with a revision comparison. Public pages share one cached copy of the published menu across requests; a save refreshes it immediately (self-hosted setups with several instances refresh within five minutes). If the database is briefly unreachable, visitors keep seeing the last published menu. Admin screens always read the database. The customer bundle never imports the migration dataset, and only the menu page receives dish data.
 
 ## Checks
 
