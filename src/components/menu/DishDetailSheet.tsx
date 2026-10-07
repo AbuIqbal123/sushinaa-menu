@@ -10,12 +10,10 @@ import { dishDescription, fieldLabel, pickName, sectionName } from "@/i18n/local
 import { formatQar } from "@/lib/money";
 import { useSheetDismiss } from "@/lib/sheet-dismiss";
 import {
-  configuresEach,
   imageFor,
   isSelectionComplete,
   preferredPieces,
   selectionForDiet,
-  serializeSelection,
   unitPrice,
 } from "@/ordering/price";
 import { DietTags } from "./DietTags";
@@ -31,7 +29,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
   const { lang, t } = useLocale();
   const [units, setUnits] = useState<Selection[]>([{}]);
   const [activeUnit, setActiveUnit] = useState(0);
-  const [note, setNote] = useState("");
+  const [notes, setNotes] = useState<string[]>([""]);
   const [justAdded, setJustAdded] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
   const addedTimer = useRef(0);
@@ -43,7 +41,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
     setUnits([selectionForDiet(dish, diet)]);
     setActiveUnit(0);
     setJustAdded(false);
-    setNote("");
+    setNotes([""]);
     window.clearTimeout(addedTimer.current);
   }, [dish, diet]);
 
@@ -61,14 +59,9 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
 
   if (!dish) return null;
   const current = dish;
-  const own = configuresEach(current);
   const shown = units[Math.min(activeUnit, units.length - 1)] ?? {};
-  const total = own
-    ? units.reduce((sum, item) => sum + unitPrice(current, item), 0)
-    : unitPrice(current, units[0] ?? {}) * units.length;
-  const ready = own
-    ? units.every((item) => isSelectionComplete(current, item))
-    : isSelectionComplete(current, units[0] ?? {});
+  const total = units.reduce((sum, item) => sum + unitPrice(current, item), 0);
+  const ready = units.every((item) => isSelectionComplete(current, item));
   const photo = imageFor(current, shown);
   const patterned = photo.startsWith("/brand/");
 
@@ -85,23 +78,13 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
       const extra = Array.from({ length: count - prev.length }, () => cloneSelection(seed));
       return [...prev, ...extra];
     });
+    setNotes((prev) => Array.from({ length: count }, (_, index) => prev[index] ?? ""));
     setActiveUnit((index) => Math.min(index, count - 1));
   }
 
   function onAdd() {
     if (!ready || justAdded) return;
-    if (!own) {
-      add(current.id, units[0] ?? {}, units.length, note);
-    } else {
-      const grouped = new Map<string, { sel: Selection; count: number }>();
-      for (const item of units) {
-        const key = serializeSelection(item);
-        const found = grouped.get(key);
-        if (found) found.count += 1;
-        else grouped.set(key, { sel: item, count: 1 });
-      }
-      for (const group of grouped.values()) add(current.id, group.sel, group.count, note);
-    }
+    units.forEach((item, index) => add(current.id, item, 1, notes[index] ?? ""));
     setJustAdded(true);
     window.clearTimeout(addedTimer.current);
     addedTimer.current = window.setTimeout(() => requestClose(), 280);
@@ -182,7 +165,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
         <DietTags tags={current.tags} />
         <p className="detail-desc">{dishDescription(current, lang)}</p>
 
-        {own && units.length > 1 ? (
+        {units.length > 1 ? (
           <div className="unit-picks">
             <p className="choice-label">{t.eachOne}</p>
             <div className="choice-row" role="tablist" aria-label={t.eachOne}>
@@ -195,6 +178,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
                     type="button"
                     role="tab"
                     aria-selected={on}
+                    aria-label={t.itemNumber(index + 1)}
                     className={`opt ${on ? "opt-on" : ""} ${done ? "" : "opt-spicy"}`}
                     onClick={() => setActiveUnit(index)}
                   >
@@ -209,9 +193,9 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
         <Configurator dish={current} sel={shown} setSel={setShown} />
 
         <label className="order-comment">
-          <span>{t.comment}</span>
-          <textarea value={note} maxLength={400} rows={3} placeholder={t.commentPlaceholder}
-            onChange={(e) => setNote(e.target.value)} />
+          <span>{units.length > 1 ? `${t.comment} · ${t.itemNumber(activeUnit + 1)}` : t.comment}</span>
+          <textarea value={notes[activeUnit] ?? ""} maxLength={400} rows={3} placeholder={t.commentPlaceholder}
+            onChange={(e) => setNotes((prev) => prev.map((note, index) => index === activeUnit ? e.target.value : note))} />
         </label>
         <p className="choice-note">{t.viewOnlyNotice}</p>
         <div className="detail-foot">

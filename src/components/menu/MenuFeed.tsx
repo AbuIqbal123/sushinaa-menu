@@ -26,6 +26,8 @@ function FeedInner() {
   const [diet, setDiet] = useState<DietFilter>("all");
   const [category, setCategory] = useState<Section>("New");
   const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchButtonRef = useRef<HTMLButtonElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const currentCategory = useRef<Section>("New");
   const pendingJump = useRef<Section | null>(null);
@@ -96,7 +98,14 @@ function FeedInner() {
     };
   }, [search, syncCategory, wrapLoop]);
 
+  function closeSearch() {
+    setQuery("");
+    setSearchOpen(false);
+    searchButtonRef.current?.focus();
+  }
+
   function jumpTo(section: Section) {
+    setSearchOpen(false);
     currentCategory.current = section;
     setCategory(section);
     if (search) { pendingJump.current = section; setQuery(""); return; }
@@ -114,6 +123,14 @@ function FeedInner() {
         <img src="/brand/logotype-white.svg" alt={t.brand} className="wordmark-img" />
         <div className="chrome-actions">
           <LangButton />
+          <button ref={searchButtonRef} type="button" className="cart-btn search-toggle"
+            aria-label={t.searchMenu} aria-expanded={searchOpen} aria-controls="menu-search-panel"
+            onClick={() => searchOpen ? closeSearch() : setSearchOpen(true)}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" strokeWidth="1.6" />
+              <path d="m16 16 4.5 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          </button>
           <button type="button" className="cart-btn" onClick={() => setOpen(true)} aria-label={t.openOrder(itemCount)}>
             <TicketIcon />
             {itemCount > 0 ? <span className="cart-badge">{itemCount}</span> : null}
@@ -121,7 +138,7 @@ function FeedInner() {
         </div>
       </header>
       <div className="filter-bar" aria-label={t.filters} inert={sheetOpen ? true : undefined}>
-        <div className="menu-tools">
+        <div className={`menu-tools${searchOpen ? " search-open" : ""}`}>
           <label className="category-picker">
             <span className="sr-only">{t.category}</span>
             <select value={category} onChange={(e) => jumpTo(e.target.value as Section)}>
@@ -131,12 +148,13 @@ function FeedInner() {
               <path d="m1 1 5 5 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </label>
-          <div className="menu-search" role="search">
+          {searchOpen ? <div id="menu-search-panel" className="menu-search" role="search">
             <label htmlFor="menu-search" className="sr-only">{t.searchMenu}</label>
             <input id="menu-search" type="search" value={query} placeholder={t.searchMenu}
-              onChange={(e) => setQuery(e.target.value)} autoComplete="off" maxLength={100} />
+              onChange={(e) => setQuery(e.target.value)} autoComplete="off" maxLength={100} autoFocus
+              onKeyDown={(e) => { if (e.key === "Escape") closeSearch(); }} />
             {query ? <button type="button" onClick={() => setQuery("")} aria-label={t.clearSearch}>×</button> : null}
-          </div>
+          </div> : null}
         </div>
         <div className="chip-row chip-row-diet" aria-label={t.dietary}>
           {DIET_CHIPS.map((chip) => <button key={chip.id} type="button"
