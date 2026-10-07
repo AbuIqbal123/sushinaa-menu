@@ -2,6 +2,7 @@
 import { useRef, useState } from "react";
 import { dishSchema, type CmsDish, type Category } from "@/cms/schema";
 import { fieldErrors } from "@/cms/issues";
+import { pricingExample } from "./pricing";
 import {
   TextField,
   Check,
@@ -20,13 +21,15 @@ import { fillIds, uniqueId } from "@/cms/ids";
 export function ItemEditor({
   item,
   categories,
-  taken,
+  dishes,
+  currency,
   onSave,
   onClose,
 }: {
   item: CmsDish;
   categories: Category[];
-  taken: string[];
+  dishes: CmsDish[];
+  currency: string;
   onSave: (d: CmsDish) => Promise<void>;
   onClose: () => void;
 }) {
@@ -42,7 +45,11 @@ export function ItemEditor({
   useUnsaved(dirty);
   const validate = () => {
     const ready = fillIds(draft);
-    if (!ready.id) ready.id = uniqueId(ready.name, taken);
+    if (!ready.id)
+      ready.id = uniqueId(
+        ready.name,
+        dishes.map((d) => d.id),
+      );
     return dishSchema.safeParse(ready);
   };
   const errors = checked ? errorsOf(validate()) : {};
@@ -223,6 +230,9 @@ export function ItemEditor({
                 <OptionsEditor
                   value={draft.kind}
                   onChange={(kind) => patch({ kind: kind as CmsDish["kind"] })}
+                  example={(type) =>
+                    pricingExample(type, dishes, currency, item.id)
+                  }
                 />
                 {draft.kind.type !== "addons" && (
                   <OtherOptions

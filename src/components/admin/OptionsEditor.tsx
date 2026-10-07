@@ -1,4 +1,6 @@
 "use client";
+import { useId, useState } from "react";
+import { kindLabels } from "./pricing";
 import {
   TextField,
   Check,
@@ -68,16 +70,6 @@ const basePrice: Field = {
   key: "priceQar",
   label: "Base price",
   type: "number",
-};
-const kindLabels = {
-  simple: "Fixed price",
-  "spicy-toggle": "Regular / spicy prices",
-  "sauce-price": "Price by sauce",
-  roll: "Protein & portions",
-  "deal-box": "Starter & sushi box",
-  "party-box": "Party box",
-  "size-price": "Sizes & flavours",
-  addons: "Add-ons & included choices",
 };
 function newKind(type: string): Row {
   switch (type) {
@@ -439,23 +431,33 @@ function ObjectFields({
 export function OptionsEditor({
   value,
   onChange,
+  example,
 }: {
   value: Row;
   onChange: (v: Row) => void;
+  example: (type: string) => string;
 }) {
+  const current = String(value.type) as keyof typeof kindLabels;
+  // A kind picked but not yet confirmed; the select shows it meanwhile.
+  const [pending, setPending] = useState<keyof typeof kindLabels | null>(null);
+  const hint = useId();
+  const shown = pending ?? current;
   return (
     <>
       <label className="admin-field">
-        Pricing model
+        How it’s priced
         <select
-          value={String(value.type)}
+          aria-describedby={hint}
+          value={shown}
           onChange={(e) => {
-            if (
-              confirm(
-                "Change the pricing model? Its current option configuration will be replaced when you save.",
-              )
-            )
-              onChange(newKind(e.target.value));
+            const next = e.target.value as keyof typeof kindLabels;
+            // Untouched options (e.g. a new item) switch at once; edited ones ask.
+            const untouched =
+              JSON.stringify(value) === JSON.stringify(newKind(current));
+            if (next === current || untouched) {
+              if (next !== current) onChange(newKind(next));
+              setPending(null);
+            } else setPending(next);
           }}
         >
           {Object.entries(kindLabels).map(([id, label]) => (
@@ -465,6 +467,32 @@ export function OptionsEditor({
           ))}
         </select>
       </label>
+      <small id={hint} className="admin-hint">
+        {example(shown)}
+      </small>
+      {pending && (
+        <div className="admin-confirm" role="alert">
+          <span>
+            Switching to {kindLabels[pending]} replaces this item’s current
+            options.
+          </span>
+          <div className="admin-actions">
+            <button
+              type="button"
+              className="primary"
+              onClick={() => {
+                onChange(newKind(pending));
+                setPending(null);
+              }}
+            >
+              Switch
+            </button>
+            <button type="button" onClick={() => setPending(null)}>
+              Keep current
+            </button>
+          </div>
+        </div>
+      )}
       <ObjectFields
         value={value}
         fields={kindFields(String(value.type))}

@@ -200,7 +200,8 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
           key={item.id}
           item={item}
           categories={categories}
-          taken={menu.dishes.map((d) => d.id)}
+          dishes={menu.dishes}
+          currency={menu.settings.currencyEn}
           onClose={() => setItem(null)}
           onSave={async (d) => {
             const previous = menu.dishes.find((x) => x.id === d.id);

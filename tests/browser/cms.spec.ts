@@ -526,3 +526,46 @@ test("blocked saves show plain errors next to the fields", async ({
     "Enter a full web address, starting with https://.",
   );
 });
+test("changing how an item is priced explains itself and confirms inline", async ({
+  page,
+  baseURL,
+}) => {
+  await page.request.post("/api/admin/session", {
+    headers: { Origin: baseURL! },
+    data: { username: "admin", password: "admin" },
+  });
+  const prompts: string[] = [];
+  page.on("dialog", (d) => {
+    prompts.push(d.message());
+    void d.accept();
+  });
+  await page.goto("/admin?q=sushinaa%20burger");
+  await page
+    .locator(".admin-row")
+    .first()
+    .getByRole("button", { name: "Edit", exact: true })
+    .click();
+  await page.getByRole("tab", { name: "Options", exact: true }).click();
+  const priced = page.getByRole("combobox", { name: "How it’s priced" });
+  await expect(priced).toHaveValue("addons");
+  await expect(page.locator(".admin-hint")).toContainText("QAR");
+  await priced.selectOption("simple");
+  const confirm = page.locator(".admin-confirm");
+  await expect(confirm).toContainText("Switching to Fixed price");
+  await expect(page.locator(".admin-hint")).toHaveText(
+    "One price. Shrimp kunafa is 35 QAR.",
+  );
+  await expect(page.getByText("Paid add-ons")).toBeVisible();
+  await confirm
+    .getByRole("button", { name: "Keep current", exact: true })
+    .click();
+  await expect(priced).toHaveValue("addons");
+  await expect(confirm).toHaveCount(0);
+  await priced.selectOption("simple");
+  await confirm.getByRole("button", { name: "Switch", exact: true }).click();
+  await expect(priced).toHaveValue("simple");
+  await expect(page.getByText("Paid add-ons")).toHaveCount(0);
+  expect(prompts).toEqual([]);
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  expect(prompts).toEqual(["Discard unsaved changes?"]);
+});
