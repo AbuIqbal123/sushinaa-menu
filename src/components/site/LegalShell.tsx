@@ -18,7 +18,7 @@ export function LegalShell({
     <div className="doc-page">
       <header className="doc-nav">
         <Link href="/" className="doc-brand">
-          <img src={SITE.documentLogo} alt={t.brand} className="doc-logo" />
+          <img src={SITE.documentLogo} alt={t.brand} className="doc-logo" width={46} height={44} />
         </Link>
         <nav className="doc-links" aria-label={t.menu}>
           <Link href="/">{t.menu}</Link>

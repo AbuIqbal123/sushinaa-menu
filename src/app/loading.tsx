@@ -8,7 +8,7 @@ export default async function Loading() {
   const lang = await requestLang();
   return (
     <div className="boot" role="status" aria-live="polite">
-      <img src={SITE.logo} alt="" className="boot-logo" />
+      <img src={SITE.logo} alt="" className="boot-logo" width={100} height={96} />
       <p>{strings(lang, menu.copy).loading}</p>
     </div>
   );

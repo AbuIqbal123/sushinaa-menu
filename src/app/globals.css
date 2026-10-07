@@ -774,7 +774,7 @@ body {
 }
 
 .wordmark-img {
-  height: 26px;
+  height: 44px;
   width: auto;
   filter: drop-shadow(0 1px 8px rgba(20, 17, 15, 0.9));
 }
@@ -1197,7 +1197,8 @@ button {
   color: #f3e4c4;
 }
 .boot-logo {
-  height: 28px;
+  height: 96px;
+  width: auto;
 }
 
 .doc-page {
@@ -1216,7 +1217,7 @@ button {
   border-bottom: 1px solid rgba(20, 17, 15, 0.12);
 }
 .doc-logo {
-  height: 22px;
+  height: 44px;
   width: auto;
 }
 .doc-links {
