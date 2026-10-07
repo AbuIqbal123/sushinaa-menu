@@ -21,33 +21,41 @@ function normalizeSearch(value: string) {
 
 function FeedInner() {
   const menu = useMenu();
-  const DISHES = menu.dishes;
-  const dietChips = menu.filters.filter((f) => f.visible).sort((a, b) => a.order - b.order);
-  const sectionName = (id: Section, l: Lang) => categoryName(id, l, menu.categories);
   const { itemCount, totalQar } = useCart();
   const { lang, t } = useLocale();
+  const sectionName = (id: Section, l: Lang) => categoryName(id, l, menu.categories);
+  const dietChips = useMemo(
+    () => menu.filters.filter((f) => f.visible).sort((a, b) => a.order - b.order),
+    [menu.filters],
+  );
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<Dish | null>(null);
   const [pop, setPop] = useState(false);
   const [diet, setDiet] = useState<DietFilter>("all");
-  const [category, setCategory] = useState<Section>(menu.categories[0]?.id ?? "");
+  const firstSection = menu.categories[0]?.id ?? "";
+  const [category, setCategory] = useState<Section>(firstSection);
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const searchButtonRef = useRef<HTMLButtonElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const prevCount = useRef(itemCount);
-  const currentCategory = useRef<Section>(menu.categories[0]?.id ?? "");
+  const currentCategory = useRef<Section>(firstSection);
   const pendingJump = useRef<Section | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
   const search = normalizeSearch(query);
-  const dishes = useMemo(() => DISHES.filter((dish) => {
-    if (!matchesDiet(dish, diet)) return false;
-    if (search) {
-      const names = normalizeSearch(`${pickName(dish, "en")} ${pickName(dish, "ar")}`);
-      return search.split(" ").every((word) => names.includes(word));
-    }
-    return true;
-  }), [DISHES, diet, search]);
+  const searchNames = useMemo(
+    () => new Map(menu.dishes.map((dish) => [dish.id, normalizeSearch(`${pickName(dish, "en")} ${pickName(dish, "ar")}`)])),
+    [menu.dishes],
+  );
+  const dietDishes = useMemo(() => menu.dishes.filter((dish) => matchesDiet(dish, diet)), [menu.dishes, diet]);
+  const filledSections = useMemo(() => new Set(dietDishes.map((dish) => dish.section)), [dietDishes]);
+  const dishes = useMemo(() => {
+    if (!search) return dietDishes;
+    const words = search.split(" ");
+    return dietDishes.filter((dish) => words.every((word) => searchNames.get(dish.id)?.includes(word)));
+  }, [dietDishes, search, searchNames]);
+  // A language switch refreshes the menu data; only a different list should move the feed.
+  const listKey = useMemo(() => dishes.map((dish) => dish.id).join("|"), [dishes]);
   const sheetOpen = open || Boolean(detail);
 
   const looped = useMemo(() => [0, 1, 2].flatMap((copy) =>
@@ -92,7 +100,9 @@ function FeedInner() {
     pendingJump.current = null;
     const index = Math.max(0, dishes.findIndex((dish) => dish.section === target));
     feed.scrollTo({ top: (dishes.length + index) * feed.clientHeight, behavior: "instant" });
-  }, [dishes, search]);
+    // `dishes` is read through `listKey` so refreshed data with the same list keeps the position.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listKey, search]);
 
   useEffect(() => {
     const feed = feedRef.current;
@@ -169,7 +179,7 @@ function FeedInner() {
           <label className="category-picker">
             <span className="sr-only">{t.category}</span>
             <select value={category} onChange={(e) => jumpTo(e.target.value)}>
-              {menu.categories.map((chip) => <option key={chip.id} value={chip.id} disabled={!DISHES.some((dish) => dish.section === chip.id && matchesDiet(dish, diet))}>{sectionName(chip.id, lang)}</option>)}
+              {menu.categories.map((c) => <option key={c.id} value={c.id} disabled={!filledSections.has(c.id)}>{sectionName(c.id, lang)}</option>)}
             </select>
             <svg className="category-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none" aria-hidden="true">
               <path d="m1 1 5 5 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
