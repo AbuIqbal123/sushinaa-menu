@@ -109,14 +109,11 @@ body {
   user-select: none;
   pointer-events: none;
   transform: translateZ(0);
-  /* Tall enough that the upward crop and the slow zoom still cover the slide. */
-  height: calc(112% + 24px) !important;
-  top: calc(-10% - 12px) !important;
-  bottom: auto !important;
-}
-
-.slide.is-active .dish-photo:not(.dish-photo-pattern) {
-  animation: kenburns 22s ease-in-out infinite alternate;
+  /* Fit the portrait viewport without the previous oversize crop or zoom. */
+  height: 100% !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  object-position: center;
 }
 
 .feed.is-scrolling .dish-photo {
@@ -1456,7 +1453,7 @@ button {
 }
 
 /* Menu discovery controls stay available above the photo feed. */
-.menu-tools { display: grid; grid-template-columns: minmax(110px, .8fr) minmax(0, 1.2fr); gap: 8px; padding: 0 12px; }
+.menu-tools { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 0 12px; }
 .category-picker select, .menu-search input {
   width: 100%; min-height: 44px; border: 1px solid rgba(243,228,196,.35);
   border-radius: 12px; background: rgba(20,17,15,.92); color: #f3e4c4;
@@ -1497,3 +1494,7 @@ button {
 .search-thumbnail { width: 52px; height: 52px; flex: 0 0 52px; border-radius: 8px; object-fit: cover; background: #342c24; }
 .search-result-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .search-result { gap: 10px; }
+
+.menu-tools.search-open { grid-template-columns: minmax(110px, .8fr) minmax(0, 1.2fr); }
+.chrome-actions .search-toggle[aria-expanded="true"] { background: #d52029; color: #fff; }
+.chrome-actions .search-toggle:focus-visible { outline: 2px solid #f3e4c4; outline-offset: 2px; }
