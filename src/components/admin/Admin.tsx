@@ -13,6 +13,7 @@ import { CategoryEditor } from "./CategoryEditor";
 import { CategoryList } from "./CategoryList";
 import { MenuList } from "./MenuList";
 import { Dashboard } from "./Dashboard";
+import { confirmDiscard } from "./Fields";
 export function Admin({ initial }: { initial: MenuSnapshot }) {
   const [snapshot, setSnapshot] = useState(initial);
   const params = useSearchParams();
@@ -98,6 +99,7 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
             className={section === s ? "active" : ""}
             aria-current={section === s ? "page" : undefined}
             onClick={() => {
+              if (s === section || !confirmDiscard()) return;
               setSection(s);
               setError("");
             }}
@@ -110,6 +112,7 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
         </a>
         <button
           onClick={async () => {
+            if (!confirmDiscard()) return;
             try {
               const r = await fetch("/api/admin/session", { method: "DELETE" });
               if (!r.ok) throw new Error("Unable to sign out");

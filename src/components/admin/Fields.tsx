@@ -1,5 +1,37 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState, type KeyboardEvent, type RefObject } from "react";
+// Open a <dialog> modally; on unmount, return focus to whatever opened it.
+export function useModal(ref: RefObject<HTMLDialogElement | null>) {
+  const [opener] = useState(() => document.activeElement as HTMLElement | null);
+  useEffect(() => {
+    ref.current?.showModal();
+    return () => opener?.focus();
+  }, [ref, opener]);
+}
+// Editors with unsaved edits register here: the page warns before unloading,
+// and confirmDiscard() asks before an in-app close or navigation drops them.
+let unsaved = 0;
+export function useUnsaved(dirty: boolean) {
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    unsaved++;
+    addEventListener("beforeunload", warn);
+    return () => {
+      unsaved--;
+      removeEventListener("beforeunload", warn);
+    };
+  }, [dirty]);
+}
+export const confirmDiscard = () =>
+  unsaved === 0 || confirm("Discard unsaved changes?");
+// Cmd/Ctrl+S saves the form instead of the browser's "Save page".
+export function saveShortcut(e: KeyboardEvent<HTMLFormElement>) {
+  if (e.key === "s" && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault();
+    e.currentTarget.requestSubmit();
+  }
+}
 export function TextField({
   label,
   value,

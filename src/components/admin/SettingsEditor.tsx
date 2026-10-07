@@ -8,6 +8,8 @@ import {
   MoveButtons,
   moveEntry,
   Tabs,
+  useUnsaved,
+  saveShortcut,
 } from "./Fields";
 const settingLabels: Record<string, string> = {
   name: "Restaurant name (English)",
@@ -37,9 +39,11 @@ export function SettingsEditor({
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  useUnsaved(JSON.stringify(draft) !== JSON.stringify(menu));
   return (
     <form
       className="admin-settings"
+      onKeyDown={saveShortcut}
       onSubmit={async (e) => {
         e.preventDefault();
         setBusy(true);

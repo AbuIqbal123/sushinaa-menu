@@ -1,7 +1,14 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { categorySchema, type Category } from "@/cms/schema";
-import { TextField, Check } from "./Fields";
+import {
+  TextField,
+  Check,
+  useModal,
+  useUnsaved,
+  confirmDiscard,
+  saveShortcut,
+} from "./Fields";
 import { uniqueId } from "@/cms/ids";
 export function CategoryEditor({
   category,
@@ -18,19 +25,22 @@ export function CategoryEditor({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    ref.current?.showModal();
-  }, []);
+  useModal(ref);
+  useUnsaved(JSON.stringify(draft) !== JSON.stringify(category));
+  const close = () => {
+    if (!busy && confirmDiscard()) onClose();
+  };
   return (
     <dialog
       ref={ref}
       onCancel={(e) => {
         e.preventDefault();
-        if (!busy) onClose();
+        close();
       }}
       aria-labelledby="category-title"
     >
       <form
+        onKeyDown={saveShortcut}
         onSubmit={async (e) => {
           e.preventDefault();
           const r = categorySchema.safeParse(
@@ -53,7 +63,7 @@ export function CategoryEditor({
       >
         <header className="admin-dialog-head">
           <h2 id="category-title">{category.name || "New category"}</h2>
-          <button type="button" disabled={busy} onClick={onClose}>
+          <button type="button" disabled={busy} onClick={close}>
             Close
           </button>
         </header>

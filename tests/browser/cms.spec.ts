@@ -433,3 +433,48 @@ test("menu filters combine and survive a reload through the URL", async ({
     .click();
   await expect(page).toHaveURL(/\/admin$/);
 });
+test("unsaved edits are guarded and focus returns to the opener", async ({
+  page,
+  baseURL,
+}) => {
+  await page.request.post("/api/admin/session", {
+    headers: { Origin: baseURL! },
+    data: { username: "admin", password: "admin" },
+  });
+  const prompts: string[] = [];
+  let answer = false;
+  page.on("dialog", async (d) => {
+    prompts.push(d.type());
+    await (answer ? d.accept() : d.dismiss());
+  });
+  await page.goto("/admin?q=burger");
+  const edit = page
+    .locator(".admin-row")
+    .first()
+    .getByRole("button", { name: "Edit", exact: true });
+  // A clean editor closes without asking, and focus goes back to "Edit".
+  await edit.click();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(edit).toBeFocused();
+  expect(prompts).toEqual([]);
+  // A dirty editor asks first; declining keeps the edit.
+  await edit.click();
+  await page.getByLabel("Name (English)").fill("Changed name");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByLabel("Name (English)")).toHaveValue("Changed name");
+  expect(prompts).toEqual(["confirm"]);
+  answer = true;
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  // Unsaved settings block in-app navigation and warn before unload.
+  answer = false;
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByLabel("Tagline").fill("Unsaved tagline");
+  await page.getByRole("button", { name: "Menu", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+  expect(prompts).toEqual(["confirm", "confirm", "confirm"]);
+  await page.close({ runBeforeUnload: true });
+  await expect.poll(() => prompts.at(-1)).toBe("beforeunload");
+});

@@ -1,7 +1,16 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { dishSchema, type CmsDish, type Category } from "@/cms/schema";
-import { TextField, Check, ImageField, Tabs } from "./Fields";
+import {
+  TextField,
+  Check,
+  ImageField,
+  Tabs,
+  useModal,
+  useUnsaved,
+  confirmDiscard,
+  saveShortcut,
+} from "./Fields";
 import { OptionsEditor, OtherOptions } from "./OptionsEditor";
 import { fillIds, uniqueId } from "@/cms/ids";
 export function ItemEditor({
@@ -22,20 +31,23 @@ export function ItemEditor({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    dialog.current?.showModal();
-  }, []);
+  useModal(dialog);
+  useUnsaved(JSON.stringify(draft) !== JSON.stringify(item));
+  const close = () => {
+    if (!busy && confirmDiscard()) onClose();
+  };
   const patch = (v: Partial<CmsDish>) => setDraft((d) => ({ ...d, ...v }));
   return (
     <dialog
       ref={dialog}
       onCancel={(e) => {
         e.preventDefault();
-        if (!busy && confirm("Discard unsaved changes?")) onClose();
+        close();
       }}
       aria-labelledby="editor-title"
     >
       <form
+        onKeyDown={saveShortcut}
         onSubmit={async (e) => {
           e.preventDefault();
           const ready = fillIds(draft);
@@ -66,13 +78,7 @@ export function ItemEditor({
       >
         <header className="admin-dialog-head">
           <h2 id="editor-title">{item.name || "New menu item"}</h2>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              if (confirm("Discard unsaved changes?")) onClose();
-            }}
-          >
+          <button type="button" disabled={busy} onClick={close}>
             Close
           </button>
         </header>
