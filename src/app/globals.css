@@ -794,10 +794,6 @@ body {
   touch-action: manipulation;
 }
 
-.cart-btn-pop {
-  animation: pop 0.42s ease;
-}
-
 .cart-badge {
   position: absolute;
   top: -4px;
@@ -873,18 +869,6 @@ body {
   50% {
     transform: translateY(-3px);
     opacity: 1;
-  }
-}
-
-@keyframes pop {
-  0% {
-    transform: scale(1);
-  }
-  40% {
-    transform: scale(1.16);
-  }
-  100% {
-    transform: scale(1);
   }
 }
 
@@ -1146,7 +1130,6 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .swipe-hint,
   .swipe-chevron,
-  .cart-btn-pop,
   .ticket,
   .detail-sheet {
     animation: none;
