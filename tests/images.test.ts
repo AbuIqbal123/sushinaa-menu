@@ -34,22 +34,37 @@ test("options photo and focal point are optional and range-checked", () => {
     }).success,
   );
 });
-test("card keeps the tall photo; the sheet prefers variant, then options photo", () => {
-  const dish = {
-    ...burger,
+test("the card shows the card photo; the sheet shows the full photo behind it", () => {
+  const plain = { ...burger, optionsImage: undefined, imageFocus: undefined };
+  assert.equal(imageFor(plain, {}), burger.image);
+  assert.equal(sheetImageFor(plain, {}), burger.image);
+  const upload = { ...plain, optionsImage: "/api/media/wide.webp" };
+  assert.equal(sheetImageFor(upload, {}), "/api/media/wide.webp");
+  // A roll variant brings its own pair, never the dish's full photo.
+  const chicken = { protein: "chicken" };
+  assert.equal(imageFor(roll, chicken), "/dishes/card/mario-roll-chicken.webp");
+  assert.equal(sheetImageFor(roll, chicken), "/dishes/mario-roll-chicken.jpg");
+  const proteins = roll.kind.type === "roll" ? roll.kind.proteins : [];
+  const uploaded = {
+    ...roll,
     optionsImage: "/api/media/wide.webp",
-    imageFocus: { x: 30, y: 60 },
-  };
-  assert.equal(imageFor(dish, {}), burger.image);
-  assert.equal(sheetImageFor(dish, {}), "/api/media/wide.webp");
-  assert.equal(sheetImageFor(burger, {}), burger.image);
-  const chicken = { ...roll, optionsImage: "/api/media/wide.webp" };
-  assert.equal(
-    sheetImageFor(chicken, { protein: "chicken" }),
-    "/dishes/mario-roll-chicken.jpg",
-  );
-  // The focal point belongs to the card photo only.
-  assert.equal(photoPosition(dish, dish.image), "30% 60%");
+    kind: {
+      ...roll.kind,
+      proteins: proteins.map((p) => ({
+        ...p,
+        image: "/api/media/new.webp",
+        optionsImage: undefined,
+      })),
+    },
+  } as typeof roll;
+  assert.equal(sheetImageFor(uploaded, chicken), "/api/media/new.webp");
+});
+test("the focal point applies to the dish's own card photo only", () => {
+  const dish = { ...burger, optionsImage: "/api/media/wide.webp" };
+  assert.equal(photoPosition(dish, dish.image), "17.3% 50%");
   assert.equal(photoPosition(dish, "/api/media/wide.webp"), undefined);
-  assert.equal(photoPosition(burger, burger.image), undefined);
+  assert.equal(
+    photoPosition({ ...dish, imageFocus: undefined }, dish.image),
+    undefined,
+  );
 });

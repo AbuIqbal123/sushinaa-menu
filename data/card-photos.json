@@ -1,0 +1,133 @@
+{
+  "cards": {
+    "/dishes/avocado-roll.jpg": "/dishes/card/avocado-roll.webp",
+    "/dishes/beef-fried-rice.jpg": "/dishes/card/beef-fried-rice.webp",
+    "/dishes/beef-noodles.jpg": "/dishes/card/beef-noodles.webp",
+    "/dishes/blue.jpg": "/dishes/card/blue.webp",
+    "/dishes/carrot-maki.jpg": "/dishes/card/carrot-maki.webp",
+    "/dishes/cereal-killer-roll.jpg": "/dishes/card/cereal-killer-roll.webp",
+    "/dishes/cheese-maki.jpg": "/dishes/card/cheese-maki.webp",
+    "/dishes/chicken-fried-rice.jpg": "/dishes/card/chicken-fried-rice.webp",
+    "/dishes/chicken-lettuce-roll.jpg": "/dishes/card/chicken-lettuce-roll.webp",
+    "/dishes/chicken-mayo-roll.jpg": "/dishes/card/chicken-mayo-roll.webp",
+    "/dishes/chicken-noodles.jpg": "/dishes/card/chicken-noodles.webp",
+    "/dishes/chicken.jpg": "/dishes/card/chicken.webp",
+    "/dishes/chips-oman-roll.jpg": "/dishes/card/chips-oman-roll.webp",
+    "/dishes/classic-cherry-roll-chicken.jpg": "/dishes/card/classic-cherry-roll-chicken.webp",
+    "/dishes/classic-cherry-roll-shrimp.jpg": "/dishes/card/classic-cherry-roll-shrimp.webp",
+    "/dishes/crab-california-roll.jpg": "/dishes/card/crab-california-roll.webp",
+    "/dishes/crab-rangoon.jpg": "/dishes/card/crab-rangoon.webp",
+    "/dishes/crabsticks-roll-crispy.jpg": "/dishes/card/crabsticks-roll-crispy.webp",
+    "/dishes/crabsticks-roll.jpg": "/dishes/card/crabsticks-roll.webp",
+    "/dishes/crazy-salmon-roll.jpg": "/dishes/card/crazy-salmon-roll.webp",
+    "/dishes/crunchy-crab-roll.jpg": "/dishes/card/crunchy-crab-roll.webp",
+    "/dishes/crunchy-crab-salad.jpg": "/dishes/card/crunchy-crab-salad.webp",
+    "/dishes/crustacean-crispy-roll.jpg": "/dishes/card/crustacean-crispy-roll.webp",
+    "/dishes/csc-roll.jpg": "/dishes/card/csc-roll.webp",
+    "/dishes/cucumber-maki.jpg": "/dishes/card/cucumber-maki.webp",
+    "/dishes/extra-sauce.jpg": "/dishes/card/extra-sauce.webp",
+    "/dishes/fire-crush-roll.jpg": "/dishes/card/fire-crush-roll.webp",
+    "/dishes/flamin-roll-chicken.jpg": "/dishes/card/flamin-roll-chicken.webp",
+    "/dishes/flamin-roll-shrimp.jpg": "/dishes/card/flamin-roll-shrimp.webp",
+    "/dishes/fried-shrimp-roll.jpg": "/dishes/card/fried-shrimp-roll.webp",
+    "/dishes/fusion-roll.jpg": "/dishes/card/fusion-roll.webp",
+    "/dishes/glazed-honey-chicken.jpg": "/dishes/card/glazed-honey-chicken.webp",
+    "/dishes/glazed-honey-salmon.jpg": "/dishes/card/glazed-honey-salmon.webp",
+    "/dishes/guac-roll.jpg": "/dishes/card/guac-roll.webp",
+    "/dishes/gyoza-chicken.jpg": "/dishes/card/gyoza-chicken.webp",
+    "/dishes/gyoza-seafood.jpg": "/dishes/card/gyoza-seafood.webp",
+    "/dishes/gyoza-shrimp.jpg": "/dishes/card/gyoza-shrimp.webp",
+    "/dishes/hba-chicken-roll.jpg": "/dishes/card/hba-chicken-roll.webp",
+    "/dishes/lettuce-roll.jpg": "/dishes/card/lettuce-roll.webp",
+    "/dishes/mario-roll-chicken.jpg": "/dishes/card/mario-roll-chicken.webp",
+    "/dishes/mario-roll-shrimp.jpg": "/dishes/card/mario-roll-shrimp.webp",
+    "/dishes/mario-roll-vegi.jpg": "/dishes/card/mario-roll-vegi.webp",
+    "/dishes/october-roll-chicken.jpg": "/dishes/card/october-roll-chicken.webp",
+    "/dishes/october-roll-shrimp.jpg": "/dishes/card/october-roll-shrimp.webp",
+    "/dishes/philadelphia-roll.jpg": "/dishes/card/philadelphia-roll.webp",
+    "/dishes/salad-roll.jpg": "/dishes/card/salad-roll.webp",
+    "/dishes/salt-edamame.jpg": "/dishes/card/salt-edamame.webp",
+    "/dishes/shrimp-dynamite-roll.jpg": "/dishes/card/shrimp-dynamite-roll.webp",
+    "/dishes/shrimp-kunafa.jpg": "/dishes/card/shrimp-kunafa.webp",
+    "/dishes/shrimp-mayo-mixture.jpg": "/dishes/card/shrimp-mayo-mixture.webp",
+    "/dishes/shrimp-noodles.jpg": "/dishes/card/shrimp-noodles.webp",
+    "/dishes/shrimp-tempura.jpg": "/dishes/card/shrimp-tempura.webp",
+    "/dishes/shrimp.jpg": "/dishes/card/shrimp.webp",
+    "/dishes/spicy-edamame.jpg": "/dishes/card/spicy-edamame.webp",
+    "/dishes/spicy-mango-salad.jpg": "/dishes/card/spicy-mango-salad.webp",
+    "/dishes/tempura-california-roll.jpg": "/dishes/card/tempura-california-roll.webp",
+    "/dishes/tempura-roll.jpg": "/dishes/card/tempura-roll.webp",
+    "/dishes/tiger-roll-chicken.jpg": "/dishes/card/tiger-roll-chicken.webp",
+    "/dishes/tiger-roll-salmon.jpg": "/dishes/card/tiger-roll-salmon.webp",
+    "/dishes/tiger-roll-shrimp.jpg": "/dishes/card/tiger-roll-shrimp.webp",
+    "/dishes/vegi-fried-rice.jpg": "/dishes/card/vegi-fried-rice.webp",
+    "/dishes/vegi-roll.jpg": "/dishes/card/vegi-roll.webp",
+    "/dishes/volcanic-shrimp-roll.jpg": "/dishes/card/volcanic-shrimp-roll.webp"
+  },
+  "focus": {
+    "/dishes/agr-sushi-burrito.jpg": {
+      "x": 81.7,
+      "y": 50
+    },
+    "/dishes/chicken-deal-box.jpg": {
+      "x": 68.5,
+      "y": 50
+    },
+    "/dishes/chicken-poke-bowl.jpg": {
+      "x": 65.4,
+      "y": 50
+    },
+    "/dishes/crispy-calamari.jpg": {
+      "x": 65.0,
+      "y": 50
+    },
+    "/dishes/crispy-rice-crab.jpg": {
+      "x": 65.0,
+      "y": 50
+    },
+    "/dishes/gyoza-beef.jpg": {
+      "x": 69.9,
+      "y": 50
+    },
+    "/dishes/mini-sushinaa-box.jpg": {
+      "x": 56.0,
+      "y": 50
+    },
+    "/dishes/seafood-deal-box.jpg": {
+      "x": 63.4,
+      "y": 50
+    },
+    "/dishes/shrimp-deal-box.jpg": {
+      "x": 70.6,
+      "y": 50
+    },
+    "/dishes/shrimp-fried-rice.jpg": {
+      "x": 59.8,
+      "y": 50
+    },
+    "/dishes/shrimp-poke-bowl.jpg": {
+      "x": 66.0,
+      "y": 50
+    },
+    "/dishes/sushinaa-box-regular.jpg": {
+      "x": 47.5,
+      "y": 50
+    },
+    "/dishes/sushinaa-burger.jpg": {
+      "x": 17.3,
+      "y": 50
+    },
+    "/dishes/vegi-deal-box.jpg": {
+      "x": 54.9,
+      "y": 50
+    },
+    "/dishes/vegi-noodles.jpg": {
+      "x": 77.5,
+      "y": 50
+    },
+    "/dishes/vegi-poke-bowl.jpg": {
+      "x": 61.9,
+      "y": 50
+    }
+  }
+}

@@ -10,6 +10,7 @@ import {
   selectionLabel,
 } from "../src/ordering/price";
 import { strings } from "../src/i18n/copy";
+import { withCardPhotos } from "../src/cms/card-photos";
 const original = JSON.parse(
   readFileSync("tests/fixtures/original-menu.json", "utf8"),
 );
@@ -28,7 +29,8 @@ function contains(actual: unknown, expected: unknown, path = "menu") {
 }
 test("all 74 original dishes, nested options, prices, descriptions and images are preserved exactly", () => {
   assert.equal(seed.dishes.length, 74);
-  contains(seed.dishes, original.dishes);
+  // Photos moved to their 9:16 card crops; the originals stay as full photos.
+  contains(seed.dishes, withCardPhotos(original).menu.dishes);
   assert.deepEqual(
     seed.categories.map((c) => ({ id: c.id, label: c.name })),
     original.categories,
@@ -41,7 +43,7 @@ test("all 74 original dishes, nested options, prices, descriptions and images ar
     if (Array.isArray(v)) v.forEach(walk);
     else if (v && typeof v === "object")
       for (const [k, x] of Object.entries(v)) {
-        if (k === "image") assert.ok(existsSync("public" + x), String(x));
+        if (k === "image" || k === "optionsImage") assert.ok(existsSync("public" + x), String(x));
         else walk(x);
       }
   };

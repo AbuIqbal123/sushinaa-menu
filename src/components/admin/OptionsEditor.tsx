@@ -221,6 +221,8 @@ function ObjectFields({
   const at = (key: string | number) => (path ? `${path}.${key}` : `${key}`);
   const set = (key: string, v: Value) => {
     const next = { ...value };
+    // An option's full photo belongs to its card photo; a new one replaces both.
+    if (key === "image") delete next.optionsImage;
     if (v === undefined) delete next[key];
     else next[key] = v;
     onChange(next);

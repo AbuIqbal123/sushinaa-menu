@@ -212,13 +212,12 @@ test("authenticated CMS CRUD, persistence, uploads and public integration", asyn
 test("public menu works at mobile and desktop widths in both languages", async ({
   page,
 }) => {
+  // Start every visit with an empty order. Clearing storage from the test
+  // races the cart's own writes; clearing before any page script runs can't.
+  await page.addInitScript(() => localStorage.clear());
   for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 844 });
-    // Start each width with an empty order: clearing storage at the end of the
-    // previous pass can race the cart's own write after the language switch.
     await page.goto("/");
-    await page.evaluate(() => localStorage.clear());
-    await page.reload();
     await expect(page.locator(".chrome-header")).toBeVisible();
     await expect(page.locator("#dish-sushinaa-burger")).toBeVisible();
     await page.locator("#dish-sushinaa-burger .slide-hit").click();
@@ -324,7 +323,8 @@ test("admin controls edit, reorder and delete content and options", async ({
     const roll = (await saved()).menu.dishes.find(
       (d) => d.id === "mario-roll",
     )!;
-    expect(roll.image).toBe("/dishes/mario-roll-chicken.jpg");
+    expect(roll.image).toBe("/dishes/card/mario-roll-chicken.webp");
+    expect(roll.optionsImage).toBe("/dishes/mario-roll-chicken.jpg");
     if (roll.kind.type === "roll") {
       expect(roll.kind.proteins[0].image).toBeUndefined();
       expect(roll.kind.proteins[1].image).toBeTruthy();
@@ -592,19 +592,18 @@ test("card focal point and options photo round-trip to the public menu", async (
     const focus = page.getByRole("slider", { name: "Card focal point" });
     await expect(focus).toHaveAttribute(
       "aria-valuetext",
-      "50% across, 50% down",
+      "17.3% across, 50% down",
     );
     await focus.focus();
-    await page.keyboard.press("Shift+ArrowLeft");
-    await page.keyboard.press("Shift+ArrowLeft");
+    await page.keyboard.press("Shift+ArrowRight");
     await page.keyboard.press("ArrowDown");
     await expect(focus).toHaveAttribute(
       "aria-valuetext",
-      "30% across, 51% down",
+      "27% across, 51% down",
     );
     await expect(page.locator(".admin-focus-preview img")).toHaveCSS(
       "object-position",
-      "30% 51%",
+      "27% 51%",
     );
     await page
       .getByLabel("Options photo", { exact: true })
@@ -618,12 +617,12 @@ test("card focal point and options photo round-trip to the public menu", async (
       await page.request.get("/api/admin/menu")
     ).json();
     const burger = saved.menu.dishes.find((d) => d.id === "sushinaa-burger")!;
-    expect(burger.imageFocus).toEqual({ x: 30, y: 51 });
+    expect(burger.imageFocus).toEqual({ x: 27, y: 51 });
     expect(burger.optionsImage).toMatch(/^\/api\/media\//);
     expect(burger.image).toBe("/dishes/sushinaa-burger.jpg");
     await page.goto("/");
     const card = page.locator("#dish-sushinaa-burger img.dish-photo");
-    await expect(card).toHaveCSS("object-position", "30% 51%");
+    await expect(card).toHaveCSS("object-position", "27% 51%");
     await page.locator("#dish-sushinaa-burger .slide-hit").click();
     await expect(page.locator(".detail-photo")).toHaveAttribute(
       "src",

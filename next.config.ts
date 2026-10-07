@@ -32,9 +32,6 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: process.env.SUSHINAA_PREVIEW_HOST
     ? [process.env.SUSHINAA_PREVIEW_HOST]
     : [],
-  outputFileTracingIncludes: {
-    "/api/admin/menu": ["./public/dishes/**/*", "./public/brand/**/*"],
-  },
   poweredByHeader: false,
   images: {
     unoptimized: true,

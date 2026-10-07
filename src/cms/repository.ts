@@ -1,9 +1,9 @@
-import { access } from "node:fs/promises";
-import { join } from "node:path";
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { db, initDb } from "./db";
 import { menuSchema, type MenuSnapshot } from "./schema";
+import shipped from "./static-images.json";
+const staticImages = new Set(shipped);
 export class ConflictError extends Error {}
 export class ContentError extends Error {}
 async function validateImages(input: unknown) {
@@ -30,13 +30,8 @@ async function validateImages(input: unknown) {
         });
         if (!result.rows.length)
           throw new ContentError(`Image does not exist: ${path}`);
-      } else {
-        try {
-          await access(join(process.cwd(), "public", path));
-        } catch {
-          throw new ContentError(`Image does not exist: ${path}`);
-        }
-      }
+      } else if (!staticImages.has(path))
+        throw new ContentError(`Image does not exist: ${path}`);
     }),
   );
 }

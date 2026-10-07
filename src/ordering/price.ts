@@ -282,23 +282,26 @@ export function selectionLabel(dish: Dish, sel: Selection, lang: Lang, t:Copy): 
   return bits.join(" · ");
 }
 
-function variantImage(dish: Dish, sel: Selection): string | undefined {
+/** Whose photo is shown: the chosen roll style's or protein's, else the dish's own. */
+function photoOf(dish: Dish, sel: Selection): { image: string; optionsImage?: string } {
   if (dish.kind.type === "roll") {
     const style = dish.kind.style?.options.find((o) => o.id === sel.style);
-    if (style?.image) return style.image;
     const protein = dish.kind.proteins.find((p) => p.id === sel.protein);
-    if (protein?.image) return protein.image;
+    for (const o of [style, protein])
+      if (o?.image) return { image: o.image, optionsImage: o.optionsImage };
   }
+  return dish;
 }
 
-/** The card photo: the chosen variant's, else the dish's tall photo. */
+/** The card photo (9:16 where one exists). */
 export function imageFor(dish: Dish, sel: Selection): string {
-  return variantImage(dish, sel) ?? dish.image;
+  return photoOf(dish, sel).image;
 }
 
-/** The options-sheet photo: the variant's, else the wide options photo, else the card photo. */
+/** The options-sheet and viewer photo: the full original or an uploaded options photo, else the card photo. */
 export function sheetImageFor(dish: Dish, sel: Selection): string {
-  return variantImage(dish, sel) ?? dish.optionsImage ?? dish.image;
+  const photo = photoOf(dish, sel);
+  return photo.optionsImage ?? photo.image;
 }
 
 /** object-position for a photo: the dish's focal point applies to its own card photo only. */

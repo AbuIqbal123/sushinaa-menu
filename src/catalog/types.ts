@@ -18,6 +18,8 @@ export type Choice = {
   name: string;
   nameAr?: string;
   image?: string;
+  /** Full photo behind `image` for the options sheet and viewer. */
+  optionsImage?: string;
   spicy?: boolean;
   veg?: boolean;
 };
@@ -42,6 +44,8 @@ export type Protein = {
   name: string;
   nameAr?: string;
   image?: string;
+  /** Full photo behind `image` for the options sheet and viewer. */
+  optionsImage?: string;
   veg?: boolean;
   spicy?: boolean;
   seafood?: boolean;
@@ -111,11 +115,11 @@ export type Dish = {
   section: Section;
   description: string;
   descriptionAr?: string;
-  /** Tall card photo (9:16). */
+  /** Card photo. A 9:16 photo fills the card; any other shape is cropped at `imageFocus`. */
   image: string;
-  /** Optional wide photo for the options sheet; falls back to `image`. */
+  /** Full photo for the options sheet and viewer (the uncropped original or an upload); falls back to `image`. */
   optionsImage?: string;
-  /** Focal point of `image` in percent; the card crop keeps it in view. */
+  /** Focal point of `image` in percent; the card crop keeps it in view. Unset is the centre. */
   imageFocus?: { x: number; y: number };
   tags: Tag[];
   kind: DishKind;

@@ -203,7 +203,7 @@ export function ItemEditor({
                 <ImageField
                   label="Card photo (tall)"
                   path="image"
-                  hint="Best at 1080 × 1920 (9:16)."
+                  hint="Best at 1080 × 1920 (9:16). Other shapes are cropped around the focal point."
                   value={draft.image}
                   // A new photo has its own composition: start from the centre.
                   onChange={(image) =>
@@ -221,7 +221,7 @@ export function ItemEditor({
                   label="Options photo"
                   path="optionsImage"
                   optional
-                  hint="Wide, shown above the options: about 1290 × 504. Without one, the options use the card photo."
+                  hint="The full photo, shown above the options. Wide works best (about 1290 × 504). Without one, the options use the card photo."
                   value={draft.optionsImage}
                   onChange={(optionsImage) => patch({ optionsImage })}
                 />

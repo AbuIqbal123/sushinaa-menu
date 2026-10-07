@@ -29,6 +29,7 @@ const choice = z
   .object({
     ...named,
     image: image.optional(),
+    optionsImage: image.optional(),
     spicy: z.boolean().optional(),
     veg: z.boolean().optional(),
   })
@@ -53,6 +54,7 @@ const protein = z
   .object({
     ...named,
     image: image.optional(),
+    optionsImage: image.optional(),
     spicy: z.boolean().optional(),
     veg: z.boolean().optional(),
     seafood: z.boolean().optional(),
