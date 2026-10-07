@@ -1,6 +1,6 @@
 "use client";
-import { useMenu } from "@/cms/context";
 
+import { useMenu } from "@/cms/context";
 import Link from "next/link";
 import { LangButton, useLocale } from "@/i18n/locale";
 
@@ -12,7 +12,7 @@ export function LegalShell({
   title: string;
   children: React.ReactNode;
 }) {
- const {settings:SITE}=useMenu();
+  const { settings: SITE } = useMenu();
   const { t } = useLocale();
   return (
     <div className="doc-page">

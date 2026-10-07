@@ -4,7 +4,7 @@ import { memo } from "react";
 import Image from "next/image";
 import type { DietFilter, Dish } from "@/catalog/menu";
 import { useLocale } from "@/i18n/locale";
-import { dishDescription, pickName, sectionName as categoryName } from "@/i18n/localize";
+import { dishDescription, pickName, sectionName as categoryName, type Lang } from "@/i18n/localize";
 import { formatQar as money } from "@/lib/money";
 import { useMenu } from "@/cms/context";
 import { hasPriceRange, imageFor, selectionForDiet, unitPrice } from "@/ordering/price";
@@ -31,9 +31,10 @@ export const DishSlide = memo(function DishSlide({
   onOpen,
 }: Props) {
   const { lang, t } = useLocale();
-  const menu=useMenu();
-  const formatQar=(n:number,l:"en"|"ar")=>money(n,l,menu.settings);
-  const sectionName=(id:string,l:"en"|"ar")=>categoryName(id,l,menu.categories);
+  const menu = useMenu();
+  const formatQar = (n: number, l: Lang) => money(n, l, menu.settings);
+  const sectionName = (id: string, l: Lang) => categoryName(id, l, menu.categories);
+  const featured = menu.categories.find((c) => c.id === dish.section)?.featured;
   const sel = selectionForDiet(dish, diet);
   const from = hasPriceRange(dish);
   const price = unitPrice(dish, sel);
@@ -90,10 +91,10 @@ export const DishSlide = memo(function DishSlide({
         <div className="slide-copy">
           <p
             className={
-              menu.categories.find(c=>c.id===dish.section)?.featured ? "section-label section-label-new" : "section-label"
+              featured ? "section-label section-label-new" : "section-label"
             }
           >
-            {menu.categories.find(c=>c.id===dish.section)?.featured ? t.newOnMenu : sectionName(dish.section, lang)}
+            {featured ? t.newOnMenu : sectionName(dish.section, lang)}
           </p>
           <div className="title-row">
             <h2 className="dish-name">{title}</h2>

@@ -6,7 +6,13 @@ import type { DietFilter, Dish } from "@/catalog/menu";
 import type { Choice, Extra, PieceCount, Selection } from "@/catalog/types";
 import { useCart } from "@/ordering/cart";
 import { useLocale } from "@/i18n/locale";
-import { dishDescription, fieldLabel as getFieldLabel, pickName, sectionName as categoryName } from "@/i18n/localize";
+import {
+  dishDescription,
+  fieldLabel as getFieldLabel,
+  pickName,
+  sectionName as categoryName,
+  type Lang,
+} from "@/i18n/localize";
 import { formatQar as money } from "@/lib/money";
 import { useMenu } from "@/cms/context";
 import { useSheetDismiss } from "@/lib/sheet-dismiss";
@@ -28,10 +34,10 @@ type Props = {
 export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
   const { add } = useCart();
   const { lang, t } = useLocale();
-  const menu=useMenu();
-  const formatQar=(n:number,l:"en"|"ar")=>money(n,l,menu.settings);
-  const sectionName=(id:string,l:"en"|"ar")=>categoryName(id,l,menu.categories);
-  const [units, setUnits] = useState<Selection[]>(()=>[dish?selectionForDiet(dish,diet):{}]);
+  const menu = useMenu();
+  const formatQar = (n: number, l: Lang) => money(n, l, menu.settings);
+  const sectionName = (id: string, l: Lang) => categoryName(id, l, menu.categories);
+  const [units, setUnits] = useState<Selection[]>(() => [dish ? selectionForDiet(dish, diet) : {}]);
   const [activeUnit, setActiveUnit] = useState(0);
   const [notes, setNotes] = useState<string[]>([""]);
   const [justAdded, setJustAdded] = useState(false);
@@ -59,6 +65,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
   const ready = units.every((item) => isSelectionComplete(current, item));
   const photo = imageFor(current, shown);
   const patterned = photo.startsWith("/brand/");
+  const featured = menu.categories.find((c) => c.id === current.section)?.featured;
 
   function setShown(next: Selection) {
     setUnits((prev) => prev.map((item, index) => (index === activeUnit ? next : item)));
@@ -138,10 +145,10 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
         <header className="detail-kicker-row">
           <p
             className={
-              menu.categories.find(c=>c.id===current.section)?.featured ? "ticket-kicker ticket-kicker-new" : "ticket-kicker"
+              featured ? "ticket-kicker ticket-kicker-new" : "ticket-kicker"
             }
           >
-            {menu.categories.find(c=>c.id===current.section)?.featured ? t.newOnMenu : sectionName(current.section, lang)}
+            {featured ? t.newOnMenu : sectionName(current.section, lang)}
           </p>
           <button ref={closeRef} type="button" className="ticket-close" onClick={requestClose}>
             {t.close}
@@ -240,9 +247,9 @@ function Configurator({
   setSel: (s: Selection) => void;
 }) {
   const { lang, t } = useLocale();
-  const menu=useMenu();
-  const formatQar=(n:number,l:"en"|"ar")=>money(n,l,menu.settings);
-  const fieldLabel=(s:string,l:"en"|"ar")=>getFieldLabel(s,l,menu.fields);
+  const menu = useMenu();
+  const formatQar = (n: number, l: Lang) => money(n, l, menu.settings);
+  const fieldLabel = (s: string, l: Lang) => getFieldLabel(s, l, menu.fields);
   const kind = dish.kind;
   const label = (name: string) => fieldLabel(name, lang);
   const named = <T extends { id: string; name: string; nameAr?: string; spicy?: boolean }>(
@@ -519,8 +526,8 @@ function PartyStarters({
   onChange: (ids: string[]) => void;
 }) {
   const { lang, t } = useLocale();
-  const menu=useMenu();
-  const fieldLabel=(s:string,l:"en"|"ar")=>getFieldLabel(s,l,menu.fields);
+  const menu = useMenu();
+  const fieldLabel = (s: string, l: Lang) => getFieldLabel(s, l, menu.fields);
   const show = (opt: Choice) => pickName(opt, lang);
   if (max <= 1) {
     return (
@@ -663,9 +670,9 @@ function ExtraList({
   onToggle: (id: string) => void;
 }) {
   const { lang } = useLocale();
-  const menu=useMenu();
-  const formatQar=(n:number,l:"en"|"ar")=>money(n,l,menu.settings);
-  const fieldLabel=(s:string,l:"en"|"ar")=>getFieldLabel(s,l,menu.fields);
+  const menu = useMenu();
+  const formatQar = (n: number, l: Lang) => money(n, l, menu.settings);
+  const fieldLabel = (s: string, l: Lang) => getFieldLabel(s, l, menu.fields);
   return (
     <div className="choice-block">
       <div className="choice-head">

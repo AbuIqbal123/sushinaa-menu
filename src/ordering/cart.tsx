@@ -9,9 +9,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { Dish } from "@/catalog/types";
+import type { Dish, Selection } from "@/catalog/types";
 import { useMenu } from "@/cms/context";
-import type { Selection } from "@/catalog/types";
 import { useLocale } from "@/i18n/locale";
 import { pickName } from "@/i18n/localize";
 import {
@@ -32,7 +31,7 @@ function emptyStored(): StoredCart {
   return { lines: {} };
 }
 
-function readStored(raw: string, DISH_BY_ID:Record<string,Dish>): StoredCart {
+function readStored(raw: string, DISH_BY_ID: Record<string, Dish>): StoredCart {
   const parsed = JSON.parse(raw) as unknown;
   if (!parsed || typeof parsed !== "object") return emptyStored();
   const record = parsed as { lines?: unknown; comment?: unknown };
@@ -95,8 +94,8 @@ function parseKey(key: string): { id: string; sel: Selection; note: string } {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const { lang, t } = useLocale();
-  const {dishes:DISHES}=useMenu();
-  const DISH_BY_ID=useMemo(()=>Object.fromEntries(DISHES.map(d=>[d.id,d])),[DISHES]);
+  const { dishes: DISHES } = useMenu();
+  const DISH_BY_ID = useMemo(() => Object.fromEntries(DISHES.map((d) => [d.id, d])), [DISHES]);
   const [qtys, setQtys] = useState<Record<string, number>>({});
   const [ready, setReady] = useState(false);
 
@@ -106,7 +105,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        const stored = readStored(raw,DISH_BY_ID);
+        const stored = readStored(raw, DISH_BY_ID);
         setQtys(stored.lines);
       }
     } catch {
@@ -161,9 +160,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       .flatMap(([key, qty]) => {
         const { id, sel, note } = parseKey(key);
         const dish = DISH_BY_ID[id];
-        if (!dish || !isSelectionComplete(dish,sel)) return [];
+        if (!dish || !isSelectionComplete(dish, sel)) return [];
         const unitQar = unitPrice(dish, sel);
-        const meta = selectionLabel(dish, sel, lang,t);
+        const meta = selectionLabel(dish, sel, lang, t);
         return [
           {
             key,
@@ -178,7 +177,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           },
         ];
       });
-  }, [qtys, lang,DISHES,DISH_BY_ID,t]);
+  }, [qtys, lang, DISHES, DISH_BY_ID, t]);
 
   const itemCount = useMemo(
     () => lines.reduce((sum, line) => sum + line.qty, 0),

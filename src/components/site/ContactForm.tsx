@@ -1,6 +1,6 @@
 "use client";
-import { useMenu } from "@/cms/context";
 
+import { useMenu } from "@/cms/context";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "@/i18n/locale";
@@ -9,7 +9,7 @@ import { waLink } from "@/lib/site";
 type Errors = Partial<Record<"name" | "phone" | "message", string>>;
 
 export function ContactForm() {
- const {settings:SITE}=useMenu();
+  const { settings: SITE } = useMenu();
   const router = useRouter();
   const { t } = useLocale();
   const [name, setName] = useState("");

@@ -16,7 +16,7 @@ type Props = {
 export function CartSheet({ open, onClose }: Props) {
   const { lines, totalQar, inc, dec, clear } = useCart();
   const { lang, t } = useLocale();
-  const {settings}=useMenu();
+  const { settings } = useMenu();
   const closeRef = useRef<HTMLButtonElement>(null);
   const { sheetRef, backdropRef, trackPointer, movePointer, endPointer, requestClose } =
     useSheetDismiss(open, onClose);
@@ -91,10 +91,14 @@ export function CartSheet({ open, onClose }: Props) {
                   <div className="line-main">
                     <p className="line-name">{line.displayName}</p>
                     {line.meta ? <p className="line-meta">{line.meta}</p> : null}
-                    {line.note ? <p className="line-note">{t.commentWord}: {line.note}</p> : null}
+                    {line.note ? (
+                      <p className="line-note">
+                        {t.commentWord}: {line.note}
+                      </p>
+                    ) : null}
                     {line.qty > 1 ? (
                       <p className="line-meta">
-                        {line.qty} × {formatQar(line.unitQar, lang,settings)}
+                        {line.qty} × {formatQar(line.unitQar, lang, settings)}
                       </p>
                     ) : null}
                   </div>
@@ -119,14 +123,14 @@ export function CartSheet({ open, onClose }: Props) {
                       +
                     </button>
                   </div>
-                  <p className="line-total">{formatQar(line.lineTotal, lang,settings)}</p>
+                  <p className="line-total">{formatQar(line.lineTotal, lang, settings)}</p>
                 </li>
               ))}
             </ul>
 
             <div className="ticket-sum">
               <span>{t.total}</span>
-              <strong>{formatQar(totalQar, lang,settings)}</strong>
+              <strong>{formatQar(totalQar, lang, settings)}</strong>
             </div>
 
             <p className="view-only-notice">{t.viewOnlyNotice}</p>

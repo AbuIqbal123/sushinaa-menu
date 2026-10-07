@@ -41,11 +41,11 @@ const arabic = localFont({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const {menu}=await getMenu();
-  const SITE=menu.settings;
+  const { menu } = await getMenu();
+  const SITE = menu.settings;
   const lang = await requestLang();
   const ar = lang === "ar";
-  const brand = strings(lang,menu.copy).brand;
+  const brand = strings(lang, menu.copy).brand;
   const title = ar ? `${brand} · قائمة` : `${brand} · QR menu`;
   const description = ar
     ? `${brand}. قائمة سوشي في قطر. اختر البروتين وعدد القطع والصوص، ثم أرسل الطلب عبر واتساب ${SITE.whatsappDisplay}.`
@@ -106,7 +106,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const SITE = menu.settings;
   const lang: Lang = await requestLang();
   const ar = lang === "ar";
-  const brand = strings(lang,menu.copy).brand;
+  const brand = strings(lang, menu.copy).brand;
   const areas = ar
     ? ["داون تاون", "أسباير", "الخور", "سيلين", "نعيجة"]
     : SITE.areas;

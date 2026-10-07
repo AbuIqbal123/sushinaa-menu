@@ -1,6 +1,6 @@
 "use client";
-import { useMenu } from "@/cms/context";
 
+import { useMenu } from "@/cms/context";
 import Link from "next/link";
 import { ContactForm } from "./ContactForm";
 import { LegalShell } from "./LegalShell";
@@ -8,7 +8,7 @@ import { useLocale } from "@/i18n/locale";
 
 
 export function PrivacyView() {
- const {settings:SITE}=useMenu();
+  const { settings: SITE } = useMenu();
   const { lang, t } = useLocale();
   const wa = `https://wa.me/${SITE.whatsappE164}`;
   if (lang === "ar") {
@@ -85,7 +85,7 @@ export function PrivacyView() {
 }
 
 export function TermsView() {
- const {settings:SITE}=useMenu();
+  const { settings: SITE } = useMenu();
   const { lang, t } = useLocale();
   const wa = `https://wa.me/${SITE.whatsappE164}`;
   if (lang === "ar") {
@@ -157,7 +157,7 @@ export function TermsView() {
 }
 
 export function ContactView() {
- const {settings:SITE}=useMenu();
+  const { settings: SITE } = useMenu();
   const { t } = useLocale();
   return (
     <LegalShell title={t.contactTitle}>
@@ -172,7 +172,7 @@ export function ContactView() {
 }
 
 export function ThankYouView() {
- const {settings:SITE}=useMenu();
+  const { settings: SITE } = useMenu();
   const { t } = useLocale();
   return (
     <LegalShell title={t.thankTitle}>

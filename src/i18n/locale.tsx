@@ -18,7 +18,7 @@ const LocaleContext = createContext<LocaleValue | null>(null);
 
 export function LocaleProvider({ initial, children }: { initial: Lang; children: ReactNode }) {
   const router = useRouter();
-  const {copy}=useMenu();
+  const { copy } = useMenu();
   const [lang, setLangState] = useState<Lang>(initial);
 
   function setLang(next: Lang) {
@@ -30,7 +30,7 @@ export function LocaleProvider({ initial, children }: { initial: Lang; children:
   }
 
   return (
-    <LocaleContext.Provider value={{ lang, t: strings(lang,copy), setLang }}>
+    <LocaleContext.Provider value={{ lang, t: strings(lang, copy), setLang }}>
       {children}
     </LocaleContext.Provider>
   );
