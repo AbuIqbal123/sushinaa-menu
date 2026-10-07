@@ -3,14 +3,17 @@ import { useEffect, useRef, useState } from "react";
 import { dishSchema, type CmsDish, type Category } from "@/cms/schema";
 import { TextField, Check, ImageField } from "./Fields";
 import { OptionsEditor, OtherOptions } from "./OptionsEditor";
+import { fillIds, uniqueId } from "@/cms/ids";
 export function ItemEditor({
   item,
   categories,
+  taken,
   onSave,
   onClose,
 }: {
   item: CmsDish;
   categories: Category[];
+  taken: string[];
   onSave: (d: CmsDish) => Promise<void>;
   onClose: () => void;
 }) {
@@ -35,7 +38,9 @@ export function ItemEditor({
       <form
         onSubmit={async (e) => {
           e.preventDefault();
-          const result = dishSchema.safeParse(draft);
+          const ready = fillIds(draft);
+          if (!ready.id) ready.id = uniqueId(ready.name, taken);
+          const result = dishSchema.safeParse(ready);
           if (!result.success) {
             setError(
               result.error.issues
@@ -163,7 +168,6 @@ export function ItemEditor({
                   onChange={(piecesNote) => patch({ piecesNote })}
                 />
               )}
-              <p className="admin-locked">Stable ID: {draft.id}</p>
             </>
           )}
           {tab === "Images" && (

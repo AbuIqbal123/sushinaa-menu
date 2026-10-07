@@ -59,7 +59,7 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
       return;
     }
     setItem({
-      id: crypto.randomUUID(),
+      id: "",
       name: "",
       nameAr: "",
       section: id,
@@ -146,7 +146,7 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
                 className="primary"
                 onClick={() =>
                   setCategory({
-                    id: crypto.randomUUID(),
+                    id: "",
                     name: "",
                     nameAr: "",
                     order: Math.max(-1, ...categories.map((c) => c.order)) + 1,
@@ -208,6 +208,7 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
           key={item.id}
           item={item}
           categories={categories}
+          taken={menu.dishes.map((d) => d.id)}
           onClose={() => setItem(null)}
           onSave={async (d) => {
             const previous = menu.dishes.find((x) => x.id === d.id);
@@ -227,6 +228,7 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
         <CategoryEditor
           key={category.id}
           category={category}
+          taken={menu.categories.map((c) => c.id)}
           onClose={() => setCategory(null)}
           onSave={async (c) => {
             await save({

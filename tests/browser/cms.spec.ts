@@ -62,6 +62,7 @@ test("authenticated CMS CRUD, persistence, uploads and public integration", asyn
       (c) => c.name === "Test category",
     )!;
     expect(cat).toBeTruthy();
+    expect(cat.id).toBe("test-category");
     await page.getByRole("button", { name: "Menu", exact: true }).click();
     await page
       .getByRole("button", { name: "Add item", exact: true })
@@ -91,6 +92,7 @@ test("authenticated CMS CRUD, persistence, uploads and public integration", asyn
     const dish = snapshot.menu.dishes.find((d) => d.name === "Test dish")!;
     expect(dish).toBeTruthy();
     expect(dish.image).toMatch(/^\/api\/media\//);
+    expect(dish.id).toBe("test-dish");
     const upload = await api.post("/api/admin/media", {
       headers,
       multipart: {

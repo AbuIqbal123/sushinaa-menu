@@ -27,7 +27,7 @@ const extraFields: Field[] = [
   ...named,
   { key: "priceQar", label: "Additional price", type: "number" },
 ];
-const newChoice = () => ({ id: crypto.randomUUID(), name: "", nameAr: "" });
+const newChoice = () => ({ id: "", name: "", nameAr: "" });
 const list = (
   key: string,
   label: string,

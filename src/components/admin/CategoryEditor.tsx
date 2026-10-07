@@ -2,12 +2,15 @@
 import { useState, useEffect, useRef } from "react";
 import { categorySchema, type Category } from "@/cms/schema";
 import { TextField, Check } from "./Fields";
+import { uniqueId } from "@/cms/ids";
 export function CategoryEditor({
   category,
+  taken,
   onClose,
   onSave,
 }: {
   category: Category;
+  taken: string[];
   onClose: () => void;
   onSave: (c: Category) => Promise<void>;
 }) {
@@ -30,7 +33,9 @@ export function CategoryEditor({
       <form
         onSubmit={async (e) => {
           e.preventDefault();
-          const r = categorySchema.safeParse(draft);
+          const r = categorySchema.safeParse(
+            draft.id ? draft : { ...draft, id: uniqueId(draft.name, taken) },
+          );
           if (!r.success) {
             setError(r.error.issues.map((i) => i.message).join("\n"));
             return;
