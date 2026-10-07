@@ -338,6 +338,14 @@
   background: white;
   gap: 12px;
 }
+.admin-dialog-foot small {
+  flex: 1;
+  min-width: 0;
+}
+.admin-dialog-foot button {
+  flex: none;
+  white-space: nowrap;
+}
 .admin-dialog-body {
   padding: 0 24px 24px;
 }
