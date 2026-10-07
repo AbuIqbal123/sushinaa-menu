@@ -49,6 +49,10 @@ export function SettingsEditor({
               <ImageField
                 key={key}
                 label={key === "logo" ? "Menu logo" : "Document logo"}
+                preset={{
+                  url: "/brand/logo.svg",
+                  label: "Use the Sushinaa logo",
+                }}
                 value={value as string}
                 onChange={(v) =>
                   setDraft({

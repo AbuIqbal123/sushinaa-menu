@@ -169,7 +169,7 @@ export function ItemEditor({
           {tab === "Images" && (
             <>
               <ImageField
-                label="Primary image"
+                label="Photo"
                 value={draft.image}
                 onChange={(image) => patch({ image: image || "" })}
               />

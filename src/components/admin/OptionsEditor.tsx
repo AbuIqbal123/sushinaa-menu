@@ -19,7 +19,7 @@ const named: Field[] = [
 ];
 const choiceFields: Field[] = [
   ...named,
-  { key: "image", label: "Option image", type: "image", optional: true },
+  { key: "image", label: "Option photo", type: "image", optional: true },
   { key: "spicy", label: "Spicy", type: "check" },
   { key: "veg", label: "Vegetarian", type: "check" },
 ];

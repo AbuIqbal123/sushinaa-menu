@@ -77,8 +77,12 @@ test("authenticated CMS CRUD, persistence, uploads and public integration", asyn
       .fill("CMS description");
     await page.getByRole("button", { name: "Images", exact: true }).click();
     await page
-      .getByLabel("Primary image", { exact: true })
-      .fill("/dishes/sushinaa-burger.jpg");
+      .getByLabel("Photo", { exact: true })
+      .setInputFiles("public/dishes/sushinaa-burger.jpg");
+    await expect(page.locator("dialog[open] .admin-image img")).toHaveAttribute(
+      "src",
+      /^\/api\/media\//,
+    );
     await page.getByRole("button", { name: "Options", exact: true }).click();
     await page.getByLabel("Base price", { exact: true }).fill("12.5");
     await page.getByRole("button", { name: "Save item", exact: true }).click();
@@ -86,6 +90,7 @@ test("authenticated CMS CRUD, persistence, uploads and public integration", asyn
     snapshot = await (await api.get("/api/admin/menu")).json();
     const dish = snapshot.menu.dishes.find((d) => d.name === "Test dish")!;
     expect(dish).toBeTruthy();
+    expect(dish.image).toMatch(/^\/api\/media\//);
     const upload = await api.post("/api/admin/media", {
       headers,
       multipart: {
@@ -274,11 +279,9 @@ test("admin controls edit, reorder and delete content and options", async ({
             .sort((a, b) => a.order - b.order)[0].id,
       )
       .toBe("crispy-calamari");
-    const burger = page
-      .locator(".admin-row")
-      .filter({
-        has: page.locator("strong", { hasText: /^Sushinaa burger$/ }),
-      });
+    const burger = page.locator(".admin-row").filter({
+      has: page.locator("strong", { hasText: /^Sushinaa burger$/ }),
+    });
     await burger.getByRole("button", { name: "Edit", exact: true }).click();
     await page.getByRole("button", { name: "Options", exact: true }).click();
     await page.getByLabel("Base price", { exact: true }).fill("54");
@@ -299,6 +302,27 @@ test("admin controls edit, reorder and delete content and options", async ({
       expect(changed.kind.priceQar).toBe(54);
       expect(changed.kind.extras[1].priceQar).toBe(6);
       expect(changed.kind.extras[1].name).toBe("Spicy mayo");
+    }
+    expect(changed.image).toBe("/dishes/sushinaa-burger.jpg");
+    const mario = page.locator(".admin-row").filter({
+      has: page.locator("strong", { hasText: /^Mario roll$/ }),
+    });
+    await mario.getByRole("button", { name: "Edit", exact: true }).click();
+    await page.getByRole("button", { name: "Options", exact: true }).click();
+    await page
+      .locator(".admin-list-entry")
+      .first()
+      .getByRole("button", { name: "Remove", exact: true })
+      .click();
+    await page.getByRole("button", { name: "Save item", exact: true }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    const roll = (await saved()).menu.dishes.find(
+      (d) => d.id === "mario-roll",
+    )!;
+    expect(roll.image).toBe("/dishes/mario-roll-chicken.jpg");
+    if (roll.kind.type === "roll") {
+      expect(roll.kind.proteins[0].image).toBeUndefined();
+      expect(roll.kind.proteins[1].image).toBeTruthy();
     }
     await burger.getByRole("button", { name: "Edit", exact: true }).click();
     await page.getByRole("button", { name: "Options", exact: true }).click();

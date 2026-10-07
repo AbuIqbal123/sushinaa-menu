@@ -71,31 +71,35 @@ export function ImageField({
   value,
   onChange,
   optional = false,
+  preset,
 }: {
   label: string;
   value?: string;
   onChange: (s: string | undefined) => void;
   optional?: boolean;
+  preset?: { url: string; label: string };
 }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   return (
-    <div className="admin-field">
-      <TextField
-        label={label}
-        value={value || ""}
-        onChange={(s) => onChange(s || undefined)}
-      />
+    <fieldset className="admin-field admin-image-field">
+      <legend>{label}</legend>
       <div className="admin-image">
-        {value && <img src={value} alt="Current image" />}
-        <label>
-          Upload replacement
+        {value ? (
+          <img src={value} alt="" />
+        ) : (
+          <span className="muted">No photo</span>
+        )}
+        <label className="admin-upload">
+          {value ? "Replace" : "Upload"}
           <input
             type="file"
+            aria-label={label}
             accept="image/jpeg,image/png,image/webp"
             disabled={busy}
             onChange={async (e) => {
-              const file = e.target.files?.[0];
+              const input = e.currentTarget;
+              const file = input.files?.[0];
               if (!file) return;
               setBusy(true);
               setError("");
@@ -112,6 +116,7 @@ export function ImageField({
               } catch (e) {
                 setError(e instanceof Error ? e.message : "Upload failed");
               } finally {
+                input.value = "";
                 setBusy(false);
               }
             }}
@@ -132,6 +137,11 @@ export function ImageField({
             Remove
           </button>
         )}
+        {preset && value !== preset.url && (
+          <button type="button" onClick={() => onChange(preset.url)}>
+            {preset.label}
+          </button>
+        )}
       </div>
       {busy && <small role="status">Uploading…</small>}
       {error && (
@@ -139,11 +149,8 @@ export function ImageField({
           {error}
         </p>
       )}
-      <small>
-        JPEG, PNG or WebP, up to 5 MB. Existing /dishes/ or /brand/ paths are
-        also supported.
-      </small>
-    </div>
+      <small>JPEG, PNG or WebP, up to 5 MB.</small>
+    </fieldset>
   );
 }
 export function MoveButtons({
