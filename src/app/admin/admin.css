@@ -94,9 +94,8 @@
 }
 .admin-brand small {
   display: block;
-  font-size: 11px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 400;
   margin-top: 4px;
 }
 .admin-sidebar button {

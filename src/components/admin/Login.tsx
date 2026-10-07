@@ -1,5 +1,4 @@
 "use client";
-import Link from "next/link";
 import { useState } from "react";
 export function Login() {
   const [error, setError] = useState("");
@@ -26,7 +25,6 @@ export function Login() {
           }
         }}
       >
-        <p className="muted">MENU ADMINISTRATION</p>
         <h1>Welcome back</h1>
         <p className="muted">Sign in to manage your restaurant menu.</p>
         <label>
@@ -50,9 +48,6 @@ export function Login() {
         <button className="primary" disabled={busy}>
           {busy ? "Signing in…" : "Sign in"}
         </button>
-        <p style={{ marginTop: 20 }}>
-          <Link href="/">Back to the menu</Link>
-        </p>
       </form>
     </div>
   );

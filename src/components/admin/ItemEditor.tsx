@@ -60,10 +60,7 @@ export function ItemEditor({
         }}
       >
         <header className="admin-dialog-head">
-          <div>
-            <small>MENU ITEM</small>
-            <h2 id="editor-title">{item.name || "New menu item"}</h2>
-          </div>
+          <h2 id="editor-title">{item.name || "New menu item"}</h2>
           <button
             type="button"
             disabled={busy}
