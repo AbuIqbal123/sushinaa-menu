@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { authenticated, sameOrigin } from "@/cms/auth";
 import {
@@ -5,6 +6,7 @@ import {
   saveMenu,
   ConflictError,
   ContentError,
+  MENU_CACHE_TAG,
 } from "@/cms/repository";
 import { ZodError } from "zod";
 export const dynamic = "force-dynamic";
@@ -27,7 +29,10 @@ export async function PUT(request: Request) {
     const { menu, revision } = JSON.parse(raw);
     if (!Number.isSafeInteger(revision) || revision < 1)
       return NextResponse.json({ error: "Invalid revision" }, { status: 400 });
-    return NextResponse.json(await saveMenu(menu, revision));
+    const saved = await saveMenu(menu, revision);
+    // Publish immediately: the next public request reads the new revision.
+    revalidateTag(MENU_CACHE_TAG, { expire: 0 });
+    return NextResponse.json(saved);
   } catch (e) {
     if (e instanceof SyntaxError)
       return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });

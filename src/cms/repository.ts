@@ -1,5 +1,6 @@
 import { access } from "node:fs/promises";
 import { join } from "node:path";
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { db, initDb } from "./db";
 import { menuSchema, type MenuSnapshot } from "./schema";
@@ -52,7 +53,16 @@ export async function readMenu(): Promise<MenuSnapshot> {
     menu: menuSchema.parse(JSON.parse(String(result.rows[0].content))),
   };
 }
-export const getMenu = cache(readMenu);
+export const MENU_CACHE_TAG = "cms-menu";
+// Public pages share the last published menu across requests instead of querying
+// and re-validating the whole document on every view. Saves invalidate the tag;
+// the time limit only bounds staleness on self-hosted multi-instance setups.
+export const getMenu = cache(
+  unstable_cache(readMenu, [MENU_CACHE_TAG], {
+    tags: [MENU_CACHE_TAG],
+    revalidate: 300,
+  }),
+);
 export async function saveMenu(
   input: unknown,
   revision: number,
@@ -77,10 +87,4 @@ export async function seedMenu(input: unknown) {
     sql: "INSERT OR IGNORE INTO menu (id,revision,content) VALUES (1,1,?)",
     args: [JSON.stringify(menu)],
   });
-}
-export async function getSite() {
-  return (await getMenu()).menu.settings;
-}
-export async function getCopy() {
-  return (await getMenu()).menu.copy;
 }
