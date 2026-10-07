@@ -1236,10 +1236,6 @@ button {
 .doc-links .lang-btn {
   min-width: 44px;
   min-height: 44px;
-  padding: 0;
-  border: 0;
-  background: none;
-  font-size: inherit;
 }
 .doc-main {
   max-width: 44rem;
