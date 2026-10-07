@@ -30,7 +30,6 @@ function FeedInner() {
   );
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<Dish | null>(null);
-  const [pop, setPop] = useState(false);
   const [diet, setDiet] = useState<DietFilter>("all");
   const firstSection = menu.categories[0]?.id ?? "";
   const [category, setCategory] = useState<Section>(firstSection);
@@ -38,7 +37,6 @@ function FeedInner() {
   const [searchOpen, setSearchOpen] = useState(false);
   const searchButtonRef = useRef<HTMLButtonElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
-  const prevCount = useRef(itemCount);
   const currentCategory = useRef<Section>(firstSection);
   const pendingJump = useRef<Section | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
@@ -61,16 +59,6 @@ function FeedInner() {
   const looped = useMemo(() => [0, 1, 2].flatMap((copy) =>
     dishes.map((dish, real) => ({ dish, copy, real, key: `${copy}-${dish.id}` })),
   ), [dishes]);
-
-  useEffect(() => {
-    if (itemCount > prevCount.current) {
-      setPop(true);
-      const timer = window.setTimeout(() => setPop(false), 420);
-      prevCount.current = itemCount;
-      return () => window.clearTimeout(timer);
-    }
-    prevCount.current = itemCount;
-  }, [itemCount]);
 
   const syncCategory = useCallback(() => {
     const feed = feedRef.current;
@@ -125,15 +113,6 @@ function FeedInner() {
     };
   }, [search, syncCategory, wrapLoop]);
 
-  // Locking the feed under a sheet must not move it (iOS can reset scrollTop).
-  useEffect(() => {
-    const feed = feedRef.current;
-    if (!feed) return;
-    const top = feed.scrollTop;
-    feed.style.overflowY = sheetOpen ? "hidden" : "";
-    if (feed.scrollTop !== top) feed.scrollTop = top;
-  }, [sheetOpen]);
-
   function closeSearch() {
     setQuery("");
     setSearchOpen(false);
@@ -167,8 +146,7 @@ function FeedInner() {
               <path d="m16 16 4.5 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
           </button>
-          <button type="button" className={`cart-btn${pop ? " cart-btn-pop" : ""}`} onClick={() => setOpen(true)}
-            aria-label={t.openOrder(itemCount)}>
+          <button type="button" className="cart-btn" onClick={() => setOpen(true)} aria-label={t.openOrder(itemCount)}>
             <TicketIcon />
             {itemCount > 0 ? <span className="cart-badge">{itemCount}</span> : null}
           </button>
@@ -200,7 +178,7 @@ function FeedInner() {
         </div>
       </div>
       <div ref={feedRef} id="main" className={`feed${search ? " feed-search" : ""}`} role={search ? "region" : "feed"}
-        aria-label={t.menuFeed} inert={sheetOpen ? true : undefined}>
+        aria-label={t.menuFeed} inert={sheetOpen ? true : undefined} style={{ overflowY: sheetOpen ? "hidden" : undefined }}>
         {dishes.length === 0 ? <div className="empty-filter"><p>{t.noMatch}</p>
           <button type="button" className="chip chip-on" onClick={clearFilters}>{t.clearFilters}</button></div>
           : search ? <div className="search-results">
@@ -223,10 +201,7 @@ function FeedInner() {
       </div>
       {itemCount > 0 && !sheetOpen ? <button type="button" className="sticky-cta" onClick={() => setOpen(true)}>
         {t.viewOrder} · {formatQar(totalQar, lang, menu.settings)}</button> : null}
-      <div className="sr-only" aria-live="polite">
-        {search ? t.searchResults(dishes.length)
-          : `${itemCount ? t.inOrder(itemCount) : ""}${category ? ` ${sectionName(category, lang)}` : ""}`}
-      </div>
+      <div className="sr-only" aria-live="polite">{search ? t.searchResults(dishes.length) : ""}</div>
       {detail ? <DishDetailSheet key={`${detail.id}-${diet}`} dish={detail} diet={diet} onClose={() => setDetail(null)} /> : null}
       <CartSheet open={open} onClose={() => setOpen(false)} />
     </div>
