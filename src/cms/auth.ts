@@ -57,7 +57,19 @@ export async function logout() {
   }
   jar.delete(COOKIE);
 }
+// CSRF check for admin writes: the browser-set Origin must name the host the
+// browser sent the request to. Compare with the Host header (or the proxy's
+// x-forwarded-host, as Next's server-action check does), not request.url, which
+// under `next dev --hostname 0.0.0.0` is the bind address, not the address used.
 export function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
-  return origin === new URL(request.url).origin;
+  const host =
+    request.headers.get("x-forwarded-host")?.split(",")[0].trim() ||
+    request.headers.get("host");
+  if (!origin || !host) return false;
+  try {
+    return new URL(origin).host === host.toLowerCase();
+  } catch {
+    return false;
+  }
 }
