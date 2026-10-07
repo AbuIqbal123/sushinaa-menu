@@ -1,15 +1,12 @@
 "use client";
 
 import { useEffect, useRef, type PointerEvent } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/ordering/cart";
 import { useLocale } from "@/i18n/locale";
 import { useMenu } from "@/cms/context";
-import type { Settings } from "@/cms/schema";
 import { formatQar } from "@/lib/money";
 import { useSheetDismiss } from "@/lib/sheet-dismiss";
-import { waLink } from "@/lib/site";
 
 type Props = {
   open: boolean;
@@ -17,11 +14,10 @@ type Props = {
 };
 
 export function CartSheet({ open, onClose }: Props) {
-  const { lines, totalQar, inc, dec, clear, comment, setComment } = useCart();
+  const { lines, totalQar, inc, dec, clear } = useCart();
   const { lang, t } = useLocale();
   const {settings}=useMenu();
   const closeRef = useRef<HTMLButtonElement>(null);
-  const router = useRouter();
   const { sheetRef, backdropRef, trackPointer, movePointer, endPointer, requestClose } =
     useSheetDismiss(open, onClose);
 
@@ -38,7 +34,6 @@ export function CartSheet({ open, onClose }: Props) {
   if (!open) return null;
 
   const empty = lines.length === 0;
-  const wa = whatsappHref(lines, totalQar, comment, t, lang,settings);
 
   function onPointerDown(e: PointerEvent) {
     const sheet = sheetRef.current;
@@ -96,6 +91,7 @@ export function CartSheet({ open, onClose }: Props) {
                   <div className="line-main">
                     <p className="line-name">{line.displayName}</p>
                     {line.meta ? <p className="line-meta">{line.meta}</p> : null}
+                    {line.note ? <p className="line-note">{t.commentWord}: {line.note}</p> : null}
                     {line.qty > 1 ? (
                       <p className="line-meta">
                         {line.qty} × {formatQar(line.unitQar, lang,settings)}
@@ -128,32 +124,12 @@ export function CartSheet({ open, onClose }: Props) {
               ))}
             </ul>
 
-            <label className="order-comment">
-              <span>{t.comment}</span>
-              <textarea
-                value={comment}
-                maxLength={400}
-                rows={3}
-                placeholder={t.commentPlaceholder}
-                onChange={(e) => setComment(e.target.value)}
-              />
-            </label>
-
             <div className="ticket-sum">
               <span>{t.total}</span>
               <strong>{formatQar(totalQar, lang,settings)}</strong>
             </div>
 
-            <button
-              type="button"
-              className="wa-btn"
-              onClick={() => {
-                window.open(wa, "_blank", "noopener,noreferrer");
-                router.push("/thank-you");
-              }}
-            >
-              {t.sendWhatsApp}
-            </button>
+            <p className="view-only-notice">{t.viewOnlyNotice}</p>
 
             <p className="ticket-legal">
               <Link href="/privacy">{t.privacy}</Link>
@@ -171,27 +147,4 @@ export function CartSheet({ open, onClose }: Props) {
       </div>
     </div>
   );
-}
-
-function whatsappHref(
-  lines: { qty: number; displayName: string; meta: string; lineTotal: number }[],
-  total: number,
-  comment: string,
-  t: { ticketWord: string; total: string; commentWord: string },
-  lang: "en" | "ar",
-  settings:Settings,
-) {
-  const note = comment.trim();
-  const body = [
-    t.ticketWord,
-    "",
-    ...lines.map((l) => {
-      const meta = l.meta ? ` (${l.meta})` : "";
-      return `• ${l.qty}× ${l.displayName}${meta} — ${formatQar(l.lineTotal, lang,settings)}`;
-    }),
-    "",
-    `${t.total}: ${formatQar(total, lang,settings)}`,
-    ...(note ? ["", `${t.commentWord}: ${note}`] : []),
-  ].join("\n");
-  return waLink(settings.whatsappE164,body);
 }

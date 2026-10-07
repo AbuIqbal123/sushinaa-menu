@@ -1,6 +1,6 @@
 # Sushinaa menu CMS
 
-The existing bilingual QR menu is now backed by a persistent menu CMS. Guests browse the same dishes, configure their order and send it on WhatsApp. The site does not take payment.
+The bilingual QR menu for Sushinaa, backed by a persistent menu CMS. Guests browse dishes with a category dropdown that follows the scroll, bilingual search, and dietary filters. They can save items with individual notes to show staff. Selections stay on the device; nothing is submitted to the kitchen and the menu does not take payment. Prices are in QAR.
 
 ## Run locally
 
@@ -17,6 +17,14 @@ npm run dev
 - Administration: http://localhost:3005/admin
 - Temporary username: `admin`
 - Temporary password: `admin`
+
+For phone testing on the same Wi-Fi, allow the computer's exact LAN address:
+
+```bash
+SUSHINAA_PREVIEW_HOST=YOUR_LAN_IP npm run dev -- --hostname 0.0.0.0 --webpack
+```
+
+Open `http://YOUR_LAN_IP:3005` on the phone. Use development mode for this HTTP preview; production headers require HTTPS for assets.
 
 The seed command inserts the complete original menu (74 dishes, 14 categories) **only when the database is empty**. Re-running it preserves CMS edits. `data/initial-menu.json` is migration input, never a frontend fallback. The original catalog and wording snapshots under `tests/fixtures/` are test references only.
 

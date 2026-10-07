@@ -1,180 +1,126 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import {
-  matchesDiet,
-  type DietFilter,
-  type Dish,
-  type Section,
-} from "@/catalog/menu";
+import { matchesDiet, type DietFilter, type Dish, type Section } from "@/catalog/menu";
+import { useMenu } from "@/cms/context";
 import { CartProvider, useCart } from "@/ordering/cart";
 import { LangButton, useLocale } from "@/i18n/locale";
-import { useMenu } from "@/cms/context";
-import { sectionName as getSectionName } from "@/i18n/localize";
+import { pickName, sectionName as categoryName, type Lang } from "@/i18n/localize";
+import { hasPriceRange, imageFor, unitPrice, selectionForDiet } from "@/ordering/price";
 import { formatQar } from "@/lib/money";
 import { CartSheet } from "../order/CartSheet";
 import { DishDetailSheet } from "./DishDetailSheet";
 import { DishSlide } from "./DishSlide";
 
+// Ignore Arabic diacritics and common alef variants, plus case and punctuation.
+function normalizeSearch(value: string) {
+  return value.normalize("NFKD").toLowerCase().replace(/[\u0300-\u036f\u064b-\u065f\u0670\u0640]/g, "")
+    .replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+}
+
 function FeedInner() {
-  const menu=useMenu();
-  const DISHES=menu.dishes;
-  const CATEGORY_CHIPS=menu.categories;
-  const DIET_CHIPS=menu.filters.filter(f=>f.visible).sort((a,b)=>a.order-b.order);
-  const sectionName=(id:string,lang:"en"|"ar")=>getSectionName(id,lang,menu.categories);
+  const menu = useMenu();
+  const DISHES = menu.dishes;
+  const dietChips = menu.filters.filter((f) => f.visible).sort((a, b) => a.order - b.order);
+  const sectionName = (id: Section, l: Lang) => categoryName(id, l, menu.categories);
   const { itemCount, totalQar } = useCart();
   const { lang, t } = useLocale();
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<Dish | null>(null);
-  const [pop, setPop] = useState(false);
   const [diet, setDiet] = useState<DietFilter>("all");
-  const [activeSection, setActiveSection] = useState<Section>(CATEGORY_CHIPS[0]?.id ?? "");
+  const [category, setCategory] = useState<Section>(menu.categories[0]?.id ?? "");
+  const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchButtonRef = useRef<HTMLButtonElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
-  const prevCount = useRef(itemCount);
+  const currentCategory = useRef<Section>(menu.categories[0]?.id ?? "");
+  const pendingJump = useRef<Section | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
-  const catRowRef = useRef<HTMLDivElement>(null);
-  const skipSpy = useRef(false);
-
-  const dishes = useMemo(() => DISHES.filter((d) => matchesDiet(d, diet)), [diet,DISHES]);
-  const looped = useMemo(() => {
-    if (dishes.length === 0) return [];
-    return [0, 1, 2].flatMap((copy) =>
-      dishes.map((dish, real) => ({ dish, copy, real, key: `${copy}-${dish.id}` })),
-    );
-  }, [dishes]);
-  const origin = dishes.length;
-  const sheetOpen = open || Boolean(detail);
-  const rowDrag = useRef(false);
-
-  useEffect(() => {
-    if (itemCount > prevCount.current) {
-      setPop(true);
-      const t = window.setTimeout(() => setPop(false), 420);
-      prevCount.current = itemCount;
-      return () => window.clearTimeout(t);
+  const search = normalizeSearch(query);
+  const dishes = useMemo(() => DISHES.filter((dish) => {
+    if (!matchesDiet(dish, diet)) return false;
+    if (search) {
+      const names = normalizeSearch(`${pickName(dish, "en")} ${pickName(dish, "ar")}`);
+      return search.split(" ").every((word) => names.includes(word));
     }
-    prevCount.current = itemCount;
-  }, [itemCount]);
+    return true;
+  }), [DISHES, diet, search]);
+  const sheetOpen = open || Boolean(detail);
 
-  const syncSectionFromScroll = useCallback(() => {
+  const looped = useMemo(() => [0, 1, 2].flatMap((copy) =>
+    dishes.map((dish, real) => ({ dish, copy, real, key: `${copy}-${dish.id}` })),
+  ), [dishes]);
+
+  const syncCategory = useCallback(() => {
     const feed = feedRef.current;
-    const n = dishes.length;
-    if (!feed || skipSpy.current || !n) return;
-    const h = feed.clientHeight;
-    if (!h) return;
-    const visual = Math.round(feed.scrollTop / h);
-    const real = ((visual % n) + n) % n;
-    const dish = dishes[real];
-    if (!dish) return;
+    if (!feed || search || !dishes.length || !feed.clientHeight) return;
+    const visual = Math.round(feed.scrollTop / feed.clientHeight);
+    const real = ((visual % dishes.length) + dishes.length) % dishes.length;
     setActiveIndex(real);
-    setActiveSection(dish.section);
-  }, [dishes]);
+    currentCategory.current = dishes[real].section;
+    setCategory(dishes[real].section);
+  }, [dishes, search]);
 
   const wrapLoop = useCallback(() => {
     const feed = feedRef.current;
     const n = dishes.length;
-    if (!feed || skipSpy.current || !n) return;
-    const h = feed.clientHeight;
-    if (!h) return;
-    const visual = Math.round(feed.scrollTop / h);
-    if (visual < n) {
-      skipSpy.current = true;
-      feed.scrollTo({ top: (visual + n) * h });
-      skipSpy.current = false;
-    } else if (visual >= n * 2) {
-      skipSpy.current = true;
-      feed.scrollTo({ top: (visual - n) * h });
-      skipSpy.current = false;
-    }
-    syncSectionFromScroll();
-  }, [dishes.length, syncSectionFromScroll]);
-
-  useEffect(() => {
-    const feed = feedRef.current;
-    if (!feed) return;
-    const node = feed;
-    let raf = 0;
-    let wrapTimer = 0;
-    function onScroll() {
-      node.classList.add("is-scrolling");
-      window.clearTimeout(wrapTimer);
-      wrapTimer = window.setTimeout(() => {
-        node.classList.remove("is-scrolling");
-        wrapLoop();
-      }, 140);
-      if (raf) return;
-      raf = window.requestAnimationFrame(() => {
-        raf = 0;
-        syncSectionFromScroll();
-      });
-    }
-    node.addEventListener("scroll", onScroll, { passive: true });
-    node.addEventListener("scrollend", wrapLoop);
-    syncSectionFromScroll();
-    return () => {
-      node.classList.remove("is-scrolling");
-      node.removeEventListener("scroll", onScroll);
-      node.removeEventListener("scrollend", wrapLoop);
-      if (raf) window.cancelAnimationFrame(raf);
-      window.clearTimeout(wrapTimer);
-    };
-  }, [syncSectionFromScroll, wrapLoop]);
+    if (!feed || search || !n || !feed.clientHeight) return;
+    const visual = Math.round(feed.scrollTop / feed.clientHeight);
+    if (visual < n) feed.scrollTo({ top: (visual + n) * feed.clientHeight, behavior: "instant" });
+    else if (visual >= n * 2) feed.scrollTo({ top: (visual - n) * feed.clientHeight, behavior: "instant" });
+    syncCategory();
+  }, [dishes.length, search, syncCategory]);
 
   useLayoutEffect(() => {
     const feed = feedRef.current;
-    if (!feed || dishes.length === 0) return;
-    skipSpy.current = true;
-    const h = feed.clientHeight;
-    feed.scrollTo({ top: origin * h });
-    setActiveIndex(0);
-    setActiveSection(dishes[0]?.section ?? "");
-    const t = window.setTimeout(() => {
-      skipSpy.current = false;
-    }, 80);
-    return () => window.clearTimeout(t);
-  }, [diet, dishes, origin]);
+    if (!feed) return;
+    if (search || !dishes.length) { feed.scrollTo({ top: 0 }); return; }
+    const target = pendingJump.current ?? currentCategory.current;
+    pendingJump.current = null;
+    const index = Math.max(0, dishes.findIndex((dish) => dish.section === target));
+    feed.scrollTo({ top: (dishes.length + index) * feed.clientHeight, behavior: "instant" });
+  }, [dishes, search]);
 
   useEffect(() => {
     const feed = feedRef.current;
-    if (!feed) return;
-    const top = feed.scrollTop;
-    feed.style.overflowY = sheetOpen ? "hidden" : "";
-    if (feed.scrollTop !== top) feed.scrollTop = top;
-  }, [sheetOpen]);
-
-  useEffect(() => {
-    const row = catRowRef.current;
-    if (!row) return;
-    const chip = row.querySelector<HTMLElement>(`[data-chip="${cssAttr(activeSection)}"]`);
-    if (!chip) return;
-    const left = chip.offsetLeft - (row.clientWidth - chip.offsetWidth) / 2;
-    row.scrollTo({ left: Math.max(0, left) });
-  }, [activeSection]);
-
-  function jumpTo(id: Section) {
-    const feed = feedRef.current;
-    if (!feed) return;
-    skipSpy.current = true;
-    const idx = dishes.findIndex((d) => d.section === id);
-    if (idx < 0) {
-      skipSpy.current = false;
-      return;
+    if (!feed || search) return;
+    let timer = 0;
+    let raf = 0;
+    function onScroll() {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(wrapLoop, 140);
+      if (!raf) raf = window.requestAnimationFrame(() => { raf = 0; syncCategory(); });
     }
-    setActiveIndex(idx);
-    setActiveSection(id);
-    const top = (origin + idx) * feed.clientHeight;
-    const far = Math.abs(idx - activeIndex) > 3;
-    feed.scrollTo({ top, behavior: far ? "auto" : "smooth" });
-    let finished = false;
-    function done() {
-      if (finished) return;
-      finished = true;
-      skipSpy.current = false;
-      syncSectionFromScroll();
-    }
-    feed.addEventListener("scrollend", done, { once: true });
-    window.setTimeout(done, 1600);
+    feed.addEventListener("scroll", onScroll, { passive: true });
+    feed.addEventListener("scrollend", wrapLoop);
+    syncCategory();
+    return () => {
+      feed.removeEventListener("scroll", onScroll);
+      feed.removeEventListener("scrollend", wrapLoop);
+      window.clearTimeout(timer);
+      window.cancelAnimationFrame(raf);
+    };
+  }, [search, syncCategory, wrapLoop]);
+
+  function closeSearch() {
+    setQuery("");
+    setSearchOpen(false);
+    searchButtonRef.current?.focus();
   }
+
+  function jumpTo(section: Section) {
+    setSearchOpen(false);
+    currentCategory.current = section;
+    setCategory(section);
+    if (search) { pendingJump.current = section; setQuery(""); return; }
+    const index = dishes.findIndex((dish) => dish.section === section);
+    if (index < 0) return;
+    setActiveIndex(index);
+    feedRef.current?.scrollTo({ top: (dishes.length + index) * feedRef.current.clientHeight, behavior: "instant" });
+  }
+
+  function clearFilters() { setQuery(""); setDiet("all"); }
 
   return (
     <div className={`shell${sheetOpen ? " is-sheet" : ""}${itemCount > 0 ? " has-order" : ""}`}>
@@ -182,139 +128,74 @@ function FeedInner() {
         <img src={menu.settings.logo} alt={t.brand} className="wordmark-img" />
         <div className="chrome-actions">
           <LangButton />
-          <button
-            type="button"
-            className={`cart-btn ${pop ? "cart-btn-pop" : ""}`}
-            onClick={() => setOpen(true)}
-            aria-label={t.openOrder(itemCount)}
-          >
+          <button ref={searchButtonRef} type="button" className="cart-btn search-toggle"
+            aria-label={t.searchMenu} aria-expanded={searchOpen} aria-controls="menu-search-panel"
+            onClick={() => searchOpen ? closeSearch() : setSearchOpen(true)}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" strokeWidth="1.6" />
+              <path d="m16 16 4.5 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          </button>
+          <button type="button" className="cart-btn" onClick={() => setOpen(true)} aria-label={t.openOrder(itemCount)}>
             <TicketIcon />
             {itemCount > 0 ? <span className="cart-badge">{itemCount}</span> : null}
           </button>
         </div>
       </header>
-
-      <div className="filter-bar" role="toolbar" aria-label={t.filters}>
-        <div
-          ref={catRowRef}
-          className="chip-row"
-          aria-label={t.category}
-          onPointerDown={() => {
-            rowDrag.current = false;
-          }}
-          onPointerMove={(e) => {
-            if (Math.abs(e.movementX) > 2) rowDrag.current = true;
-          }}
-        >
-          {CATEGORY_CHIPS.map((chip) => {
-            const on = activeSection === chip.id;
-            const empty = !dishes.some((d) => d.section === chip.id);
-            return (
-              <button
-                key={chip.id}
-                type="button"
-                data-chip={chip.id}
-                className={`chip${chip.featured ? " chip-new" : ""}${on ? " chip-on" : ""}`}
-                aria-pressed={on}
-                aria-current={on ? "true" : undefined}
-                disabled={empty}
-                onClick={() => {
-                  if (rowDrag.current) return;
-                  jumpTo(chip.id);
-                }}
-              >
-                {sectionName(chip.id, lang)}
-              </button>
-            );
-          })}
+      <div className="filter-bar" aria-label={t.filters} inert={sheetOpen ? true : undefined}>
+        <div className={`menu-tools${searchOpen ? " search-open" : ""}`}>
+          <label className="category-picker">
+            <span className="sr-only">{t.category}</span>
+            <select value={category} onChange={(e) => jumpTo(e.target.value)}>
+              {menu.categories.map((chip) => <option key={chip.id} value={chip.id} disabled={!DISHES.some((dish) => dish.section === chip.id && matchesDiet(dish, diet))}>{sectionName(chip.id, lang)}</option>)}
+            </select>
+            <svg className="category-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none" aria-hidden="true">
+              <path d="m1 1 5 5 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </label>
+          {searchOpen ? <div id="menu-search-panel" className="menu-search" role="search">
+            <label htmlFor="menu-search" className="sr-only">{t.searchMenu}</label>
+            <input id="menu-search" type="search" value={query} placeholder={t.searchMenu}
+              onChange={(e) => setQuery(e.target.value)} autoComplete="off" maxLength={100} autoFocus
+              onKeyDown={(e) => { if (e.key === "Escape") closeSearch(); }} />
+            {query ? <button type="button" onClick={() => setQuery("")} aria-label={t.clearSearch}>×</button> : null}
+          </div> : null}
         </div>
-        <div
-          className="chip-row chip-row-diet"
-          aria-label={t.dietary}
-          onPointerDown={() => {
-            rowDrag.current = false;
-          }}
-          onPointerMove={(e) => {
-            if (Math.abs(e.movementX) > 2) rowDrag.current = true;
-          }}
-        >
-          {DIET_CHIPS.map((chip) => (
-            <button
-              key={chip.id}
-              type="button"
-              className={`chip chip-diet ${diet === chip.id ? "chip-on" : ""}`}
-              aria-pressed={diet === chip.id}
-              onClick={() => {
-                if (rowDrag.current) return;
-                setDiet(chip.id);
-              }}
-            >
-              {t[chip.id]}
-            </button>
-          ))}
+        <div className="chip-row chip-row-diet" aria-label={t.dietary}>
+          {dietChips.map((chip) => <button key={chip.id} type="button"
+            className={`chip chip-diet ${diet === chip.id ? "chip-on" : ""}`} aria-pressed={diet === chip.id}
+            onClick={() => setDiet(chip.id)}>{t[chip.id]}</button>)}
         </div>
       </div>
-
-      <div
-        ref={feedRef}
-        id="main"
-        className="feed"
-        role="feed"
-        aria-label={t.menuFeed}
-        inert={sheetOpen ? true : undefined}
-      >
-        {dishes.length === 0 ? (
-          <div className="empty-filter">
-            <p>{t.noMatch}</p>
-            <button type="button" className="chip chip-on" onClick={() => setDiet("all")}>
-              {t.clearFilters}
-            </button>
-          </div>
-        ) : (
-          looped.map((item) => {
+      <div ref={feedRef} id="main" className={`feed${search ? " feed-search" : ""}`} role={search ? "region" : "feed"}
+        aria-label={t.menuFeed} inert={sheetOpen ? true : undefined} style={{ overflowY: sheetOpen ? "hidden" : undefined }}>
+        {dishes.length === 0 ? <div className="empty-filter"><p>{t.noMatch}</p>
+          <button type="button" className="chip chip-on" onClick={clearFilters}>{t.clearFilters}</button></div>
+          : search ? <div className="search-results">
+            <p className="search-summary">{t.searchResults(dishes.length)}</p>
+            {dishes.map((dish) => <button type="button" className="search-result" key={dish.id} onClick={() => setDetail(dish)}>
+              <Image className="search-thumbnail" src={imageFor(dish, selectionForDiet(dish, diet))}
+                width={52} height={52} sizes="52px" alt="" unoptimized />
+              <span className="search-result-name"><strong>{pickName(dish, lang)}</strong><small>{sectionName(dish.section, lang)}</small></span>
+              <span>{`${hasPriceRange(dish) ? t.from + " " : ""}${formatQar(unitPrice(dish, selectionForDiet(dish, diet)), lang, menu.settings)}`}</span>
+            </button>)}
+          </div> : looped.map((item) => {
             const n = dishes.length;
-            const dist = Math.min(
-              Math.abs(item.real - activeIndex),
-              n - Math.abs(item.real - activeIndex),
-            );
-            const inView = item.copy === 1 && dist <= 2;
-            const seam =
-              (item.copy === 2 && item.real <= 1) || (item.copy === 0 && item.real >= n - 2);
-            return (
-              <DishSlide
-                key={item.key}
-                dish={item.dish}
-                diet={diet}
-                marked={item.copy === 1}
-                active={item.copy === 1 && item.real === activeIndex}
-                eager={inView || seam}
-                showHint={item.copy === 1 && item.real === 0}
-                onOpen={setDetail}
-              />
-            );
-          })
-        )}
+            const distance = Math.min(Math.abs(item.real - activeIndex), n - Math.abs(item.real - activeIndex));
+            const seam = (item.copy === 0 && item.real >= n - 2) || (item.copy === 2 && item.real <= 1);
+            return <DishSlide key={item.key} dish={item.dish} diet={diet} marked={item.copy === 1}
+              active={item.copy === 1 && item.real === activeIndex}
+              eager={(item.copy === 1 && distance <= 2) || seam}
+              showHint={item.copy === 1 && item.real === 0 && n > 1} onOpen={setDetail} />;
+          })}
       </div>
-
-      {itemCount > 0 && !sheetOpen ? (
-        <button type="button" className="sticky-cta" onClick={() => setOpen(true)}>
-          {t.viewOrder} · {formatQar(totalQar, lang,menu.settings)}
-        </button>
-      ) : null}
-
-      <div className="sr-only" aria-live="polite">
-        {itemCount ? t.inOrder(itemCount) : ""}
-        {activeSection ? ` ${sectionName(activeSection, lang)}` : ""}
-      </div>
-
+      {itemCount > 0 && !sheetOpen ? <button type="button" className="sticky-cta" onClick={() => setOpen(true)}>
+        {t.viewOrder} · {formatQar(totalQar, lang, menu.settings)}</button> : null}
+      <div className="sr-only" aria-live="polite">{search ? t.searchResults(dishes.length) : ""}</div>
       {detail ? <DishDetailSheet key={`${detail.id}-${diet}`} dish={detail} diet={diet} onClose={() => setDetail(null)} /> : null}
       <CartSheet open={open} onClose={() => setOpen(false)} />
     </div>
   );
-}
-
-function cssAttr(value: string) {
-  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
 function TicketIcon() {
