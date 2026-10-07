@@ -1,8 +1,9 @@
 "use client";
+import { useMenu } from "@/cms/context";
 
 import Link from "next/link";
 import { LangButton, useLocale } from "@/i18n/locale";
-import { SITE } from "@/lib/site";
+
 
 export function LegalShell({
   title,
@@ -11,12 +12,13 @@ export function LegalShell({
   title: string;
   children: React.ReactNode;
 }) {
+ const {settings:SITE}=useMenu();
   const { t } = useLocale();
   return (
     <div className="doc-page">
       <header className="doc-nav">
         <Link href="/" className="doc-brand">
-          <img src="/brand/logotype-red.svg" alt={t.brand} className="doc-logo" />
+          <img src={SITE.documentLogo} alt={t.brand} className="doc-logo" />
         </Link>
         <nav className="doc-links" aria-label={t.menu}>
           <Link href="/">{t.menu}</Link>

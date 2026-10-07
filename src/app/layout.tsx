@@ -5,7 +5,9 @@ import { strings } from "@/i18n/copy";
 import { LocaleProvider, SkipLink } from "@/i18n/locale";
 import type { Lang } from "@/i18n/localize";
 import { requestLang } from "@/i18n/request-lang";
-import { SITE } from "@/lib/site";
+import { getMenu } from "@/cms/repository";
+import { publicMenu } from "@/cms/schema";
+import { MenuProvider } from "@/cms/context";
 import "./globals.css";
 
 const display = localFont({
@@ -39,9 +41,11 @@ const arabic = localFont({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
+  const {menu}=await getMenu();
+  const SITE=menu.settings;
   const lang = await requestLang();
   const ar = lang === "ar";
-  const brand = strings(lang).brand;
+  const brand = strings(lang,menu.copy).brand;
   const title = ar ? `${brand} · قائمة` : `${brand} · QR menu`;
   const description = ar
     ? `${brand}. قائمة سوشي في قطر. اختر البروتين وعدد القطع والصوص، ثم أرسل الطلب عبر واتساب ${SITE.whatsappDisplay}.`
@@ -98,9 +102,12 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const {menu:fullMenu}=await getMenu();
+  const menu=publicMenu(fullMenu);
+  const SITE=menu.settings;
   const lang: Lang = await requestLang();
   const ar = lang === "ar";
-  const brand = strings(lang).brand;
+  const brand = strings(lang,menu.copy).brand;
   const areas = ar
     ? ["داون تاون", "أسباير", "الخور", "سيلين", "نعيجة"]
     : SITE.areas;
@@ -129,15 +136,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       className={`${display.variable} ${sans.variable} ${arabic.variable} h-full`}
     >
       <body className="min-h-full antialiased">
-        <LocaleProvider initial={lang}>
+        <MenuProvider menu={menu}><LocaleProvider initial={lang}>
           <SkipLink />
           <script
             type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g,"\\u003c") }}
           />
           {children}
           <Analytics />
-        </LocaleProvider>
+        </LocaleProvider></MenuProvider>
       </body>
     </html>
   );

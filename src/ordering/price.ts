@@ -6,7 +6,7 @@ import type {
   PiecePrices,
   Selection,
 } from "@/catalog/types";
-import { strings } from "@/i18n/copy";
+import type { Copy } from "@/i18n/copy";
 import { pickName, type Lang } from "@/i18n/localize";
 
 export function preferredPieces(prices: PiecePrices): PieceCount {
@@ -207,10 +207,9 @@ export function hasPriceRange(dish: Dish): boolean {
   }
 }
 
-export function selectionLabel(dish: Dish, sel: Selection, lang: Lang = "en"): string {
+export function selectionLabel(dish: Dish, sel: Selection, lang: Lang, t:Copy): string {
   const bits: string[] = [];
   const kind = dish.kind;
-  const t = strings(lang);
 
   if (kind.type === "roll") {
     const protein = kind.proteins.find((p) => p.id === sel.protein);
@@ -301,6 +300,16 @@ export function imageFor(dish: Dish, sel: Selection): string {
 
 export function isSelectionComplete(dish: Dish, sel: Selection): boolean {
   const kind = dish.kind;
+  const has=(options:{id:string}[]|undefined,id:string|undefined)=>!id||Boolean(options?.some(o=>o.id===id));
+  const extras=kind.type==='addons'?kind.extras:dish.extras;
+  if(sel.extras?.some(id=>!has(extras,id)))return false;
+  if(!has(dish.freeDips,sel.dip) && !(kind.type==='addons'&&kind.freeChoices?.some(g=>g.id==='dip'&&has(g.options,sel.dip))))return false;
+  if(kind.type==='sauce-price'&&!has(kind.sauces,sel.sauce))return false;
+  if(kind.type==='deal-box'&&(!has(kind.starters,sel.starter)||!has(kind.sushi,sel.sushi)))return false;
+  if(kind.type==='party-box'&&sel.starters?.some(id=>!has(kind.starters,id)))return false;
+  if(kind.type==='size-price'&&(!has(kind.sizes,sel.size)||!has(kind.flavors?.options,sel.flavor)))return false;
+  if(kind.type==='roll'&&(!has(kind.topping?.options,sel.topping)||!has(kind.style?.options,sel.style)))return false;
+  if(kind.type==='addons'&&kind.freeChoices?.some(g=>!has(g.options,sel[g.id as 'cut'|'style'|'topping'|'dip'])))return false;
   if (kind.type === "sauce-price" && !sel.sauce) return false;
   if (kind.type === "roll") {
     if (!sel.protein || !sel.pieces) return false;

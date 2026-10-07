@@ -1,0 +1,3766 @@
+{
+  "schemaVersion": 1,
+  "categories": [
+    {
+      "id": "New",
+      "name": "New",
+      "nameAr": "جديد",
+      "order": 0,
+      "visible": true,
+      "featured": true
+    },
+    {
+      "id": "Starters",
+      "name": "Starters",
+      "nameAr": "المقبلات",
+      "order": 1,
+      "visible": true,
+      "featured": false
+    },
+    {
+      "id": "Fried rice",
+      "name": "Fried rice",
+      "nameAr": "أرز مقلي",
+      "order": 2,
+      "visible": true,
+      "featured": false
+    },
+    {
+      "id": "Poke bowls",
+      "name": "Poke",
+      "nameAr": "بوكي",
+      "order": 3,
+      "visible": true,
+      "featured": false
+    },
+    {
+      "id": "Deal box",
+      "name": "Deal box",
+      "nameAr": "بوكس العرض",
+      "order": 4,
+      "visible": true,
+      "featured": false
+    },
+    {
+      "id": "Salads",
+      "name": "Salads",
+      "nameAr": "السلطات",
+      "order": 5,
+      "visible": true,
+      "featured": false
+    },
+    {
+      "id": "Mains",
+      "name": "Mains",
+      "nameAr": "الأطباق الرئيسية",
+      "order": 6,
+      "visible": true,
+      "featured": false
+    },
+    {
+      "id": "Sushina rolls",
+      "name": "Rolls",
+      "nameAr": "رولز",
+      "order": 7,
+      "visible": true,
+      "featured": false
+    },
+    {
+      "id": "Sushi burrito",
+      "name": "Burrito",
+      "nameAr": "بوريتو",
+      "order": 8,
+      "visible": true,
+      "featured": false
+    },
+    {
+      "id": "Sushinaa maki",
+      "name": "Maki",
+      "nameAr": "ماكي",
+      "order": 9,
+      "visible": true,
+      "featured": false
+    },
+    {
+      "id": "Noodles",
+      "name": "Noodles",
+      "nameAr": "نودلز",
+      "order": 10,
+      "visible": true,
+      "featured": false
+    },
+    {
+      "id": "Sushinaa box",
+      "name": "Boxes",
+      "nameAr": "بوكسات",
+      "order": 11,
+      "visible": true,
+      "featured": false
+    },
+    {
+      "id": "Sauces",
+      "name": "Sauces",
+      "nameAr": "الصوصات",
+      "order": 12,
+      "visible": true,
+      "featured": false
+    },
+    {
+      "id": "Drinks",
+      "name": "Drinks",
+      "nameAr": "المشروبات",
+      "order": 13,
+      "visible": true,
+      "featured": false
+    }
+  ],
+  "dishes": [
+    {
+      "id": "sushinaa-burger",
+      "name": "Sushinaa burger",
+      "nameAr": "برجر سوشينا",
+      "section": "New",
+      "description": "Sushi burger with shrimp, crab stick, avocado, cucumber and spicy mayo, finished with furikake and sweet soy sauce.",
+      "descriptionAr": "برجر سوشي مع الروبيان، أصابع السلطعون، الأفوكادو، الخيار والمايونيز الحار، مزين بالفوريكاكي وصلصة الصويا الحلوة.",
+      "image": "/dishes/sushinaa-burger.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "addons",
+        "priceQar": 53,
+        "extras": [
+          {
+            "id": "spicy-mayo",
+            "name": "Spicy mayo",
+            "nameAr": "مايونيز حار",
+            "priceQar": 5
+          },
+          {
+            "id": "sushinaa",
+            "name": "Sushinaa sauce",
+            "nameAr": "صوص سوشينا",
+            "priceQar": 5
+          },
+          {
+            "id": "dynamite",
+            "name": "Dynamite",
+            "nameAr": "صوص دايناميت",
+            "priceQar": 5
+          },
+          {
+            "id": "bbq",
+            "name": "BBQ",
+            "nameAr": "صوص باربكيو",
+            "priceQar": 5
+          },
+          {
+            "id": "sweet-n-spicy",
+            "name": "Sweet n spicy",
+            "nameAr": "صوص حلو وحار",
+            "priceQar": 5
+          }
+        ]
+      },
+      "order": 0,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "crispy-calamari",
+      "name": "Crispy calamari",
+      "nameAr": "كاليماري مقرمش",
+      "section": "New",
+      "description": "Crispy calamari rings seasoned with garlic and paprika, served with spicy mayo and lemon garlic mayo.",
+      "descriptionAr": "حلقات كاليماري مقرمشة متبلة بالثوم والبابريكا، تقدم مع المايونيز الحار ومايونيز الثوم والليمون.",
+      "image": "/dishes/crispy-calamari.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "addons",
+        "priceQar": 46,
+        "extras": [
+          {
+            "id": "lemon-garlic-mayo",
+            "name": "Lemon garlic mayo",
+            "nameAr": "مايونيز الثوم والليمون",
+            "priceQar": 5
+          },
+          {
+            "id": "sambal-mayo",
+            "name": "Sambal mayo",
+            "nameAr": "مايونيز سامبال حار",
+            "priceQar": 5
+          }
+        ]
+      },
+      "order": 1,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "gyoza-chicken",
+      "name": "Gyoza chicken",
+      "nameAr": "جيوزا الدجاج",
+      "section": "New",
+      "description": "Chicken-filled gyoza with cabbage, spring onion, garlic and ginger, seasoned with soy and oyster sauce. Served with your choice of 2 sauces.",
+      "descriptionAr": "جيوزا محشوة بالدجاج، الملفوف، البصل الأخضر، الثوم والزنجبيل، متبلة بصلصة الصويا وصلصة المحار، تقدم مع اختيارك من صوصين.",
+      "image": "/dishes/gyoza-chicken.jpg",
+      "tags": [],
+      "kind": {
+        "type": "addons",
+        "priceQar": 44,
+        "extras": [
+          {
+            "id": "extra-wonton",
+            "name": "Extra sweet wonton",
+            "nameAr": "صوص وانتون إضافي",
+            "priceQar": 5
+          },
+          {
+            "id": "extra-chili-garlic",
+            "name": "Extra chili garlic",
+            "nameAr": "صوص الثوم والفلفل إضافي",
+            "priceQar": 5
+          },
+          {
+            "id": "extra-dumpling",
+            "name": "Extra spicy dumpling",
+            "nameAr": "صوص دامبلنغ إضافي",
+            "priceQar": 5
+          }
+        ],
+        "includedPicks": {
+          "name": "Sauces",
+          "nameAr": "الصوصات",
+          "min": 2,
+          "max": 2,
+          "options": [
+            {
+              "id": "wonton",
+              "name": "Sweet wonton",
+              "nameAr": "صوص وانتون حلو"
+            },
+            {
+              "id": "chili-garlic",
+              "name": "Chili garlic",
+              "nameAr": "صوص الثوم والفلفل الحار",
+              "spicy": true
+            },
+            {
+              "id": "dumpling",
+              "name": "Spicy dumpling",
+              "nameAr": "صوص دامبلنغ حار",
+              "spicy": true
+            }
+          ]
+        }
+      },
+      "order": 2,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "gyoza-beef",
+      "name": "Gyoza beef",
+      "nameAr": "جيوزا اللحم البقري",
+      "section": "New",
+      "description": "Beef-filled gyoza with cabbage, red onion, ginger and garlic, seasoned with soy sauce and sesame oil. Served with your choice of 2 sauces.",
+      "descriptionAr": "جيوزا محشوة باللحم البقري، الملفوف، البصل الأحمر، الزنجبيل والثوم، متبلة بصلصة الصويا وزيت السمسم، تقدم مع اختيارك من صوصين.",
+      "image": "/dishes/gyoza-beef.jpg",
+      "tags": [],
+      "kind": {
+        "type": "addons",
+        "priceQar": 44,
+        "extras": [
+          {
+            "id": "extra-wonton",
+            "name": "Extra sweet wonton",
+            "nameAr": "صوص وانتون إضافي",
+            "priceQar": 5
+          },
+          {
+            "id": "extra-chili-garlic",
+            "name": "Extra chili garlic",
+            "nameAr": "صوص الثوم والفلفل إضافي",
+            "priceQar": 5
+          },
+          {
+            "id": "extra-dumpling",
+            "name": "Extra spicy dumpling",
+            "nameAr": "صوص دامبلنغ إضافي",
+            "priceQar": 5
+          }
+        ],
+        "includedPicks": {
+          "name": "Sauces",
+          "nameAr": "الصوصات",
+          "min": 2,
+          "max": 2,
+          "options": [
+            {
+              "id": "wonton",
+              "name": "Sweet wonton",
+              "nameAr": "صوص وانتون حلو"
+            },
+            {
+              "id": "chili-garlic",
+              "name": "Chili garlic",
+              "nameAr": "صوص الثوم والفلفل الحار",
+              "spicy": true
+            },
+            {
+              "id": "dumpling",
+              "name": "Spicy dumpling",
+              "nameAr": "صوص دامبلنغ حار",
+              "spicy": true
+            }
+          ]
+        }
+      },
+      "order": 3,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "gyoza-shrimp",
+      "name": "Gyoza shrimp",
+      "nameAr": "جيوزا الروبيان",
+      "section": "New",
+      "description": "Shrimp-filled gyoza with spring onion, seasoned with soy sauce and black pepper for a light, savory flavor. Served with your choice of 2 sauces.",
+      "descriptionAr": "جيوزا محشوة بالروبيان والبصل الأخضر، متبلة بصلصة الصويا والفلفل الأسود لنكهة خفيفة ولذيذة، تقدم مع اختيارك من صوصين.",
+      "image": "/dishes/gyoza-shrimp.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "addons",
+        "priceQar": 44,
+        "extras": [
+          {
+            "id": "extra-wonton",
+            "name": "Extra sweet wonton",
+            "nameAr": "صوص وانتون إضافي",
+            "priceQar": 5
+          },
+          {
+            "id": "extra-chili-garlic",
+            "name": "Extra chili garlic",
+            "nameAr": "صوص الثوم والفلفل إضافي",
+            "priceQar": 5
+          },
+          {
+            "id": "extra-dumpling",
+            "name": "Extra spicy dumpling",
+            "nameAr": "صوص دامبلنغ إضافي",
+            "priceQar": 5
+          }
+        ],
+        "includedPicks": {
+          "name": "Sauces",
+          "nameAr": "الصوصات",
+          "min": 2,
+          "max": 2,
+          "options": [
+            {
+              "id": "wonton",
+              "name": "Sweet wonton",
+              "nameAr": "صوص وانتون حلو"
+            },
+            {
+              "id": "chili-garlic",
+              "name": "Chili garlic",
+              "nameAr": "صوص الثوم والفلفل الحار",
+              "spicy": true
+            },
+            {
+              "id": "dumpling",
+              "name": "Spicy dumpling",
+              "nameAr": "صوص دامبلنغ حار",
+              "spicy": true
+            }
+          ]
+        }
+      },
+      "order": 4,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "gyoza-seafood",
+      "name": "Gyoza seafood",
+      "nameAr": "جيوزا المأكولات البحرية",
+      "section": "New",
+      "description": "Seafood-filled gyoza with fresh shrimp, crab stick, spring onion and red onion, blended with egg, ginger and garlic for a rich seafood flavor. Served with your choice of 2 sauces.",
+      "descriptionAr": "جيوزا محشوة بالروبيان الطازج، أصابع السلطعون، البصل الأخضر والبصل الأحمر، مع البيض والزنجبيل والثوم لنكهة بحرية غنية، تقدم مع اختيارك من صوصين.",
+      "image": "/dishes/gyoza-seafood.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "addons",
+        "priceQar": 44,
+        "extras": [
+          {
+            "id": "extra-wonton",
+            "name": "Extra sweet wonton",
+            "nameAr": "صوص وانتون إضافي",
+            "priceQar": 5
+          },
+          {
+            "id": "extra-chili-garlic",
+            "name": "Extra chili garlic",
+            "nameAr": "صوص الثوم والفلفل إضافي",
+            "priceQar": 5
+          },
+          {
+            "id": "extra-dumpling",
+            "name": "Extra spicy dumpling",
+            "nameAr": "صوص دامبلنغ إضافي",
+            "priceQar": 5
+          }
+        ],
+        "includedPicks": {
+          "name": "Sauces",
+          "nameAr": "الصوصات",
+          "min": 2,
+          "max": 2,
+          "options": [
+            {
+              "id": "wonton",
+              "name": "Sweet wonton",
+              "nameAr": "صوص وانتون حلو"
+            },
+            {
+              "id": "chili-garlic",
+              "name": "Chili garlic",
+              "nameAr": "صوص الثوم والفلفل الحار",
+              "spicy": true
+            },
+            {
+              "id": "dumpling",
+              "name": "Spicy dumpling",
+              "nameAr": "صوص دامبلنغ حار",
+              "spicy": true
+            }
+          ]
+        }
+      },
+      "order": 5,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "shrimp-kunafa",
+      "name": "Shrimp kunafa",
+      "nameAr": "روبيان كنافة",
+      "section": "Starters",
+      "description": "Five pieces, served with sweet chili sauce.",
+      "descriptionAr": "خمس حبات يقدم مع صوص السويت تشيلي",
+      "image": "/dishes/shrimp-kunafa.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "simple",
+        "priceQar": 35
+      },
+      "order": 6,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "shrimp-tempura",
+      "name": "Shrimp tempura",
+      "nameAr": "روبيان تيمبورا",
+      "section": "Starters",
+      "description": "Five pieces, with a sauce of your choice.",
+      "descriptionAr": "خمس حبات مع صوص من اختيارك",
+      "image": "/dishes/shrimp-tempura.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "simple",
+        "priceQar": 35
+      },
+      "freeDips": [
+        {
+          "id": "sweet-chili",
+          "name": "Sweet chili",
+          "nameAr": "سويت تشيلي"
+        },
+        {
+          "id": "mayo",
+          "name": "Mayo",
+          "nameAr": "مايونيز"
+        },
+        {
+          "id": "spicy-mayo",
+          "name": "Spicy mayo",
+          "nameAr": "مايونيز حار",
+          "spicy": true
+        },
+        {
+          "id": "soya",
+          "name": "Soya",
+          "nameAr": "صويا"
+        },
+        {
+          "id": "bbq",
+          "name": "BBQ",
+          "nameAr": "باربكيو"
+        },
+        {
+          "id": "sushinaa",
+          "name": "Sushinaa sauce",
+          "nameAr": "صوص سوشينا"
+        },
+        {
+          "id": "sweet-n-spicy",
+          "name": "Sweet n spicy",
+          "nameAr": "حلو وحار",
+          "spicy": true
+        },
+        {
+          "id": "dynamite",
+          "name": "Dynamite",
+          "nameAr": "ديناميت",
+          "spicy": true
+        }
+      ],
+      "order": 7,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "shrimp",
+      "name": "Shrimp",
+      "nameAr": "روبيان",
+      "section": "Starters",
+      "description": "Crispy shrimp with the sauce of your choice. Price follows the sauce.",
+      "descriptionAr": "قطع روبيان مع صوص من اختيارك",
+      "image": "/dishes/shrimp.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "sauce-price",
+        "sauces": [
+          {
+            "id": "bbq",
+            "name": "BBQ",
+            "nameAr": "باربكيو",
+            "priceQar": 50
+          },
+          {
+            "id": "sweet-n-spicy",
+            "name": "Sweet n spicy",
+            "nameAr": "حلو وحار",
+            "spicy": true,
+            "priceQar": 45
+          },
+          {
+            "id": "dynamite",
+            "name": "Dynamite",
+            "nameAr": "ديناميت",
+            "spicy": true,
+            "priceQar": 50
+          }
+        ]
+      },
+      "order": 8,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "chicken",
+      "name": "Chicken",
+      "nameAr": "دجاج",
+      "section": "Starters",
+      "description": "Crispy chicken with the sauce of your choice. Price follows the sauce.",
+      "descriptionAr": "قطع دجاج مع صوص من اختيارك",
+      "image": "/dishes/chicken.jpg",
+      "tags": [],
+      "kind": {
+        "type": "sauce-price",
+        "sauces": [
+          {
+            "id": "bbq",
+            "name": "BBQ",
+            "nameAr": "باربكيو",
+            "priceQar": 40
+          },
+          {
+            "id": "sweet-n-spicy",
+            "name": "Sweet n spicy",
+            "nameAr": "حلو وحار",
+            "spicy": true,
+            "priceQar": 35
+          },
+          {
+            "id": "dynamite",
+            "name": "Dynamite",
+            "nameAr": "ديناميت",
+            "spicy": true,
+            "priceQar": 40
+          }
+        ]
+      },
+      "order": 9,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "crispy-rice-crab",
+      "name": "Crispy rice / crab",
+      "nameAr": "أرز مقرمش بالكراب",
+      "section": "Starters",
+      "description": "Six pieces. Crab, mayonnaise, caviar, breadcrumbs.",
+      "descriptionAr": "ست حبات. سلطعون، مايونيز، كفيار",
+      "image": "/dishes/crispy-rice-crab.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "spicy-toggle",
+        "mildQar": 30,
+        "spicyQar": 35
+      },
+      "order": 10,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "crab-rangoon",
+      "name": "Crab rangoon",
+      "nameAr": "كراب رانغون",
+      "section": "Starters",
+      "description": "Five pieces. Crab, cream cheese, spring onion.",
+      "descriptionAr": "خمس حبات. سلطعون، جبنة، بصل أخضر",
+      "image": "/dishes/crab-rangoon.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "spicy-toggle",
+        "mildQar": 25,
+        "spicyQar": 28
+      },
+      "freeDips": [
+        {
+          "id": "sweet-chili",
+          "name": "Sweet chili",
+          "nameAr": "سويت تشيلي"
+        },
+        {
+          "id": "mayo",
+          "name": "Mayo",
+          "nameAr": "مايونيز"
+        },
+        {
+          "id": "spicy-mayo",
+          "name": "Spicy mayo",
+          "nameAr": "مايونيز حار",
+          "spicy": true
+        },
+        {
+          "id": "soya",
+          "name": "Soya",
+          "nameAr": "صويا"
+        },
+        {
+          "id": "bbq",
+          "name": "BBQ",
+          "nameAr": "باربكيو"
+        },
+        {
+          "id": "sushinaa",
+          "name": "Sushinaa sauce",
+          "nameAr": "صوص سوشينا"
+        },
+        {
+          "id": "sweet-n-spicy",
+          "name": "Sweet n spicy",
+          "nameAr": "حلو وحار",
+          "spicy": true
+        },
+        {
+          "id": "dynamite",
+          "name": "Dynamite",
+          "nameAr": "ديناميت",
+          "spicy": true
+        }
+      ],
+      "order": 11,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "salt-edamame",
+      "name": "Salt edamame",
+      "nameAr": "إدامامي مالح",
+      "section": "Starters",
+      "description": "Boiled edamame with rock salt.",
+      "descriptionAr": "فول الصويا يقدم مع الملح الصخري",
+      "image": "/dishes/salt-edamame.jpg",
+      "tags": [
+        "veg"
+      ],
+      "kind": {
+        "type": "simple",
+        "priceQar": 30
+      },
+      "order": 12,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "spicy-edamame",
+      "name": "Spicy edamame",
+      "nameAr": "إدامامي حار",
+      "section": "Starters",
+      "description": "Edamame with spicy sauce, garlic, and soy.",
+      "descriptionAr": "يحتوي على صوص حار، ثوم، صويا",
+      "image": "/dishes/spicy-edamame.jpg",
+      "tags": [
+        "veg",
+        "spicy"
+      ],
+      "kind": {
+        "type": "simple",
+        "priceQar": 40
+      },
+      "order": 13,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "chicken-fried-rice",
+      "name": "Chicken fried rice",
+      "nameAr": "أرز مقلي بالدجاج",
+      "section": "Fried rice",
+      "description": "Chicken, rice, soy sauce, yellow pepper, green pepper, red pepper, mushroom, carrot, black pepper.",
+      "image": "/dishes/chicken-fried-rice.jpg",
+      "tags": [],
+      "kind": {
+        "type": "simple",
+        "priceQar": 48
+      },
+      "descriptionAr": "دجاج,أرز,صلصة صويا,لفل أصفر,لفل أخضر,فلفل أحمر,فطر,جزرفلفل أسود 350 جم إلى380 جم",
+      "order": 14,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "beef-fried-rice",
+      "name": "Beef fried rice",
+      "nameAr": "أرز مقلي باللحم",
+      "section": "Fried rice",
+      "description": "Beef, rice, soy sauce, yellow pepper, green pepper, red pepper, mushroom, carrot, black pepper.",
+      "image": "/dishes/beef-fried-rice.jpg",
+      "tags": [],
+      "kind": {
+        "type": "simple",
+        "priceQar": 48
+      },
+      "descriptionAr": "لحم,أرز,صلصة صويا,لفل أصفر,لفل أخضر,فلفل أحمر,فطر,جزرفلفل أسود 350 جم إلى380 جم",
+      "order": 15,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "shrimp-fried-rice",
+      "name": "Shrimp fried rice",
+      "nameAr": "أرز مقلي بالجمبري",
+      "section": "Fried rice",
+      "description": "Shrimp, rice, soy sauce, yellow pepper, green pepper, red pepper, mushroom, carrot, black pepper.",
+      "image": "/dishes/shrimp-fried-rice.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "simple",
+        "priceQar": 52
+      },
+      "descriptionAr": "روبيان,أرز,صلصة صويا,لفل أصفر,لفل أخضر,فلفل أحمر,فطر,جزرفلفل أسود 350 جم إلى380 جم",
+      "order": 16,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "vegi-fried-rice",
+      "name": "Vegetable fried rice",
+      "nameAr": "أرز مقلي بالخضار",
+      "section": "Fried rice",
+      "description": "Rice, soy sauce, yellow pepper, green pepper, red pepper, mushroom, carrot, black pepper.",
+      "image": "/dishes/vegi-fried-rice.jpg",
+      "tags": [
+        "veg"
+      ],
+      "kind": {
+        "type": "simple",
+        "priceQar": 40
+      },
+      "descriptionAr": "أرز,صلصة صويا,لفل أصفر,لفل أخضر,فلفل أحمر,فطر,جزرفلفل أسود 320 جم إلى350 جم",
+      "order": 17,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "veggie-poke",
+      "name": "Veggie poke bowl",
+      "nameAr": "بوك بول خضار",
+      "section": "Poke bowls",
+      "description": "Rice, cucumber, edamame, avocado, mango, white cabbage, red cabbage, breadcrumbs, nori. Crispy potato on the side.",
+      "image": "/dishes/vegi-poke-bowl.jpg",
+      "tags": [
+        "veg"
+      ],
+      "kind": {
+        "type": "simple",
+        "priceQar": 35
+      },
+      "descriptionAr": "ارز، خيار، ادمامي، افوكادو، منجا، ملفوف ابيض، ملفوف احمر، فتات الخبز، نوري (يقدم مع بطاطا مقرمشه) 300 جم إلى320 جم",
+      "order": 18,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "chicken-poke",
+      "name": "Chicken poke bowl",
+      "nameAr": "بوك بول دجاج",
+      "section": "Poke bowls",
+      "description": "Crispy chicken with sauce, rice, cucumber, corn, avocado, white cabbage, red cabbage, nori. Crispy potato on the side.",
+      "image": "/dishes/chicken-poke-bowl.jpg",
+      "tags": [],
+      "kind": {
+        "type": "simple",
+        "priceQar": 50
+      },
+      "descriptionAr": "دجاج كرسبي مع صوص، ارز، خيار، ذره، افوكادو، ملفوف ابيض، ملفوف احمر، نوري. (يقدم مع بطاطا مقرمشه) 300 جم إلى320 جم",
+      "order": 19,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "shrimp-poke",
+      "name": "Shrimp poke bowl",
+      "nameAr": "بوك بول روبيان",
+      "section": "Poke bowls",
+      "description": "Crispy shrimp with sauce, rice, cucumber, edamame, avocado, crab, mayonnaise, caviar, corn, nori. Crispy potato on the side.",
+      "image": "/dishes/shrimp-poke-bowl.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "simple",
+        "priceQar": 55
+      },
+      "descriptionAr": "روبيان كرسبي مع صوص، ارز، خيار، ادمامي، افوكادو، سلطعون، مايونيز، كافيار، ذره، نوري. (يقدم مع بطاطا مقرمشه) 300 جم إلى320 جم",
+      "order": 20,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "shrimp-box",
+      "name": "Shrimp box",
+      "nameAr": "بوكس روبيان",
+      "section": "Deal box",
+      "description": "One starter and one sushi type (6 pieces). Shrimp only.",
+      "descriptionAr": "مقبلات ونوع سوشي (٦ حبات). روبيان فقط.",
+      "image": "/dishes/shrimp-deal-box.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "deal-box",
+        "priceQar": 55,
+        "starters": [
+          {
+            "id": "shrimp-tempura",
+            "name": "Shrimp tempura",
+            "nameAr": "روبيان تيمبورا"
+          },
+          {
+            "id": "shrimp-dynamite",
+            "name": "Shrimp dynamite",
+            "spicy": true,
+            "nameAr": "روبيان ديناميت"
+          },
+          {
+            "id": "shrimp-sns",
+            "name": "Shrimp sweet n sour",
+            "spicy": true,
+            "nameAr": "روبيان سويت آند ساور"
+          },
+          {
+            "id": "shrimp-bbq",
+            "name": "Shrimp BBQ",
+            "nameAr": "روبيان باربكيو"
+          }
+        ],
+        "sushi": [
+          {
+            "id": "classic-cherry",
+            "name": "Classic cherry roll",
+            "nameAr": "كلاسيك تشيري رول"
+          },
+          {
+            "id": "tiger-shrimp",
+            "name": "Tiger roll (shrimp)",
+            "nameAr": "تايغر رول (روبيان)"
+          },
+          {
+            "id": "tempura-cali",
+            "name": "Tempura California roll",
+            "nameAr": "تمبورا كاليفورنيا رول"
+          },
+          {
+            "id": "october-shrimp",
+            "name": "October roll (shrimp)",
+            "spicy": true,
+            "nameAr": "أكتوبر رول (روبيان)"
+          }
+        ]
+      },
+      "order": 21,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "chicken-box",
+      "name": "Chicken box",
+      "nameAr": "بوكس دجاج",
+      "section": "Deal box",
+      "description": "One starter and one sushi type (6 pieces). Chicken only.",
+      "descriptionAr": "مقبلات ونوع سوشي (٦ حبات). دجاج فقط.",
+      "image": "/dishes/chicken-deal-box.jpg",
+      "tags": [],
+      "kind": {
+        "type": "deal-box",
+        "priceQar": 55,
+        "starters": [
+          {
+            "id": "chicken-dynamite",
+            "name": "Chicken dynamite",
+            "spicy": true,
+            "nameAr": "دجاج ديناميت"
+          },
+          {
+            "id": "chicken-sns",
+            "name": "Chicken sweet n spicy",
+            "spicy": true,
+            "nameAr": "دجاج حلو وحار"
+          },
+          {
+            "id": "chicken-bbq",
+            "name": "Chicken BBQ",
+            "nameAr": "دجاج باربكيو"
+          }
+        ],
+        "sushi": [
+          {
+            "id": "chicken-mayo",
+            "name": "Chicken mayo roll",
+            "nameAr": "رول دجاج مايونيز"
+          },
+          {
+            "id": "hba",
+            "name": "HBA chicken roll",
+            "nameAr": "رول إتش بي إيه دجاج"
+          },
+          {
+            "id": "chips-oman",
+            "name": "Chips Oman roll",
+            "spicy": true,
+            "nameAr": "رول شيبس عمان"
+          }
+        ]
+      },
+      "order": 22,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "seafood-box",
+      "name": "Seafood box",
+      "nameAr": "بوكس مأكولات بحرية",
+      "section": "Deal box",
+      "description": "One starter and one sushi type (6 pieces). Seafood only.",
+      "descriptionAr": "مقبلات ونوع سوشي (٦ حبات). بحري فقط.",
+      "image": "/dishes/seafood-deal-box.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "deal-box",
+        "priceQar": 55,
+        "starters": [
+          {
+            "id": "crab-rangoon",
+            "name": "Crab rangoon",
+            "nameAr": "كراب رانغون"
+          },
+          {
+            "id": "crunchy-crab-salad",
+            "name": "Crunchy crab salad",
+            "nameAr": "سلطة كراب مقرمشة"
+          }
+        ],
+        "sushi": [
+          {
+            "id": "blue",
+            "name": "Blue roll",
+            "nameAr": "بلو رول"
+          },
+          {
+            "id": "cereal-killer",
+            "name": "Cereal-killer roll",
+            "nameAr": "رول سيريال كيلر"
+          },
+          {
+            "id": "crazy-salmon",
+            "name": "Crazy salmon roll",
+            "spicy": true,
+            "nameAr": "رول كريزي سلمون"
+          },
+          {
+            "id": "csc",
+            "name": "CSC roll",
+            "nameAr": "رول سي إس سي"
+          }
+        ]
+      },
+      "order": 23,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "veggie-box",
+      "name": "Veggie box",
+      "nameAr": "بوكس خضار",
+      "section": "Deal box",
+      "description": "One starter and one sushi type (6 pieces). Vegetarian only.",
+      "descriptionAr": "مقبلات ونوع سوشي (٦ حبات). خضار فقط.",
+      "image": "/dishes/vegi-deal-box.jpg",
+      "tags": [
+        "veg"
+      ],
+      "kind": {
+        "type": "deal-box",
+        "priceQar": 55,
+        "starters": [
+          {
+            "id": "salt-edamame",
+            "name": "Salt edamame",
+            "nameAr": "إدامامي مالح"
+          },
+          {
+            "id": "spicy-edamame",
+            "name": "Spicy edamame",
+            "spicy": true,
+            "nameAr": "إدامامي حار"
+          }
+        ],
+        "sushi": [
+          {
+            "id": "lettuce",
+            "name": "Lettuce roll",
+            "veg": true,
+            "nameAr": "رول خس"
+          },
+          {
+            "id": "avocado",
+            "name": "Avocado roll",
+            "veg": true,
+            "nameAr": "رول أفوكادو"
+          },
+          {
+            "id": "veggie",
+            "name": "Veggie roll",
+            "veg": true,
+            "nameAr": "رول خضار"
+          },
+          {
+            "id": "mario",
+            "name": "Mario roll",
+            "veg": true,
+            "nameAr": "ماريو رول"
+          }
+        ]
+      },
+      "order": 24,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "spicy-mango-salad",
+      "name": "Spicy mango salad",
+      "nameAr": "سلطة مانجو حارة",
+      "section": "Salads",
+      "description": "Crab sticks, mango, cucumber, lettuce, black sesame, crispy wonton, spicy sauce.",
+      "image": "/dishes/spicy-mango-salad.jpg",
+      "tags": [
+        "seafood",
+        "spicy"
+      ],
+      "kind": {
+        "type": "simple",
+        "priceQar": 36
+      },
+      "descriptionAr": "عصي كراب، مانجو، خيار، خس، سمسم أسود، وونتون مقرمش، صوص حار",
+      "order": 25,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "crunchy-crab-salad",
+      "name": "Crunchy crab salad",
+      "nameAr": "سلطة كراب مقرمشة",
+      "section": "Salads",
+      "description": "Crab, lettuce, caviar, nori, breadcrumbs, mayonnaise, cucumber.",
+      "image": "/dishes/crunchy-crab-salad.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "addons",
+        "priceQar": 39,
+        "extras": [
+          {
+            "id": "make-spicy",
+            "name": "Make it spicy",
+            "nameAr": "حار",
+            "priceQar": 3
+          }
+        ],
+        "spicyOptional": false
+      },
+      "descriptionAr": "سلطعون، خس، كفيار، ورق النوري، فتات الخبز، مايونيز، خيار 300 جم إلى320 جم",
+      "order": 26,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "honey-glaze-chicken",
+      "name": "Honey glaze chicken",
+      "nameAr": "دجاج بصلصة العسل",
+      "section": "Mains",
+      "description": "Honey chicken, rice, avocado, sesame, spring onion.",
+      "image": "/dishes/glazed-honey-chicken.jpg",
+      "tags": [],
+      "kind": {
+        "type": "simple",
+        "priceQar": 45
+      },
+      "extras": [
+        {
+          "id": "extra-chicken",
+          "name": "Extra chicken",
+          "nameAr": "دجاج إضافي",
+          "priceQar": 7
+        },
+        {
+          "id": "extra-rice",
+          "name": "Extra rice",
+          "nameAr": "أرز إضافي",
+          "priceQar": 3
+        },
+        {
+          "id": "extra-avocado",
+          "name": "Extra avocado",
+          "nameAr": "أفوكادو إضافي",
+          "priceQar": 3
+        }
+      ],
+      "descriptionAr": "دجاج بالعسل، رز، افوكادو، سمسم، بصل اخضر 360 جم إلى380 جم",
+      "order": 27,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "honey-glaze-salmon",
+      "name": "Honey glaze salmon",
+      "nameAr": "سلمون بصلصة العسل",
+      "section": "Mains",
+      "description": "Honey salmon, rice, avocado, sesame, spring onion.",
+      "image": "/dishes/glazed-honey-salmon.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "simple",
+        "priceQar": 48
+      },
+      "extras": [
+        {
+          "id": "extra-salmon",
+          "name": "Extra salmon",
+          "nameAr": "سلمون إضافي",
+          "priceQar": 7
+        },
+        {
+          "id": "extra-rice",
+          "name": "Extra rice",
+          "nameAr": "أرز إضافي",
+          "priceQar": 3
+        },
+        {
+          "id": "extra-avocado",
+          "name": "Extra avocado",
+          "nameAr": "أفوكادو إضافي",
+          "priceQar": 3
+        }
+      ],
+      "descriptionAr": "سلمون بالعسل، رز، افوكادو، سمسم، بصل اخضر 360 جم إلى380 جم",
+      "order": 28,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "mario-roll",
+      "name": "Mario roll",
+      "nameAr": "رول ماريو",
+      "section": "Sushina rolls",
+      "description": "Mango, carrot, avocado, cherry, cucumber. Choose your protein.",
+      "descriptionAr": "مانجو، جزر، أفوكادو، كرز، خيار",
+      "image": "/dishes/mario-roll-chicken.jpg",
+      "tags": [],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "chicken",
+            "name": "Chicken",
+            "nameAr": "دجاج",
+            "image": "/dishes/mario-roll-chicken.jpg",
+            "prices": {
+              "4": 32,
+              "6": 48,
+              "8": 64,
+              "12": 96,
+              "24": 192
+            }
+          },
+          {
+            "id": "shrimp",
+            "name": "Shrimp",
+            "nameAr": "روبيان",
+            "image": "/dishes/mario-roll-shrimp.jpg",
+            "seafood": true,
+            "prices": {
+              "4": 32,
+              "6": 48,
+              "8": 64,
+              "12": 96,
+              "24": 192
+            }
+          },
+          {
+            "id": "vegi",
+            "name": "Veggie",
+            "nameAr": "خضار",
+            "image": "/dishes/mario-roll-vegi.jpg",
+            "veg": true,
+            "prices": {
+              "4": 32,
+              "6": 48,
+              "8": 64,
+              "12": 96,
+              "24": 192
+            }
+          }
+        ]
+      },
+      "order": 29,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "cereal-killer-roll",
+      "name": "Cereal-killer roll",
+      "nameAr": "رول سيريل كيلر",
+      "section": "Sushina rolls",
+      "description": "Shrimp, crab, lettuce, two sauces, crisps.",
+      "image": "/dishes/cereal-killer-roll.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "shrimp",
+            "name": "Shrimp",
+            "seafood": true,
+            "prices": {
+              "4": 30,
+              "6": 45,
+              "8": 60,
+              "12": 90,
+              "24": 180
+            },
+            "nameAr": "روبيان"
+          }
+        ]
+      },
+      "descriptionAr": "رول سيريال كيلر ٤ قطع ربيان، سلطعون، خس، نوعين صوص، رقائق 100 جم إلى120 جم",
+      "order": 30,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "tiger-roll",
+      "name": "Tiger roll",
+      "nameAr": "رول تايغر",
+      "section": "Sushina rolls",
+      "description": "Mozzarella, special sauce, soy sauce. Chicken, shrimp, or salmon — price follows the protein.",
+      "descriptionAr": "جبنة موزاريلا وصوص خاص. اختار الدجاج أو الروبيان أو السلمون",
+      "image": "/dishes/tiger-roll-chicken.jpg",
+      "tags": [],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "chicken",
+            "name": "Chicken",
+            "nameAr": "دجاج",
+            "image": "/dishes/tiger-roll-chicken.jpg",
+            "prices": {
+              "4": 32,
+              "6": 48,
+              "8": 64
+            }
+          },
+          {
+            "id": "shrimp",
+            "name": "Shrimp",
+            "nameAr": "روبيان",
+            "image": "/dishes/tiger-roll-shrimp.jpg",
+            "seafood": true,
+            "prices": {
+              "4": 34,
+              "6": 51,
+              "8": 68
+            }
+          },
+          {
+            "id": "salmon",
+            "name": "Salmon",
+            "nameAr": "سلمون",
+            "image": "/dishes/tiger-roll-salmon.jpg",
+            "seafood": true,
+            "prices": {
+              "4": 36,
+              "6": 54,
+              "8": 72
+            }
+          }
+        ]
+      },
+      "order": 31,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "chicken-mayo-roll",
+      "name": "Chicken mayo roll",
+      "nameAr": "رول دجاج مايونيز",
+      "section": "Sushina rolls",
+      "description": "Chicken, carrot, mayonnaise.",
+      "image": "/dishes/chicken-mayo-roll.jpg",
+      "tags": [],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "chicken",
+            "name": "Chicken",
+            "prices": {
+              "4": 28,
+              "6": 42,
+              "8": 56,
+              "12": 84,
+              "24": 168
+            },
+            "nameAr": "دجاج"
+          }
+        ]
+      },
+      "descriptionAr": "رول دجاج بالمايونيز ٤ قطع دجاج، جزر، مايونيز 100 جم إلى120 جم",
+      "order": 32,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "philadelphia-roll",
+      "name": "The Philadelphia roll",
+      "nameAr": "رول فيلادلفيا",
+      "section": "Sushina rolls",
+      "description": "Smoked salmon, cheese, cucumber.",
+      "image": "/dishes/philadelphia-roll.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "salmon",
+            "name": "Salmon",
+            "seafood": true,
+            "prices": {
+              "4": 28,
+              "6": 42,
+              "8": 56,
+              "12": 84,
+              "24": 168
+            },
+            "nameAr": "سلمون"
+          }
+        ]
+      },
+      "descriptionAr": "فيلادلفيا رول 4 قطع سالمون مدخن، جبن، خيار 100 جم إلى120 جم",
+      "order": 33,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "fusion-roll",
+      "name": "Fusion crab roll",
+      "nameAr": "رول فيوجن كراب",
+      "section": "Sushina rolls",
+      "description": "Flaming hot chips powder, mayonnaise, crab sticks, rice, nori, soy sauce.",
+      "image": "/dishes/fusion-roll.jpg",
+      "tags": [
+        "seafood",
+        "spicy"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "crab",
+            "name": "Crab",
+            "seafood": true,
+            "prices": {
+              "4": 30,
+              "6": 45,
+              "8": 60,
+              "12": 90,
+              "24": 180
+            },
+            "nameAr": "سلطعون"
+          }
+        ]
+      },
+      "descriptionAr": "فلامنقو كراب رول 4 قطع اختيار من:بودرة رقائق حارة,مايونيز,عصي كراب,أرز,نوري,صلصة صويا 120 جم إلى140 جم",
+      "order": 34,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "crazy-salmon-roll",
+      "name": "Crazy salmon roll",
+      "nameAr": "رول سالمون كريزي",
+      "section": "Sushina rolls",
+      "description": "Salmon cooked in spicy sauce, caviar.",
+      "image": "/dishes/crazy-salmon-roll.jpg",
+      "tags": [
+        "seafood",
+        "spicy"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "salmon",
+            "name": "Salmon",
+            "seafood": true,
+            "spicy": true,
+            "prices": {
+              "4": 36,
+              "6": 54,
+              "8": 72,
+              "12": 108,
+              "24": 216
+            },
+            "nameAr": "سلمون"
+          }
+        ]
+      },
+      "descriptionAr": "سلمون كريزي رول 4 قطع سالمون، مطبوخ في صلصه حاره، كفيار 120 جم إلى140 جم",
+      "order": 35,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "volcanic-shrimp-roll",
+      "name": "Volcanic shrimp roll",
+      "nameAr": "رول فولكانيك شرمب",
+      "section": "Sushina rolls",
+      "description": "Shrimp, cucumber, flakes.",
+      "image": "/dishes/volcanic-shrimp-roll.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "shrimp",
+            "name": "Shrimp",
+            "seafood": true,
+            "prices": {
+              "4": 40,
+              "6": 60,
+              "8": 80,
+              "12": 120,
+              "24": 240
+            },
+            "nameAr": "روبيان"
+          }
+        ]
+      },
+      "descriptionAr": "روبيان فولكانك رول 4 قطع ربيان، خيار، رقائق 100 جم إلى120 جم",
+      "order": 36,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "chips-oman-roll",
+      "name": "Chips Oman roll",
+      "nameAr": "رول تشبس عمان",
+      "section": "Sushina rolls",
+      "description": "Chicken, cheese, cucumber, spicy sauce.",
+      "image": "/dishes/chips-oman-roll.jpg",
+      "tags": [
+        "spicy"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "chicken",
+            "name": "Chicken",
+            "spicy": true,
+            "prices": {
+              "4": 40,
+              "6": 60,
+              "8": 80,
+              "12": 120,
+              "24": 240
+            },
+            "nameAr": "دجاج"
+          }
+        ]
+      },
+      "descriptionAr": "رول شيبس عمان ٤ قطع دجاج، جبن، خيار، صوص حار 120 جم إلى140 جم",
+      "order": 37,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "salad-roll",
+      "name": "Salad roll",
+      "nameAr": "رول سلطة",
+      "section": "Sushina rolls",
+      "description": "Crab, lettuce, caviar, breadcrumbs, mayonnaise, cucumber.",
+      "image": "/dishes/salad-roll.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "crab",
+            "name": "Crab",
+            "seafood": true,
+            "prices": {
+              "4": 28,
+              "6": 42,
+              "8": 56,
+              "12": 84,
+              "24": 168
+            },
+            "nameAr": "سلطعون"
+          }
+        ]
+      },
+      "descriptionAr": "سلطة رول 4 قطع سلطعون، خس، كفيار، فتات الخبز، مايونيز، خيار 100 جم إلى120 جم",
+      "order": 38,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "shrimp-dynamite-roll",
+      "name": "Shrimp dynamite roll",
+      "nameAr": "رول شرمب ديناميت",
+      "section": "Sushina rolls",
+      "description": "Shrimp, dynamite sauce.",
+      "image": "/dishes/shrimp-dynamite-roll.jpg",
+      "tags": [
+        "seafood",
+        "spicy"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "shrimp",
+            "name": "Shrimp",
+            "seafood": true,
+            "spicy": true,
+            "prices": {
+              "4": 40,
+              "6": 60,
+              "8": 80,
+              "12": 120,
+              "24": 240
+            },
+            "nameAr": "روبيان"
+          }
+        ]
+      },
+      "descriptionAr": "روبيان داينامايت رول 4 قطع ربيان، صوص الديناميت 120 جم إلى140 جم",
+      "order": 39,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "tempura-california-roll",
+      "name": "Tempura California roll",
+      "nameAr": "رول تمبورا كاليفورنيا",
+      "section": "Sushina rolls",
+      "description": "Tempura, cucumber, avocado, mayonnaise. Choose sesame, orange caviar, or none.",
+      "image": "/dishes/tempura-california-roll.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "tempura",
+            "name": "Tempura shrimp",
+            "seafood": true,
+            "prices": {
+              "4": 28,
+              "6": 42,
+              "8": 56,
+              "12": 84,
+              "24": 168
+            },
+            "nameAr": "روبيان تيمبورا"
+          }
+        ],
+        "topping": {
+          "id": "topping",
+          "name": "Topping",
+          "options": [
+            {
+              "id": "sesame",
+              "name": "Sesame",
+              "nameAr": "سمسم"
+            },
+            {
+              "id": "orange-caviar",
+              "name": "Orange caviar",
+              "nameAr": "كفيار برتقالي"
+            },
+            {
+              "id": "none",
+              "name": "None",
+              "nameAr": "بدون"
+            }
+          ],
+          "nameAr": "الإضافة"
+        }
+      },
+      "descriptionAr": "كاليفورنيا تمبورا رول 4 قطع تمبورا، خيار، افوكادو، مايونيز 120 جم إلى140 جم",
+      "order": 40,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "crab-california-roll",
+      "name": "Crab California roll",
+      "nameAr": "رول كراب كاليفورنيا",
+      "section": "Sushina rolls",
+      "description": "Crab, cucumber, avocado, mayonnaise. Choose sesame, orange caviar, or none.",
+      "image": "/dishes/crab-california-roll.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "crab",
+            "name": "Crab",
+            "seafood": true,
+            "prices": {
+              "4": 28,
+              "6": 42,
+              "8": 56,
+              "12": 84,
+              "24": 168
+            },
+            "nameAr": "سلطعون"
+          }
+        ],
+        "topping": {
+          "id": "topping",
+          "name": "Topping",
+          "options": [
+            {
+              "id": "sesame",
+              "name": "Sesame",
+              "nameAr": "سمسم"
+            },
+            {
+              "id": "orange-caviar",
+              "name": "Orange caviar",
+              "nameAr": "كفيار برتقالي"
+            },
+            {
+              "id": "none",
+              "name": "None",
+              "nameAr": "بدون"
+            }
+          ],
+          "nameAr": "الإضافة"
+        }
+      },
+      "descriptionAr": "رول كاليفورنيا كراب ٤ قطع سلطعون، خيار، افوكادو، مايونيز 120 جم إلى140 جم",
+      "order": 41,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "shrimp-mayo-mixture",
+      "name": "Shrimp mayo mixture",
+      "nameAr": "شرمب مايونيز ميكس",
+      "section": "Sushina rolls",
+      "description": "Shrimp, mayo, spring onion, soy sauce.",
+      "image": "/dishes/shrimp-mayo-mixture.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "shrimp",
+            "name": "Shrimp",
+            "seafood": true,
+            "prices": {
+              "4": 32,
+              "6": 48,
+              "8": 64,
+              "12": 96,
+              "24": 192
+            },
+            "nameAr": "روبيان"
+          }
+        ]
+      },
+      "descriptionAr": "خليط روبيان مع مايونيز رول 4 قطع ربيان، مايونيز، بصل اخضر، صوص الصويا 120 جم إلى140 جم",
+      "order": 42,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "hba-chicken-roll",
+      "name": "HBA chicken roll",
+      "nameAr": "رول إتش بي إيه دجاج",
+      "section": "Sushina rolls",
+      "description": "Chicken, dynamite sauce.",
+      "image": "/dishes/hba-chicken-roll.jpg",
+      "tags": [
+        "spicy"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "chicken",
+            "name": "Chicken",
+            "spicy": true,
+            "prices": {
+              "4": 32,
+              "6": 48,
+              "8": 64,
+              "12": 96,
+              "24": 192
+            },
+            "nameAr": "دجاج"
+          }
+        ]
+      },
+      "descriptionAr": "رول إتش بي إيه دجاج ٤ قطع دجاج، صوص الديناميت ١٢٠ جم إلى ١٤٠ جم",
+      "order": 43,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "crustacean-crispy-roll",
+      "name": "Crustacean crispy roll",
+      "nameAr": "رول كرسبي كراستيشن",
+      "section": "Sushina rolls",
+      "description": "Shrimp, crab, three sauces.",
+      "image": "/dishes/crustacean-crispy-roll.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "shrimp",
+            "name": "Shrimp",
+            "seafood": true,
+            "prices": {
+              "4": 34,
+              "6": 51,
+              "8": 68,
+              "12": 102,
+              "24": 204
+            },
+            "nameAr": "روبيان"
+          }
+        ]
+      },
+      "descriptionAr": "كرسيتشيان كريسبي رول 4 قطع ربيان، سلذعون، ٣ أنواع صوص 120 جم إلى140 جم",
+      "order": 44,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "blue-roll",
+      "name": "Blue",
+      "nameAr": "بلو",
+      "section": "Sushina rolls",
+      "description": "Crab, shrimp, caviar, Sushinaa sauce.",
+      "image": "/dishes/blue.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "seafood",
+            "name": "Seafood",
+            "seafood": true,
+            "prices": {
+              "4": 44,
+              "6": 66,
+              "8": 88,
+              "12": 132,
+              "24": 264
+            },
+            "nameAr": "بحري"
+          }
+        ]
+      },
+      "descriptionAr": "بلو رول ٤ قطع- سلطعون، ربيان، كفيار، صوص سوشينا 120 جم إلى140 جم",
+      "order": 45,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "csc-roll",
+      "name": "CSC roll",
+      "nameAr": "رول سي إس سي",
+      "section": "Sushina rolls",
+      "description": "Crab, shrimp, caviar, mayo.",
+      "image": "/dishes/csc-roll.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "seafood",
+            "name": "Seafood",
+            "seafood": true,
+            "prices": {
+              "4": 32,
+              "6": 48,
+              "8": 64,
+              "12": 96,
+              "24": 192
+            },
+            "nameAr": "بحري"
+          }
+        ]
+      },
+      "descriptionAr": "سي إس سي رول 4 قطع سلطعون، ربيان، كفيار، مايونيز 120 جم إلى140 جم",
+      "order": 46,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "flamin-hot-roll",
+      "name": "Flamin hot roll",
+      "nameAr": "رول فليمين هوت",
+      "section": "Sushina rolls",
+      "description": "Fried protein, cheese, Cheetos (hot). Shrimp costs more than chicken.",
+      "image": "/dishes/flamin-roll-chicken.jpg",
+      "tags": [
+        "spicy"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "chicken",
+            "name": "Chicken",
+            "nameAr": "دجاج",
+            "image": "/dishes/flamin-roll-chicken.jpg",
+            "spicy": true,
+            "prices": {
+              "4": 28,
+              "6": 42,
+              "8": 56,
+              "12": 84,
+              "24": 168
+            }
+          },
+          {
+            "id": "shrimp",
+            "name": "Shrimp",
+            "nameAr": "روبيان",
+            "image": "/dishes/flamin-roll-shrimp.jpg",
+            "seafood": true,
+            "spicy": true,
+            "prices": {
+              "4": 32,
+              "6": 48,
+              "8": 64,
+              "12": 96,
+              "24": 192
+            }
+          }
+        ]
+      },
+      "descriptionAr": "رول فليمين هوت ٤ قطع بروتين مقلي، جبن، شيتوس (حار). دجاج أو روبيان",
+      "order": 47,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "lettuce-roll",
+      "name": "Lettuce roll",
+      "nameAr": "رول خس",
+      "section": "Sushina rolls",
+      "description": "Avocado, carrot, lettuce, mayo. Add chicken and the price steps up.",
+      "image": "/dishes/lettuce-roll.jpg",
+      "tags": [
+        "veg"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "vegi",
+            "name": "Veggie",
+            "nameAr": "خضار",
+            "image": "/dishes/lettuce-roll.jpg",
+            "veg": true,
+            "prices": {
+              "4": 28,
+              "6": 42,
+              "8": 56,
+              "12": 84,
+              "24": 168
+            }
+          },
+          {
+            "id": "chicken",
+            "name": "Chicken",
+            "nameAr": "دجاج",
+            "image": "/dishes/chicken-lettuce-roll.jpg",
+            "prices": {
+              "4": 32,
+              "6": 48,
+              "8": 64,
+              "12": 96,
+              "24": 192
+            }
+          }
+        ]
+      },
+      "descriptionAr": "رول خس ٤ قطع أفوكادو، جزر، خس، مايونيز. يمكن إضافة دجاج",
+      "order": 48,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "october-roll",
+      "name": "October roll",
+      "nameAr": "رول أكتوبر",
+      "section": "Sushina rolls",
+      "description": "Sweet n spicy sauce, avocado. Shrimp is a little more than chicken.",
+      "image": "/dishes/october-roll-chicken.jpg",
+      "tags": [
+        "spicy"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "chicken",
+            "name": "Chicken",
+            "nameAr": "دجاج",
+            "image": "/dishes/october-roll-chicken.jpg",
+            "spicy": true,
+            "prices": {
+              "4": 34,
+              "6": 51,
+              "8": 68,
+              "12": 102,
+              "24": 204
+            }
+          },
+          {
+            "id": "shrimp",
+            "name": "Shrimp",
+            "nameAr": "روبيان",
+            "image": "/dishes/october-roll-shrimp.jpg",
+            "seafood": true,
+            "spicy": true,
+            "prices": {
+              "4": 36,
+              "6": 54,
+              "8": 72,
+              "12": 108,
+              "24": 216
+            }
+          }
+        ]
+      },
+      "descriptionAr": "رول أكتوبر ٤ قطع صوص حلو وحار، أفوكادو (حار). دجاج أو روبيان",
+      "order": 49,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "fire-crunch-roll",
+      "name": "Fire crunch shrimp roll",
+      "nameAr": "رول فاير كرنش شرمب",
+      "section": "Sushina rolls",
+      "description": "Shrimp, spicy sauce, spring onion, sesame, mayonnaise, crispy.",
+      "image": "/dishes/fire-crush-roll.jpg",
+      "tags": [
+        "seafood",
+        "spicy"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "shrimp",
+            "name": "Shrimp",
+            "seafood": true,
+            "spicy": true,
+            "prices": {
+              "4": 32,
+              "6": 48,
+              "8": 64,
+              "12": 96,
+              "24": 192
+            },
+            "nameAr": "روبيان"
+          }
+        ]
+      },
+      "descriptionAr": "فاير كرَنش شرمب رول 4 قطع ربيان، صوص حار، بصل اخضر، سمسم، مايونيز، مقرمش 120 جم إلى140 جم",
+      "order": 50,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "classic-cherry-roll",
+      "name": "Classic cherry roll",
+      "nameAr": "رول كلاسيك تشيري",
+      "section": "Sushina rolls",
+      "description": "Cream cheese, avocado, roasted sesame, mayonnaise, dried cherry tomato. Shrimp or chicken breast.",
+      "image": "/dishes/classic-cherry-roll-chicken.jpg",
+      "tags": [],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "chicken",
+            "name": "Chicken",
+            "nameAr": "دجاج",
+            "image": "/dishes/classic-cherry-roll-chicken.jpg",
+            "prices": {
+              "4": 34,
+              "6": 51,
+              "8": 68,
+              "12": 102,
+              "24": 204
+            }
+          },
+          {
+            "id": "shrimp",
+            "name": "Shrimp",
+            "nameAr": "روبيان",
+            "image": "/dishes/classic-cherry-roll-shrimp.jpg",
+            "seafood": true,
+            "prices": {
+              "4": 36,
+              "6": 54,
+              "8": 72,
+              "12": 108,
+              "24": 216
+            }
+          }
+        ]
+      },
+      "descriptionAr": "رول كلاسيك تشيري ٤ قطع جبنة كريمية، أفوكادو، سمسم محمص، مايونيز، طماطم كرزية مجففة. روبيان أو صدر دجاج",
+      "order": 51,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "crunchy-crab-roll",
+      "name": "Crunchy crab roll",
+      "nameAr": "رول كرانشي كراب",
+      "section": "Sushina rolls",
+      "description": "Crab, tempura shrimp, three sauces, flakes, spring onion.",
+      "image": "/dishes/crunchy-crab-roll.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "crab",
+            "name": "Crab",
+            "seafood": true,
+            "prices": {
+              "4": 36,
+              "6": 54,
+              "8": 72,
+              "12": 108,
+              "24": 216
+            },
+            "nameAr": "سلطعون"
+          }
+        ]
+      },
+      "descriptionAr": "كراب كرنشي رول 4 قطع سلطعون، ربيان تمبورا، ٣ أنواع صوص، رقائق، بصل اخضر. 120 جم إلى140 جم",
+      "order": 52,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "guac-roll",
+      "name": "Guac roll",
+      "nameAr": "رول جواك",
+      "section": "Sushina rolls",
+      "description": "Rice, nori, crispy shrimp, cheddar, cucumber, avocado, nacho chips.",
+      "image": "/dishes/guac-roll.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "shrimp",
+            "name": "Shrimp",
+            "seafood": true,
+            "prices": {
+              "4": 34,
+              "6": 51,
+              "8": 68,
+              "12": 102,
+              "24": 204
+            },
+            "nameAr": "روبيان"
+          }
+        ]
+      },
+      "descriptionAr": "غوك رول 4 قطع يحتوي الرول على الأرز، نوري، روبيان مقرمش، جبن الشيدر، الخيار، الأفوكادو، رقائق الناتشو.120 جم إلى140 جم",
+      "order": 53,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "fried-shrimp-roll",
+      "name": "Fried shrimp roll",
+      "nameAr": "رول الروبيان المقلي",
+      "section": "Sushina rolls",
+      "description": "Shrimp, spicy sauce, mayonnaise, crispy.",
+      "image": "/dishes/fried-shrimp-roll.jpg",
+      "tags": [
+        "seafood",
+        "spicy"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "shrimp",
+            "name": "Shrimp",
+            "seafood": true,
+            "spicy": true,
+            "prices": {
+              "4": 24,
+              "6": 36,
+              "8": 48,
+              "12": 72
+            },
+            "nameAr": "روبيان"
+          }
+        ]
+      },
+      "descriptionAr": "رول روبيان مقلي ٤ قطع ربيان، صوص حار، مايونيز، مقرمش",
+      "order": 54,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "agr-burrito",
+      "name": "AGR sushi burrito",
+      "nameAr": "بوريتو سوشي",
+      "section": "Sushi burrito",
+      "description": "Crab, caviar, shrimp tempura, lettuce, sesame, chips, two sauces.",
+      "image": "/dishes/agr-sushi-burrito.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "addons",
+        "priceQar": 55,
+        "extras": [],
+        "freeChoices": [
+          {
+            "id": "cut",
+            "name": "Cut",
+            "nameAr": "التقطيع",
+            "options": [
+              {
+                "id": "not-cut",
+                "name": "Not cut",
+                "nameAr": "بدون تقطيع"
+              },
+              {
+                "id": "half",
+                "name": "Cut in half",
+                "nameAr": "نصفين"
+              },
+              {
+                "id": "four",
+                "name": "Cut in four",
+                "nameAr": "أربعة"
+              }
+            ]
+          }
+        ]
+      },
+      "descriptionAr": "سلطعون، ربيان تمبورا، خس، سمسم، رقائق، نوعين صوص 720 جم إلى740 جم",
+      "order": 55,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "tempura-roll",
+      "name": "Tempura roll",
+      "nameAr": "رول تمبورا",
+      "section": "Sushinaa maki",
+      "description": "Shrimp tempura. Choose cheese, mayo, or spicy mayo.",
+      "image": "/dishes/tempura-roll.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "tempura",
+            "name": "Tempura shrimp",
+            "seafood": true,
+            "prices": {
+              "4": 24,
+              "6": 36,
+              "8": 48,
+              "12": 72,
+              "24": 144
+            },
+            "nameAr": "روبيان تيمبورا"
+          }
+        ],
+        "topping": {
+          "id": "topping",
+          "name": "Filling",
+          "options": [
+            {
+              "id": "cheese",
+              "name": "Cheese",
+              "nameAr": "جبن"
+            },
+            {
+              "id": "mayo",
+              "name": "Mayo",
+              "nameAr": "مايونيز"
+            },
+            {
+              "id": "spicy-mayo",
+              "name": "Spicy mayo",
+              "nameAr": "مايونيز حار",
+              "spicy": true
+            }
+          ],
+          "nameAr": "الحشوة"
+        }
+      },
+      "descriptionAr": "رول تيمبورا ٤ قطع ربيان تيمبورا. اختر الجبن أو المايونيز أو المايونيز الحار",
+      "order": 56,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "cheese-roll",
+      "name": "Cheese roll",
+      "nameAr": "رول الجبن",
+      "section": "Sushinaa maki",
+      "description": "Cheese. Vegetarian.",
+      "image": "/dishes/cheese-maki.jpg",
+      "tags": [
+        "veg"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "cheese",
+            "name": "Cheese",
+            "veg": true,
+            "prices": {
+              "4": 24,
+              "6": 36,
+              "8": 48,
+              "12": 72,
+              "24": 144
+            },
+            "nameAr": "جبن"
+          }
+        ],
+        "style": {
+          "id": "style",
+          "name": "Heat",
+          "options": [
+            {
+              "id": "spicy",
+              "name": "Spicy",
+              "nameAr": "حار",
+              "spicy": true
+            },
+            {
+              "id": "not-spicy",
+              "name": "Regular",
+              "nameAr": "عادي"
+            }
+          ],
+          "nameAr": "الحرارة"
+        }
+      },
+      "descriptionAr": "رول جبنة ٤ قطع جبن (نباتي) 120 جم إلى140 جم",
+      "order": 57,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "carrot-roll",
+      "name": "Carrot roll",
+      "nameAr": "رول الجزر",
+      "section": "Sushinaa maki",
+      "description": "Carrot. Vegetarian. Choose cheese, mayo, or spicy mayo.",
+      "image": "/dishes/carrot-maki.jpg",
+      "tags": [
+        "veg"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "carrot",
+            "name": "Carrot",
+            "veg": true,
+            "prices": {
+              "4": 24,
+              "6": 36,
+              "8": 48,
+              "12": 72,
+              "24": 144
+            },
+            "nameAr": "جزر"
+          }
+        ],
+        "topping": {
+          "id": "topping",
+          "name": "Filling",
+          "options": [
+            {
+              "id": "cheese",
+              "name": "Cheese",
+              "nameAr": "جبن"
+            },
+            {
+              "id": "mayo",
+              "name": "Mayo",
+              "nameAr": "مايونيز"
+            },
+            {
+              "id": "spicy-mayo",
+              "name": "Spicy mayo",
+              "nameAr": "مايونيز حار",
+              "spicy": true
+            }
+          ],
+          "nameAr": "الحشوة"
+        }
+      },
+      "descriptionAr": "رول جزر ٤ قطع جزر (نباتي). اختر الجبن أو المايونيز أو المايونيز الحار",
+      "order": 58,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "avocado-roll",
+      "name": "Avocado roll",
+      "nameAr": "رول الأفوكادو",
+      "section": "Sushinaa maki",
+      "description": "Avocado. Vegetarian. Choose cheese, mayo, or spicy mayo.",
+      "image": "/dishes/avocado-roll.jpg",
+      "tags": [
+        "veg"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "avocado",
+            "name": "Avocado",
+            "veg": true,
+            "prices": {
+              "4": 24,
+              "6": 36,
+              "8": 48,
+              "12": 72,
+              "24": 144
+            },
+            "nameAr": "أفوكادو"
+          }
+        ],
+        "topping": {
+          "id": "topping",
+          "name": "Filling",
+          "options": [
+            {
+              "id": "cheese",
+              "name": "Cheese",
+              "nameAr": "جبن"
+            },
+            {
+              "id": "mayo",
+              "name": "Mayo",
+              "nameAr": "مايونيز"
+            },
+            {
+              "id": "spicy-mayo",
+              "name": "Spicy mayo",
+              "nameAr": "مايونيز حار",
+              "spicy": true
+            }
+          ],
+          "nameAr": "الحشوة"
+        }
+      },
+      "descriptionAr": "رول أفوكادو ٤ قطع افوكادو (نباتي) 120 جم إلى140 جم",
+      "order": 59,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "cucumber-roll",
+      "name": "Cucumber roll",
+      "nameAr": "رول الخيار",
+      "section": "Sushinaa maki",
+      "description": "Cucumber. Vegetarian. Choose cheese, mayo, or spicy mayo.",
+      "image": "/dishes/cucumber-maki.jpg",
+      "tags": [
+        "veg"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "cucumber",
+            "name": "Cucumber",
+            "veg": true,
+            "prices": {
+              "4": 24,
+              "6": 36,
+              "8": 48,
+              "12": 72,
+              "24": 144
+            },
+            "nameAr": "خيار"
+          }
+        ],
+        "topping": {
+          "id": "topping",
+          "name": "Filling",
+          "options": [
+            {
+              "id": "cheese",
+              "name": "Cheese",
+              "nameAr": "جبن"
+            },
+            {
+              "id": "mayo",
+              "name": "Mayo",
+              "nameAr": "مايونيز"
+            },
+            {
+              "id": "spicy-mayo",
+              "name": "Spicy mayo",
+              "nameAr": "مايونيز حار",
+              "spicy": true
+            }
+          ],
+          "nameAr": "الحشوة"
+        }
+      },
+      "descriptionAr": "رول خيار ٤ قطع خيار (نباتي) 120 جم إلى140 جم",
+      "order": 60,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "crabsticks-roll",
+      "name": "Crab sticks roll",
+      "nameAr": "رول كراب ستيكس",
+      "section": "Sushinaa maki",
+      "description": "Crab sticks and mayo. Regular, spicy, or crispy.",
+      "image": "/dishes/crabsticks-roll.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "crab",
+            "name": "Crab",
+            "seafood": true,
+            "prices": {
+              "4": 24,
+              "6": 36,
+              "8": 48,
+              "12": 72,
+              "24": 144
+            },
+            "nameAr": "سلطعون"
+          }
+        ],
+        "style": {
+          "id": "style",
+          "name": "Style",
+          "options": [
+            {
+              "id": "regular",
+              "name": "Regular",
+              "image": "/dishes/crabsticks-roll.jpg",
+              "nameAr": "عادي"
+            },
+            {
+              "id": "spicy",
+              "name": "Spicy",
+              "spicy": true,
+              "image": "/dishes/crabsticks-roll.jpg",
+              "nameAr": "حار"
+            },
+            {
+              "id": "crispy",
+              "name": "Crispy",
+              "image": "/dishes/crabsticks-roll-crispy.jpg",
+              "nameAr": "مقرمش"
+            }
+          ],
+          "nameAr": "النوع"
+        }
+      },
+      "descriptionAr": "رول عصي كراب ٤ قطع سلطعون ومايونيز. عادي أو حار أو مقرمش",
+      "order": 61,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "vegi-sushi",
+      "name": "Vegi sushi",
+      "nameAr": "سوشي خضار",
+      "section": "Sushinaa maki",
+      "description": "Bell pepper, carrot, lettuce, avocado, cucumber, rice, nori. Regular, or choose crispy.",
+      "image": "/dishes/vegi-roll.jpg",
+      "tags": [
+        "veg"
+      ],
+      "kind": {
+        "type": "roll",
+        "proteins": [
+          {
+            "id": "vegi",
+            "name": "Veggie",
+            "veg": true,
+            "prices": {
+              "4": 24,
+              "6": 36,
+              "8": 48,
+              "12": 72,
+              "24": 144
+            },
+            "nameAr": "خضار"
+          }
+        ],
+        "style": {
+          "id": "style",
+          "name": "Style",
+          "options": [
+            {
+              "id": "not-spicy",
+              "name": "Regular",
+              "nameAr": "عادي"
+            },
+            {
+              "id": "crispy",
+              "name": "Crispy",
+              "nameAr": "مقرمش"
+            }
+          ],
+          "nameAr": "النوع"
+        }
+      },
+      "descriptionAr": "سوشي خضار ٤ قطع فلفل رومي، جزر، خس، أفوكادو، خيار. عادي أو مقرمش",
+      "order": 62,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "chicken-noodles",
+      "name": "Chicken noodles",
+      "nameAr": "نودلز دجاج",
+      "section": "Noodles",
+      "description": "Chicken breast, bell pepper, carrot, red cabbage, onion, garlic, sauce. Spicy optional.",
+      "image": "/dishes/chicken-noodles.jpg",
+      "tags": [],
+      "kind": {
+        "type": "addons",
+        "priceQar": 50,
+        "spicyOptional": true,
+        "extras": [
+          {
+            "id": "extra-chicken",
+            "name": "Extra chicken",
+            "nameAr": "دجاج",
+            "priceQar": 5
+          },
+          {
+            "id": "mushroom",
+            "name": "Mushroom",
+            "nameAr": "فطر",
+            "priceQar": 2
+          },
+          {
+            "id": "extra-sauce",
+            "name": "Extra sauce",
+            "nameAr": "صوص إضافي",
+            "priceQar": 2
+          },
+          {
+            "id": "onion",
+            "name": "Onion",
+            "nameAr": "بصل",
+            "priceQar": 2
+          },
+          {
+            "id": "carrot",
+            "name": "Carrot",
+            "nameAr": "جزر",
+            "priceQar": 2
+          },
+          {
+            "id": "bell-pepper",
+            "name": "Bell pepper",
+            "nameAr": "فلفل رومي",
+            "priceQar": 2
+          },
+          {
+            "id": "cabbage",
+            "name": "Cabbage",
+            "nameAr": "ملفوف",
+            "priceQar": 2
+          }
+        ]
+      },
+      "descriptionAr": "دجاج، فلفل رومي، ملفوف احمر، بصل، ثوم، صوص 400 جم إلى420 جم",
+      "order": 63,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "shrimp-noodles",
+      "name": "Shrimp noodles",
+      "nameAr": "نودلز روبيان",
+      "section": "Noodles",
+      "description": "Shrimp, bell pepper, carrot, red cabbage, onion, garlic, sauce. Spicy optional.",
+      "image": "/dishes/shrimp-noodles.jpg",
+      "tags": [
+        "seafood"
+      ],
+      "kind": {
+        "type": "addons",
+        "priceQar": 52,
+        "spicyOptional": true,
+        "extras": [
+          {
+            "id": "extra-shrimp",
+            "name": "Extra shrimp",
+            "nameAr": "روبيان",
+            "priceQar": 5
+          },
+          {
+            "id": "mushroom",
+            "name": "Mushroom",
+            "nameAr": "فطر",
+            "priceQar": 2
+          },
+          {
+            "id": "extra-sauce",
+            "name": "Extra sauce",
+            "nameAr": "صوص إضافي",
+            "priceQar": 2
+          },
+          {
+            "id": "onion",
+            "name": "Onion",
+            "nameAr": "بصل",
+            "priceQar": 2
+          },
+          {
+            "id": "carrot",
+            "name": "Carrot",
+            "nameAr": "جزر",
+            "priceQar": 2
+          },
+          {
+            "id": "bell-pepper",
+            "name": "Bell pepper",
+            "nameAr": "فلفل رومي",
+            "priceQar": 2
+          },
+          {
+            "id": "cabbage",
+            "name": "Cabbage",
+            "nameAr": "ملفوف",
+            "priceQar": 2
+          }
+        ]
+      },
+      "descriptionAr": "ربيان، فلفل رومي، ملفوف احمر، بصل، ثوم، صوص 400 جم إلى420 جم",
+      "order": 64,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "beef-noodles",
+      "name": "Beef noodles",
+      "nameAr": "نودلز لحم بقري",
+      "section": "Noodles",
+      "description": "Beef, bell pepper, carrot, red cabbage, onion, garlic, sauce. Spicy optional.",
+      "image": "/dishes/beef-noodles.jpg",
+      "tags": [],
+      "kind": {
+        "type": "addons",
+        "priceQar": 55,
+        "spicyOptional": true,
+        "extras": [
+          {
+            "id": "extra-beef",
+            "name": "Extra beef",
+            "nameAr": "لحم",
+            "priceQar": 5
+          },
+          {
+            "id": "mushroom",
+            "name": "Mushroom",
+            "nameAr": "فطر",
+            "priceQar": 2
+          },
+          {
+            "id": "extra-sauce",
+            "name": "Extra sauce",
+            "nameAr": "صوص إضافي",
+            "priceQar": 2
+          },
+          {
+            "id": "onion",
+            "name": "Onion",
+            "nameAr": "بصل",
+            "priceQar": 2
+          },
+          {
+            "id": "carrot",
+            "name": "Carrot",
+            "nameAr": "جزر",
+            "priceQar": 2
+          },
+          {
+            "id": "bell-pepper",
+            "name": "Bell pepper",
+            "nameAr": "فلفل رومي",
+            "priceQar": 2
+          },
+          {
+            "id": "cabbage",
+            "name": "Cabbage",
+            "nameAr": "ملفوف",
+            "priceQar": 2
+          }
+        ]
+      },
+      "descriptionAr": "لحم، فلفل رومي، ملفوف احمر، بصل، ثوم، صوص 400 جم إلى420 جم",
+      "order": 65,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "veggie-noodles",
+      "name": "Veggie noodles",
+      "nameAr": "نودلز خضار",
+      "section": "Noodles",
+      "description": "Bell pepper, carrot, red cabbage, onion, garlic, sauce. Spicy optional.",
+      "image": "/dishes/vegi-noodles.jpg",
+      "tags": [
+        "veg"
+      ],
+      "kind": {
+        "type": "addons",
+        "priceQar": 45,
+        "spicyOptional": true,
+        "extras": [
+          {
+            "id": "mushroom",
+            "name": "Mushroom",
+            "nameAr": "فطر",
+            "priceQar": 2
+          },
+          {
+            "id": "extra-sauce",
+            "name": "Extra sauce",
+            "nameAr": "صوص إضافي",
+            "priceQar": 2
+          },
+          {
+            "id": "onion",
+            "name": "Onion",
+            "nameAr": "بصل",
+            "priceQar": 2
+          },
+          {
+            "id": "carrot",
+            "name": "Carrot",
+            "nameAr": "جزر",
+            "priceQar": 2
+          },
+          {
+            "id": "bell-pepper",
+            "name": "Bell pepper",
+            "nameAr": "فلفل رومي",
+            "priceQar": 2
+          },
+          {
+            "id": "cabbage",
+            "name": "Cabbage",
+            "nameAr": "ملفوف",
+            "priceQar": 2
+          }
+        ]
+      },
+      "descriptionAr": "فلفل رومي، ملفوف احمر، بصل، ثوم، صوص 400 جم إلى420 جم",
+      "order": 66,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "sushinaa-box-mini",
+      "name": "Sushinaa box mini",
+      "nameAr": "بوكس سوشينا ميني",
+      "section": "Sushinaa box",
+      "description": "Nine sushi types, one piece of each, plus one starter of your choice. Serves 1–2. WhatsApp 55075933 for the mix.",
+      "image": "/dishes/mini-sushinaa-box.jpg",
+      "tags": [],
+      "kind": {
+        "type": "party-box",
+        "priceQar": 110,
+        "starterMin": 1,
+        "starterMax": 1,
+        "starters": [
+          {
+            "id": "salt-edamame",
+            "name": "Salt edamame",
+            "nameAr": "إدامامي مالح"
+          },
+          {
+            "id": "spicy-edamame",
+            "name": "Spicy edamame",
+            "spicy": true,
+            "nameAr": "إدامامي حار"
+          },
+          {
+            "id": "shrimp-dynamite",
+            "name": "Shrimp dynamite",
+            "spicy": true,
+            "nameAr": "روبيان ديناميت"
+          },
+          {
+            "id": "shrimp-sns",
+            "name": "Shrimp sweet n spicy",
+            "spicy": true,
+            "nameAr": "روبيان حلو وحار"
+          },
+          {
+            "id": "shrimp-bbq",
+            "name": "Shrimp BBQ",
+            "nameAr": "روبيان باربكيو"
+          },
+          {
+            "id": "chicken-dynamite",
+            "name": "Chicken dynamite",
+            "spicy": true,
+            "nameAr": "دجاج ديناميت"
+          },
+          {
+            "id": "chicken-sns",
+            "name": "Chicken sweet n spicy",
+            "spicy": true,
+            "nameAr": "دجاج حلو وحار"
+          },
+          {
+            "id": "chicken-bbq",
+            "name": "Chicken BBQ",
+            "nameAr": "دجاج باربكيو"
+          },
+          {
+            "id": "shrimp-kunafa",
+            "name": "Shrimp kunafa",
+            "nameAr": "روبيان كنافة"
+          },
+          {
+            "id": "shrimp-tempura",
+            "name": "Shrimp tempura",
+            "nameAr": "روبيان تيمبورا"
+          },
+          {
+            "id": "crab-salad",
+            "name": "Crunchy crab salad",
+            "nameAr": "سلطة كراب مقرمشة"
+          },
+          {
+            "id": "mango-salad",
+            "name": "Spicy mango salad",
+            "spicy": true,
+            "nameAr": "سلطة مانجو حارة"
+          },
+          {
+            "id": "crab-rangoon",
+            "name": "Crab rangoon",
+            "nameAr": "كراب رانغون"
+          }
+        ]
+      },
+      "descriptionAr": "بوكس مشكل من ٩ أنواع سوشي، حبه من كل نوع وستارتر واحد من اختيارك (تواصلو معانا عالوتس اب لتفاصيل البوكس ٥٥٠٧٥٩٣٣) - يكفي شخص او اثنين360 جم إلى380 جم",
+      "order": 67,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "sushinaa-box-regular",
+      "name": "Sushinaa box regular",
+      "nameAr": "بوكس سوشينا عادي",
+      "section": "Sushinaa box",
+      "description": "Nine sushi types, two pieces of each, plus 1 or 2 starters of your choice. The same starter twice is fine. Serves 3–4. WhatsApp 55075933 for the mix.",
+      "image": "/dishes/sushinaa-box-regular.jpg",
+      "tags": [],
+      "kind": {
+        "type": "party-box",
+        "priceQar": 200,
+        "starterMin": 1,
+        "starterMax": 2,
+        "starters": [
+          {
+            "id": "salt-edamame",
+            "name": "Salt edamame",
+            "nameAr": "إدامامي مالح"
+          },
+          {
+            "id": "spicy-edamame",
+            "name": "Spicy edamame",
+            "spicy": true,
+            "nameAr": "إدامامي حار"
+          },
+          {
+            "id": "shrimp-dynamite",
+            "name": "Shrimp dynamite",
+            "spicy": true,
+            "nameAr": "روبيان ديناميت"
+          },
+          {
+            "id": "shrimp-sns",
+            "name": "Shrimp sweet n spicy",
+            "spicy": true,
+            "nameAr": "روبيان حلو وحار"
+          },
+          {
+            "id": "shrimp-bbq",
+            "name": "Shrimp BBQ",
+            "nameAr": "روبيان باربكيو"
+          },
+          {
+            "id": "chicken-dynamite",
+            "name": "Chicken dynamite",
+            "spicy": true,
+            "nameAr": "دجاج ديناميت"
+          },
+          {
+            "id": "chicken-sns",
+            "name": "Chicken sweet n spicy",
+            "spicy": true,
+            "nameAr": "دجاج حلو وحار"
+          },
+          {
+            "id": "chicken-bbq",
+            "name": "Chicken BBQ",
+            "nameAr": "دجاج باربكيو"
+          },
+          {
+            "id": "shrimp-kunafa",
+            "name": "Shrimp kunafa",
+            "nameAr": "روبيان كنافة"
+          },
+          {
+            "id": "shrimp-tempura",
+            "name": "Shrimp tempura",
+            "nameAr": "روبيان تيمبورا"
+          },
+          {
+            "id": "crab-salad",
+            "name": "Crunchy crab salad",
+            "nameAr": "سلطة كراب مقرمشة"
+          },
+          {
+            "id": "mango-salad",
+            "name": "Spicy mango salad",
+            "spicy": true,
+            "nameAr": "سلطة مانجو حارة"
+          },
+          {
+            "id": "crab-rangoon",
+            "name": "Crab rangoon",
+            "nameAr": "كراب رانغون"
+          }
+        ]
+      },
+      "descriptionAr": "بوكس مشكل من ٩ أنواع سوشي، حبتين من كل نوع. وستارتر واحد او ٢ من اختيارك (تواصلو معانا عالوتس اب لتفاصيل البوكس ٥٥٠٧٥٩٣٣) - يكفي ٣ او ٤ اشخاص 700 جم إلى720 جم",
+      "order": 68,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "sauces",
+      "name": "Extra sauce",
+      "nameAr": "الصوصات",
+      "section": "Sauces",
+      "description": "Small 1oz or big 2oz. Pick the sauce.",
+      "image": "/dishes/extra-sauce.jpg",
+      "tags": [],
+      "kind": {
+        "type": "size-price",
+        "sizes": [
+          {
+            "id": "small",
+            "name": "Small 1oz",
+            "nameAr": "صغير",
+            "priceQar": 3
+          },
+          {
+            "id": "big",
+            "name": "Big 2oz",
+            "nameAr": "كبير",
+            "priceQar": 5
+          }
+        ],
+        "flavors": {
+          "id": "flavor",
+          "name": "Sauce",
+          "options": [
+            {
+              "id": "soya",
+              "name": "Soya",
+              "nameAr": "صويا"
+            },
+            {
+              "id": "sweet-chili",
+              "name": "Sweet chili",
+              "nameAr": "سويت تشيلي"
+            },
+            {
+              "id": "mayo",
+              "name": "Mayo",
+              "nameAr": "مايونيز"
+            },
+            {
+              "id": "bbq",
+              "name": "BBQ",
+              "nameAr": "باربكيو"
+            },
+            {
+              "id": "sushinaa",
+              "name": "Sushinaa sauce",
+              "nameAr": "صوص سوشينا"
+            },
+            {
+              "id": "spicy-mayo",
+              "name": "Spicy mayo",
+              "spicy": true,
+              "nameAr": "مايونيز حار"
+            },
+            {
+              "id": "sweet-n-spicy",
+              "name": "Sweet n spicy",
+              "spicy": true,
+              "nameAr": "حلو وحار"
+            },
+            {
+              "id": "dynamite",
+              "name": "Dynamite",
+              "spicy": true,
+              "nameAr": "ديناميت"
+            }
+          ],
+          "nameAr": "الصوص"
+        }
+      },
+      "descriptionAr": "يمكن للعميل إضافة صوص (اختياري) 10 جم إلى15 جم",
+      "order": 69,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "redbull",
+      "name": "Red Bull",
+      "nameAr": "ريد بُل",
+      "section": "Drinks",
+      "description": "250ml.",
+      "image": "/dishes/redbull.jpg",
+      "tags": [],
+      "kind": {
+        "type": "simple",
+        "priceQar": 15
+      },
+      "descriptionAr": "ريد بُل 250مل",
+      "order": 70,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "water",
+      "name": "Still water",
+      "nameAr": "مياه معدنية",
+      "section": "Drinks",
+      "description": "Small 330ml or big 500ml.",
+      "image": "/dishes/still-water.jpg",
+      "tags": [],
+      "kind": {
+        "type": "size-price",
+        "sizes": [
+          {
+            "id": "small",
+            "name": "330ml",
+            "priceQar": 3,
+            "nameAr": "٣٣٠ مل"
+          },
+          {
+            "id": "big",
+            "name": "500ml",
+            "priceQar": 5,
+            "nameAr": "٥٠٠ مل"
+          }
+        ]
+      },
+      "descriptionAr": "مياه معدنية (٣٣٠ مل)",
+      "order": 71,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "kinza",
+      "name": "Kinza",
+      "nameAr": "كينزا",
+      "section": "Drinks",
+      "description": "Small 185ml or big 250ml. Pick a flavour.",
+      "image": "/dishes/kinza.jpg",
+      "tags": [],
+      "kind": {
+        "type": "size-price",
+        "sizes": [
+          {
+            "id": "small",
+            "name": "185ml",
+            "priceQar": 3,
+            "nameAr": "١٨٥ مل"
+          },
+          {
+            "id": "big",
+            "name": "250ml",
+            "priceQar": 5,
+            "nameAr": "٢٥٠ مل"
+          }
+        ],
+        "flavors": {
+          "id": "flavor",
+          "name": "Flavour",
+          "options": [
+            {
+              "id": "cola",
+              "name": "Cola",
+              "nameAr": "كولا"
+            },
+            {
+              "id": "diet",
+              "name": "Diet cola",
+              "nameAr": "كولا دايت"
+            },
+            {
+              "id": "pomegranate",
+              "name": "Pomegranate",
+              "nameAr": "رمان"
+            },
+            {
+              "id": "lemon",
+              "name": "Lemon",
+              "nameAr": "ليمون"
+            },
+            {
+              "id": "blackcurrant",
+              "name": "Blackcurrant",
+              "nameAr": "كشمش أسود"
+            },
+            {
+              "id": "orange",
+              "name": "Orange",
+              "nameAr": "برتقال"
+            },
+            {
+              "id": "citrus",
+              "name": "Citrus",
+              "nameAr": "حمضيات"
+            }
+          ],
+          "nameAr": "النكهة"
+        }
+      },
+      "descriptionAr": "كينزا كولا ١٨٥ مل",
+      "order": 72,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    },
+    {
+      "id": "shani",
+      "name": "Shani",
+      "nameAr": "شاني",
+      "section": "Drinks",
+      "description": "250ml.",
+      "image": "/dishes/shani.jpg",
+      "tags": [],
+      "kind": {
+        "type": "simple",
+        "priceQar": 5
+      },
+      "descriptionAr": "شاني 250مل",
+      "order": 73,
+      "visible": true,
+      "available": true,
+      "imageAlt": "",
+      "imageAltAr": ""
+    }
+  ],
+  "settings": {
+    "name": "Sushinaa",
+    "nameAr": "سوشينا",
+    "tagline": "Let the good times roll",
+    "url": "https://sushinaa-menu.vercel.app",
+    "whatsappE164": "97455075933",
+    "whatsappDisplay": "+974 5507 5933",
+    "instagram": "https://www.instagram.com/sushinaa_qtr",
+    "instagramHandle": "@sushinaa_qtr",
+    "country": "Qatar",
+    "founded": "2015",
+    "areas": [
+      "The Downtown",
+      "Aspire Park",
+      "Al Khor",
+      "Sealine",
+      "Nuaija"
+    ],
+    "addressLine": "Doha, Qatar — delivery across The Downtown, Aspire Park, Al Khor, Sealine, and Nuaija",
+    "logo": "/brand/logotype-white.svg",
+    "documentLogo": "/brand/logotype-red.svg",
+    "currencyEn": "QAR",
+    "currencyAr": "ر.ق"
+  },
+  "copy": {
+    "en": {
+      "langButton": "عربي",
+      "langButtonLabel": "Switch to Arabic",
+      "brand": "Sushinaa",
+      "whatsapp": "WhatsApp",
+      "tapForDetails": "Tap for details.",
+      "openDetails": "Open {0} details",
+      "skip": "Skip to menu",
+      "viewOrder": "View order",
+      "addToOrder": "Add to order",
+      "added": "Added",
+      "from": "from",
+      "close": "Close",
+      "closeDetails": "Close details",
+      "closeTicket": "Close order",
+      "clear": "Clear",
+      "total": "Total",
+      "comment": "Comment",
+      "commentPlaceholder": "Add a note for this order",
+      "sendWhatsApp": "Send on WhatsApp",
+      "openingWhatsApp": "Opening WhatsApp…",
+      "emptyTicket": "Empty — swipe the menu and tap to add.",
+      "yourTicket": "Your order",
+      "noMatch": "No dishes match these filters.",
+      "clearFilters": "Clear filters",
+      "swipeUp": "Swipe up",
+      "fewer": "Fewer",
+      "more": "More",
+      "menu": "Menu",
+      "contact": "Contact",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "backToMenu": "Back to the menu",
+      "filters": "Menu filters",
+      "category": "Category",
+      "dietary": "Dietary",
+      "menuFeed": "Sushinaa menu",
+      "loading": "Loading the menu…",
+      "spicy": "Spicy",
+      "regular": "Regular",
+      "veg": "Veg",
+      "seafood": "Seafood",
+      "all": "All",
+      "dip": "Dip",
+      "pcs": "pcs",
+      "proteinPieces": "Protein & pieces",
+      "sauceChanges": "Sauce changes the price",
+      "spicyOrRegular": "Spicy or regular",
+      "pickStarterSushi": "Pick starter & sushi",
+      "pickStarter": "Pick your starter",
+      "addonsAvailable": "Add-ons available",
+      "newOnMenu": "New on the menu",
+      "pickTwoSauces": "Pick 2 sauces",
+      "saucesIncluded": "Pick 2. They come with the dish.",
+      "sizeFlavour": "Size & flavour",
+      "or": "or",
+      "pick": "Pick",
+      "ofCount": "{0} of {1}",
+      "eachOne": "Each one",
+      "contactTitle": "Contact",
+      "contactFrom": "Contact from the menu",
+      "contactLead": "You call, we roll. WhatsApp is the line:",
+      "name": "Name",
+      "phone": "Phone",
+      "message": "Message",
+      "enterName": "Enter your name.",
+      "enterPhone": "Enter a valid phone number.",
+      "tellMore": "Tell us a little more.",
+      "thankTitle": "Thank you",
+      "thankBody": "If WhatsApp opened, send the ticket there. We will confirm items, time, and the total in QAR before we start rolling.",
+      "missingTitle": "This roll is missing",
+      "missingBody": "That link is not on the menu.",
+      "ticketWord": "Sushinaa ticket",
+      "commentWord": "Comment",
+      "privacyTitle": "Privacy policy",
+      "termsTitle": "Terms and conditions",
+      "updated": "Last updated 26 September 2026.",
+      "termsUpdated": "Last updated 20 September 2026.",
+      "openOrderZero": "Open order",
+      "openOrderOne": "Open order, {0} item",
+      "openOrderOther": "Open order, {0} items",
+      "inOrderZero": "{0} items in your order",
+      "inOrderOne": "{0} item in your order",
+      "inOrderOther": "{0} items in your order",
+      "fewerOf": "Fewer {0}",
+      "moreOf": "More {0}",
+      "oneFewer": "One fewer {0}",
+      "oneMore": "One more {0}",
+      "piecesHint": "{0} pcs",
+      "company": "Company",
+      "menuBlurb": "Let the good times roll. New on the menu: sushi burger, crispy calamari, and gyoza. Browse rolls, starters, bowls, and boxes. Prices in QAR update when you change protein, pieces, or sauce. Add to ticket — no payment on this page.",
+      "privacyBlurb": "How Sushinaa uses the ticket on your device, WhatsApp, and anonymous analytics.",
+      "termsBlurb": "Terms for using the Sushinaa QR menu. Prices in QAR. No payment on this site.",
+      "contactBlurb": "Message Sushinaa on WhatsApp +974 5507 5933. Delivery across Doha.",
+      "thankBlurb": "Ticket sent. Sushinaa will confirm your order on WhatsApp.",
+      "missingBlurb": "This Sushinaa page does not exist. Head back to the QR menu.",
+      "address": "Doha, Qatar — delivery across The Downtown, Aspire Park, Al Khor, Sealine, and Nuaija"
+    },
+    "ar": {
+      "langButton": "English",
+      "langButtonLabel": "التبديل إلى الإنجليزية",
+      "brand": "سوشينا",
+      "whatsapp": "واتساب",
+      "tapForDetails": "اضغط للتفاصيل.",
+      "openDetails": "افتح تفاصيل {0}",
+      "skip": "تخطى إلى القائمة",
+      "viewOrder": "عرض الطلب",
+      "addToOrder": "أضف إلى الطلب",
+      "added": "تمت الإضافة",
+      "from": "من",
+      "close": "إغلاق",
+      "closeDetails": "إغلاق التفاصيل",
+      "closeTicket": "إغلاق الطلب",
+      "clear": "مسح",
+      "total": "المجموع",
+      "comment": "ملاحظة",
+      "commentPlaceholder": "أضف ملاحظة لهذا الطلب",
+      "sendWhatsApp": "إرسال عبر واتساب",
+      "openingWhatsApp": "جارٍ فتح واتساب…",
+      "emptyTicket": "فارغ — اسحب القائمة واضغط للإضافة.",
+      "yourTicket": "طلبك",
+      "noMatch": "لا توجد أطباق بهذه التصفية.",
+      "clearFilters": "إلغاء التصفية",
+      "swipeUp": "اسحب للأعلى",
+      "fewer": "أقل",
+      "more": "أكثر",
+      "menu": "القائمة",
+      "contact": "تواصل",
+      "privacy": "الخصوصية",
+      "terms": "الشروط",
+      "backToMenu": "العودة إلى القائمة",
+      "filters": "تصفية القائمة",
+      "category": "التصنيف",
+      "dietary": "النظام الغذائي",
+      "menuFeed": "قائمة سوشينا",
+      "loading": "جارٍ تحميل القائمة…",
+      "spicy": "حار",
+      "regular": "عادي",
+      "veg": "نباتي",
+      "seafood": "بحري",
+      "all": "الكل",
+      "dip": "الصوص",
+      "pcs": "حبات",
+      "proteinPieces": "البروتين وعدد القطع",
+      "sauceChanges": "الصوص يغيّر السعر",
+      "spicyOrRegular": "حار أو عادي",
+      "pickStarterSushi": "اختر المقبلات والسوشي",
+      "pickStarter": "اختر المقبلات",
+      "addonsAvailable": "إضافات متاحة",
+      "newOnMenu": "جديد في القائمة",
+      "pickTwoSauces": "اختر صوصين",
+      "saucesIncluded": "اختر صوصين. يأتيان مع الطبق.",
+      "sizeFlavour": "الحجم والنكهة",
+      "or": "أو",
+      "pick": "اختر",
+      "ofCount": "{0} من {1}",
+      "eachOne": "كل واحد",
+      "contactTitle": "تواصل",
+      "contactFrom": "تواصل من القائمة",
+      "contactLead": "تتصل، ونحن نلف. الخط على واتساب:",
+      "name": "الاسم",
+      "phone": "الهاتف",
+      "message": "الرسالة",
+      "enterName": "اكتب اسمك.",
+      "enterPhone": "اكتب رقماً صحيحاً.",
+      "tellMore": "اكتب تفاصيل أكثر.",
+      "thankTitle": "شكراً لك",
+      "thankBody": "إذا فُتح واتساب، أرسل الطلب من هناك. نؤكد الأصناف والوقت والمجموع بالريال قبل أن نبدأ التحضير.",
+      "missingTitle": "هذه الصفحة غير موجودة",
+      "missingBody": "هذا الرابط ليس في القائمة.",
+      "ticketWord": "طلب سوشينا",
+      "commentWord": "ملاحظة",
+      "privacyTitle": "سياسة الخصوصية",
+      "termsTitle": "الشروط والأحكام",
+      "updated": "آخر تحديث ٢٦ سبتمبر ٢٠٢٦.",
+      "termsUpdated": "آخر تحديث ٢٠ سبتمبر ٢٠٢٦.",
+      "openOrderZero": "فتح الطلب",
+      "openOrderOne": "فتح الطلب، {0} صنف",
+      "openOrderOther": "فتح الطلب، {0} أصناف",
+      "inOrderZero": "{0} أصناف في طلبك",
+      "inOrderOne": "{0} صنف في طلبك",
+      "inOrderOther": "{0} أصناف في طلبك",
+      "fewerOf": "أقل من {0}",
+      "moreOf": "أكثر من {0}",
+      "oneFewer": "واحدة أقل من {0}",
+      "oneMore": "واحدة أكثر من {0}",
+      "piecesHint": "{0} حبات",
+      "company": "الشركة",
+      "menuBlurb": "جديد في القائمة: برجر سوشي، كاليماري مقرمش، وجيوزا. تصفح الرولات والمقبلات والأطباق والبوكسات. الأسعار بالريال وتتغير مع البروتين وعدد القطع والصوص. أضف إلى الطلب، ولا يتم الدفع في هذه الصفحة.",
+      "privacyBlurb": "كيف تستخدم سوشينا الطلب المحفوظ على جهازك، وواتساب، والتحليلات المجهولة.",
+      "termsBlurb": "شروط استخدام قائمة سوشينا. الأسعار بالريال القطري. لا يتم الدفع على هذا الموقع.",
+      "contactBlurb": "راسل سوشينا على واتساب +974 5507 5933. التوصيل في الدوحة.",
+      "thankBlurb": "أُرسل الطلب. تؤكد سوشينا الطلب على واتساب.",
+      "missingBlurb": "هذه الصفحة غير موجودة في قائمة سوشينا.",
+      "address": "الدوحة، قطر — التوصيل إلى داون تاون، أسباير، الخور، سيلين، ونعيجة"
+    }
+  },
+  "fields": {
+    "Sauce": {
+      "name": "Sauce",
+      "nameAr": "الصوص"
+    },
+    "Heat": {
+      "name": "Heat",
+      "nameAr": "الحرارة"
+    },
+    "Protein": {
+      "name": "Protein",
+      "nameAr": "البروتين"
+    },
+    "Pieces": {
+      "name": "Pieces",
+      "nameAr": "القطع"
+    },
+    "Starter": {
+      "name": "Starter",
+      "nameAr": "المقبلات"
+    },
+    "Starters": {
+      "name": "Starters",
+      "nameAr": "المقبلات"
+    },
+    "Sushi": {
+      "name": "Sushi",
+      "nameAr": "السوشي"
+    },
+    "Size": {
+      "name": "Size",
+      "nameAr": "الحجم"
+    },
+    "Dip": {
+      "name": "Dip",
+      "nameAr": "الصوص"
+    },
+    "Flavour": {
+      "name": "Flavour",
+      "nameAr": "النكهة"
+    },
+    "Cut": {
+      "name": "Cut",
+      "nameAr": "التقطيع"
+    },
+    "Style": {
+      "name": "Style",
+      "nameAr": "النوع"
+    },
+    "Filling": {
+      "name": "Filling",
+      "nameAr": "الحشوة"
+    },
+    "Topping": {
+      "name": "Topping",
+      "nameAr": "الإضافة"
+    },
+    "Add-ons": {
+      "name": "Add-ons",
+      "nameAr": "إضافات"
+    },
+    "Sauces": {
+      "name": "Sauces",
+      "nameAr": "الصوصات"
+    }
+  },
+  "filters": [
+    {
+      "id": "all",
+      "order": 0,
+      "visible": true
+    },
+    {
+      "id": "veg",
+      "order": 1,
+      "visible": true
+    },
+    {
+      "id": "spicy",
+      "order": 2,
+      "visible": true
+    },
+    {
+      "id": "seafood",
+      "order": 3,
+      "visible": true
+    }
+  ]
+}

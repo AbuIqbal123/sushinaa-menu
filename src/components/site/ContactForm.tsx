@@ -1,4 +1,5 @@
 "use client";
+import { useMenu } from "@/cms/context";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -8,6 +9,7 @@ import { waLink } from "@/lib/site";
 type Errors = Partial<Record<"name" | "phone" | "message", string>>;
 
 export function ContactForm() {
+ const {settings:SITE}=useMenu();
   const router = useRouter();
   const { t } = useLocale();
   const [name, setName] = useState("");
@@ -40,7 +42,7 @@ export function ContactForm() {
       "",
       message.trim(),
     ].join("\n");
-    window.open(waLink(text), "_blank", "noopener,noreferrer");
+    window.open(waLink(SITE.whatsappE164,text), "_blank", "noopener,noreferrer");
     router.push("/thank-you");
   }
 

@@ -1,10 +1,12 @@
+import { getMenu } from "@/cms/repository";
 import type { MetadataRoute } from "next";
 import { strings } from "@/i18n/copy";
 import { requestLang } from "@/i18n/request-lang";
 
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const {menu}=await getMenu();
   const lang = await requestLang();
-  const t = strings(lang);
+  const t = strings(lang,menu.copy);
   const ar = lang === "ar";
   return {
     name: ar ? "قائمة سوشينا" : "Sushinaa menu",

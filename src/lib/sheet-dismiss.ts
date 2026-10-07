@@ -36,7 +36,7 @@ export function useSheetDismiss(active: boolean, onClose: () => void) {
   });
   const closing = useRef(false);
   const closeRef = useRef(onClose);
-  closeRef.current = onClose;
+  useLayoutEffect(() => { closeRef.current = onClose; }, [onClose]);
 
   useLayoutEffect(() => {
     closing.current = false;

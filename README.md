@@ -1,26 +1,92 @@
-# Sushinaa menu
+# Sushinaa menu CMS
 
-The public QR menu for Sushinaa. Guests browse the dishes, build an order, and send it on WhatsApp. Prices are in QAR. The site does not take payment.
+The existing bilingual QR menu is now backed by a persistent menu CMS. Guests browse the same dishes, configure their order and send it on WhatsApp. The site does not take payment.
 
-## Run
+## Run locally
 
-```bash
-npm install
+Requires Node.js 22+ and npm.
+
+```sh
+npm ci
+cp .env.example .env.local
+npm run cms:seed
 npm run dev
 ```
 
-The menu opens at [http://localhost:3005](http://localhost:3005). A push to `main` updates the live menu.
+- Public menu: http://localhost:3005
+- Administration: http://localhost:3005/admin
+- Temporary username: `admin`
+- Temporary password: `admin`
 
-## Layout
+The seed command inserts the complete original menu (74 dishes, 14 categories) **only when the database is empty**. Re-running it preserves CMS edits. `data/initial-menu.json` is migration input, never a frontend fallback. The original catalog and wording snapshots under `tests/fixtures/` are test references only.
 
-- `src/app` — the pages
-- `src/catalog` — dishes, prices, and choices
-- `src/ordering` — how a selection is priced and kept on the device
-- `src/i18n` — English and Arabic
-- `src/components/menu` — the scrolling menu
-- `src/components/order` — the order sheet
-- `src/components/site` — contact and legal pages
-- `src/lib` — company facts, money, and page titles
-- `public` — the photos, logo, and fonts the site serves
+## Manage content
 
-Spreadsheets, print menus, and brand files stay in `reference/` on this machine. They are not part of the site.
+- **Dashboard:** category/item counts, active/hidden items and recently edited dishes.
+- **Menu:** search, status filtering, category groups, item creation/editing/deletion, visibility and up/down ordering.
+- **Item editor:** bilingual names/descriptions, category, availability, dietary labels, primary photo and alt text, all eight original pricing models, portion prices, proteins, styles, sizes, sauces, extras, included selections and limits. Multiple photos follow the existing protein/style option model; no new gallery changes the customer experience. Upload, replace or remove optional option photos and reorder the associated choices.
+- **Categories:** create, rename, reorder, hide/show, and delete empty categories. Move or delete their items before deleting a category.
+- **Settings:** restaurant details, logos, currency labels, WhatsApp destination, bilingual menu wording, option field labels and dietary filters. Wording is independently editable in both languages; numbered placeholders insert names/counts.
+
+Saves are published immediately. Refresh the public menu to load the newest content. Hiding a category hides its dishes. Hidden or unavailable dishes cannot be ordered. Removed dishes and invalid saved option selections are excluded from a restored cart. Conflicting saves receive a reload prompt instead of silently overwriting another administrator’s changes.
+
+## Persistence and deployment
+
+Development defaults to the SQLite file `data/menu.db`. Back up that database (including its media and sessions), and keep it on a persistent volume when self-hosting. Do not commit it.
+
+For **Vercel**, set a remote libSQL database before deployment:
+
+```text
+CMS_DATABASE_URL=libsql://your-database.turso.io
+CMS_DATABASE_AUTH_TOKEN=your-database-token
+CMS_ADMIN_USERNAME=admin
+CMS_ADMIN_PASSWORD=admin
+```
+
+Use those same database environment variables locally and run `npm run cms:seed` once before deploying. The CLI reads `.env.local`/`.env` like Next.js. Do not put database tokens in `NEXT_PUBLIC_*` variables. The application deliberately rejects a local-file database on Vercel, where filesystem changes are not durable. No cloud database has been provisioned by this branch.
+
+Uploaded JPEG/PNG/WebP photos (up to 5 MB) are decoded, resized and stored as WebP in the database. Their content-addressed media URLs are immutable. Existing bundled photos remain in `public/`; uploads do not depend on an ephemeral deployment filesystem. Removing a photo association keeps the underlying upload available for other items.
+
+For a local production check:
+
+```sh
+npm run cms:seed
+npm run build
+npm start
+```
+
+The temporary credential adapter is isolated in `src/cms/auth.ts` for later replacement. Sessions are random, server-stored, expiring and revocable; cookies are HTTP-only, SameSite Strict and secure in production. Every admin data/media mutation verifies authentication and same-origin requests. The public menu and media routes remain public.
+
+## Architecture
+
+```text
+Authenticated /admin → validated API → libSQL menu document + media
+                                      ↓
+                         server data layer → original public menu
+```
+
+- `src/cms`: domain validation, persistence, session authentication and public data context.
+- `src/components/admin`: focused dashboard, list, settings and item/option editors.
+- `src/catalog/types.ts`: existing dish and selection types; `menu.ts` retains filtering logic only.
+- `src/ordering`: existing pricing and cart behavior.
+- `src/i18n`: language handling and interpolation of database-managed wording.
+- `data/initial-menu.json`: deterministic original-menu seed, including resolved Arabic fallbacks.
+
+Category and dish order are explicit numeric fields; nested choice arrays are deliberately ordered sequences. Stable IDs preserve relationships through renames. The complete document is validated on the server and saved atomically with a revision comparison. Public reads are shared within a server request; the customer bundle never imports the migration dataset.
+
+## Checks
+
+```sh
+npm test
+npm run lint
+npm run build
+npx playwright install chromium
+# With the app running locally, against a disposable/test database:
+npm run test:e2e
+```
+
+Browser tests edit the menu and restore the prior document afterward. Do not point them at a live customer database. Override `CMS_TEST_URL` for another local server URL.
+
+Tests cover migration parity, all pricing types, bilingual interpolation, invalid values, relationship validation, stale saved selections, visibility/order, idempotent seeding, persistent writes, concurrent-save rejection, authentication, category/item workflows, uploads, settings propagation, empty menus and mobile/desktop English/Arabic cart interactions.
+
+The original public stylesheet is unchanged. Before/after mobile and desktop screenshots were reviewed during implementation. Next.js was updated from 16.3.4 to 16.4.0 to resolve the runtime security advisory found during installation. The remaining npm audit findings concern the development-only ESLint glob dependency chain; the suggested automated fix would downgrade the Next.js lint configuration across major versions and was not applied.

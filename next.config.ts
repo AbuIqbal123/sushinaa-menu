@@ -28,6 +28,9 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  outputFileTracingIncludes: {
+    "/api/admin/menu": ["./public/dishes/**/*", "./public/brand/**/*"],
+  },
   poweredByHeader: false,
   images: {
     unoptimized: true,

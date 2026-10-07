@@ -1,18 +1,4 @@
-export type Section =
-  | "New"
-  | "Starters"
-  | "Fried rice"
-  | "Poke bowls"
-  | "Deal box"
-  | "Salads"
-  | "Mains"
-  | "Sushina rolls"
-  | "Sushi burrito"
-  | "Sushinaa maki"
-  | "Noodles"
-  | "Sushinaa box"
-  | "Sauces"
-  | "Drinks";
+export type Section = string;
 
 export type CategoryFilter = "all" | Section;
 export type DietFilter = "all" | "veg" | "spicy" | "seafood";
@@ -132,6 +118,8 @@ export type Dish = {
   extras?: Extra[];
   freeDips?: Choice[];
   piecesNote?: string;
+  imageAlt?: string;
+  imageAltAr?: string;
 };
 
 export type Selection = {
