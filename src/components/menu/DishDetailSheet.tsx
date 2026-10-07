@@ -25,6 +25,7 @@ import {
   unitPrice,
 } from "@/ordering/price";
 import { DietTags } from "./DietTags";
+import { PhotoViewer } from "./PhotoViewer";
 
 type Props = {
   dish: Dish | null;
@@ -43,6 +44,8 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
   const [notes, setNotes] = useState<string[]>([""]);
   const [justAdded, setJustAdded] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
+  // The photo the full-screen viewer grows from, while it is open.
+  const [viewFrom, setViewFrom] = useState<HTMLElement | null>(null);
   const addedTimer = useRef(0);
   const { sheetRef, backdropRef, trackPointer, movePointer, endPointer, requestClose } =
     useSheetDismiss(Boolean(dish), onClose);
@@ -143,7 +146,25 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
               style={{ objectPosition: photoPosition(current, photo) }}
             />
           )}
+          {!patterned && (
+            <button
+              type="button"
+              className="detail-photo-open"
+              aria-label={pickName(current, lang)}
+              aria-haspopup="dialog"
+              onClick={(e) => setViewFrom(e.currentTarget.parentElement)}
+            />
+          )}
         </div>
+        {viewFrom && (
+          <PhotoViewer
+            src={photo}
+            alt={pickName(current, lang)}
+            closeLabel={t.close}
+            from={viewFrom}
+            onClose={() => setViewFrom(null)}
+          />
+        )}
         <header className="detail-kicker-row">
           <p
             className={

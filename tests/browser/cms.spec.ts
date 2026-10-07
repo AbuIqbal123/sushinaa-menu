@@ -642,3 +642,31 @@ test("card focal point and options photo round-trip to the public menu", async (
     });
   }
 });
+
+test("the options photo opens full screen and closes back to the sheet", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.locator("#dish-sushinaa-burger .slide-hit").click();
+  const photo = page.locator(".detail-photo-open");
+  await photo.click();
+  const viewer = page.locator(".viewer");
+  await expect(viewer).toHaveAttribute("role", "dialog");
+  await expect(viewer).toHaveAttribute("aria-modal", "true");
+  await expect(viewer).toHaveAttribute("aria-label", "Sushinaa burger");
+  await expect(viewer.locator("img")).toHaveAttribute(
+    "src",
+    "/dishes/sushinaa-burger.jpg",
+  );
+  await expect(page.locator(".viewer-close")).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.locator(".viewer-close")).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(viewer).toHaveCount(0);
+  await expect(page.locator(".detail-sheet")).toBeVisible();
+  await expect(photo).toBeFocused();
+  await photo.click();
+  await page.locator(".viewer-close").click();
+  await expect(viewer).toHaveCount(0);
+});

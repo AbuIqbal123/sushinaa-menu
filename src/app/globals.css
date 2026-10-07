@@ -437,6 +437,73 @@ body {
   object-fit: cover;
 }
 
+.detail-photo-open {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
+.detail-photo-open:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -4px;
+  border-radius: 22px 22px 0 0;
+}
+
+/* Full-screen photo. Layout is fixed on open; motion is transform and opacity. */
+.viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.viewer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(10 8 7 / 0.97);
+  opacity: 0;
+}
+
+.viewer-frame {
+  position: absolute;
+  overflow: hidden;
+  transform-origin: 0 0;
+}
+
+.viewer-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: 0 0;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.viewer-close {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  inset-inline-end: max(12px, env(safe-area-inset-right));
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.14);
+  color: #fff;
+  opacity: 0;
+}
+
+.viewer-close:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
 .detail-kicker-row {
   display: flex;
   align-items: center;
