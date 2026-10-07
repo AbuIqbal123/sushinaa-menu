@@ -759,6 +759,8 @@ body {
 [dir="rtl"] .empty-filter,
 [dir="rtl"] .tap-hint,
 [dir="rtl"] .ticket-kicker,
+[dir="rtl"] .menu-tools,
+[dir="rtl"] .search-results,
 [dir="rtl"] .clear-ticket {
   font-family: var(--font-arabic), Tahoma, sans-serif;
   letter-spacing: 0;
