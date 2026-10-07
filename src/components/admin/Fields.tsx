@@ -1,5 +1,67 @@
 "use client";
-import { useEffect, useState, type KeyboardEvent, type RefObject } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useId,
+  useState,
+  type KeyboardEvent,
+  type RefObject,
+} from "react";
+// Field-level validation messages, keyed by dotted path ("kind.sauces.0.name").
+export const FieldErrors = createContext<Record<string, string>>({});
+export function FieldError({ path, id }: { path: string; id?: string }) {
+  const message = useContext(FieldErrors)[path];
+  return message ? (
+    <small className="admin-field-error" id={id}>
+      {message}
+    </small>
+  ) : null;
+}
+// The note beside a save button: what blocks the save, else whether there
+// are unsaved edits. Messages without a field of their own (e.g. "kind") are
+// spelled out here.
+export function SaveNote({
+  errors,
+  where,
+  loose = [],
+  dirty,
+  idle,
+}: {
+  errors: Record<string, string>;
+  where?: string;
+  loose?: string[];
+  dirty: boolean;
+  idle: string;
+}) {
+  const n = Object.keys(errors).length;
+  if (!n) return <small>{dirty ? "Unsaved changes" : idle}</small>;
+  const extra = loose.filter((k) => errors[k]).map((k) => errors[k]);
+  return (
+    <small className="admin-field-error" role="alert">
+      Fix {n === 1 ? "the marked field" : `${n} marked fields`}
+      {where ? ` in ${where}` : ""}. {extra.join(" ")}
+    </small>
+  );
+}
+// Focus the first invalid control after a blocked save.
+export function focusFirstInvalid(root: HTMLElement | null) {
+  requestAnimationFrame(() =>
+    root?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
+  );
+}
+// Props that tie a control to its message for assistive tech.
+function useInvalid(path?: string) {
+  const id = useId();
+  const errors = useContext(FieldErrors);
+  const invalid = Boolean(path && errors[path]);
+  return {
+    id,
+    props: invalid
+      ? { "aria-invalid": true as const, "aria-describedby": id }
+      : {},
+  };
+}
 // Open a <dialog> modally; on unmount, return focus to whatever opened it.
 export function useModal(ref: RefObject<HTMLDialogElement | null>) {
   const [opener] = useState(() => document.activeElement as HTMLElement | null);
@@ -40,6 +102,7 @@ export function TextField({
   type = "text",
   disabled = false,
   lang,
+  path,
 }: {
   label: string;
   value: string | number;
@@ -48,14 +111,17 @@ export function TextField({
   type?: string;
   disabled?: boolean;
   lang?: "ar";
+  path?: string;
 }) {
   // An Arabic field mirrors as a whole: label, caret and text run right to left.
   const dir = lang === "ar" ? "rtl" : undefined;
+  const invalid = useInvalid(path);
   return (
     <label className="admin-field" dir={dir}>
       <bdi>{label}</bdi>
       {multiline ? (
         <textarea
+          {...invalid.props}
           aria-label={label}
           lang={lang}
           dir={dir}
@@ -65,6 +131,7 @@ export function TextField({
         />
       ) : (
         <input
+          {...invalid.props}
           aria-label={label}
           lang={lang}
           dir={dir}
@@ -75,6 +142,7 @@ export function TextField({
           onChange={(e) => onChange(e.target.value)}
         />
       )}
+      {path && <FieldError path={path} id={invalid.id} />}
     </label>
   );
 }
@@ -104,15 +172,18 @@ export function ImageField({
   onChange,
   optional = false,
   preset,
+  path,
 }: {
   label: string;
   value?: string;
   onChange: (s: string | undefined) => void;
   optional?: boolean;
   preset?: { url: string; label: string };
+  path?: string;
 }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const invalid = useInvalid(path);
   return (
     <fieldset className="admin-field admin-image-field">
       <legend>{label}</legend>
@@ -125,6 +196,7 @@ export function ImageField({
         <label className="admin-upload">
           {value ? "Replace" : "Upload"}
           <input
+            {...invalid.props}
             type="file"
             aria-label={label}
             accept="image/jpeg,image/png,image/webp"
@@ -175,6 +247,7 @@ export function ImageField({
           </button>
         )}
       </div>
+      {path && <FieldError path={path} id={invalid.id} />}
       {busy && <small role="status">Uploading…</small>}
       {error && (
         <p role="alert" className="admin-error">

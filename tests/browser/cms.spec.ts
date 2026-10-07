@@ -214,7 +214,11 @@ test("public menu works at mobile and desktop widths in both languages", async (
 }) => {
   for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 844 });
+    // Start each width with an empty order: clearing storage at the end of the
+    // previous pass can race the cart's own write after the language switch.
     await page.goto("/");
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
     await expect(page.locator(".chrome-header")).toBeVisible();
     await expect(page.locator("#dish-sushinaa-burger")).toBeVisible();
     await page.locator("#dish-sushinaa-burger .slide-hit").click();
@@ -230,7 +234,6 @@ test("public menu works at mobile and desktop widths in both languages", async (
       "برجر سوشينا",
     );
     await page.getByRole("button", { name: "التبديل إلى الإنجليزية" }).click();
-    await page.evaluate(() => localStorage.clear());
   }
 });
 
@@ -477,4 +480,49 @@ test("unsaved edits are guarded and focus returns to the opener", async ({
   expect(prompts).toEqual(["confirm", "confirm", "confirm"]);
   await page.close({ runBeforeUnload: true });
   await expect.poll(() => prompts.at(-1)).toBe("beforeunload");
+});
+test("blocked saves show plain errors next to the fields", async ({
+  page,
+  baseURL,
+}) => {
+  await page.request.post("/api/admin/session", {
+    headers: { Origin: baseURL! },
+    data: { username: "admin", password: "admin" },
+  });
+  page.on("dialog", (d) => d.accept());
+  await page.goto("/admin");
+  await page.getByRole("button", { name: "Menu", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Add item", exact: true })
+    .first()
+    .click();
+  await page.getByRole("button", { name: "Save item", exact: true }).click();
+  const name = page.getByLabel("Name (English)", { exact: true });
+  await expect(name).toHaveAttribute("aria-invalid", "true");
+  await expect(name).toBeFocused();
+  await expect(
+    page.locator(".admin-field .admin-field-error").first(),
+  ).toHaveText("Name is required");
+  await expect(page.locator(".admin-dialog-foot")).toContainText(
+    "Fix 2 marked fields in Details and Images.",
+  );
+  await name.fill("Valid name");
+  await expect(name).not.toHaveAttribute("aria-invalid");
+  await page.getByRole("tab", { name: "Images", exact: true }).click();
+  await expect(page.locator(".admin-field .admin-field-error")).toHaveText(
+    "Choose an existing image or upload a photo",
+  );
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await expect(page.getByText("All changes saved")).toBeVisible();
+  const url = page.getByLabel("Website address", { exact: true });
+  await url.fill("not a url");
+  await expect(page.getByText("Unsaved changes")).toBeVisible();
+  await page
+    .getByRole("button", { name: "Save settings", exact: true })
+    .click();
+  await expect(url).toHaveAttribute("aria-invalid", "true");
+  await expect(page.locator(".admin-field .admin-field-error")).toHaveText(
+    "Enter a full web address, starting with https://.",
+  );
 });

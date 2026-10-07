@@ -1,5 +1,12 @@
 "use client";
-import { TextField, Check, ImageField, MoveButtons, moveEntry } from "./Fields";
+import {
+  TextField,
+  Check,
+  ImageField,
+  MoveButtons,
+  moveEntry,
+  FieldError,
+} from "./Fields";
 // One typed field description drives repeated option forms; administrators never edit JSON.
 type Value =
   string | number | boolean | undefined | Record<string, unknown> | unknown[];
@@ -212,11 +219,14 @@ function ObjectFields({
   value,
   fields,
   onChange,
+  path,
 }: {
   value: Row;
   fields: Field[];
   onChange: (v: Row) => void;
+  path: string; // where this object sits in the dish, for field errors
 }) {
+  const at = (key: string | number) => (path ? `${path}.${key}` : `${key}`);
   const set = (key: string, v: Value) => {
     const next = { ...value };
     if (v === undefined) delete next[key];
@@ -267,6 +277,7 @@ function ObjectFields({
               label={f.label}
               value={val as string}
               optional
+              path={at(f.key)}
               onChange={(v) => set(f.key, v)}
             />
           );
@@ -279,12 +290,14 @@ function ObjectFields({
                 Leave a portion blank to remove it. At least one price is
                 required.
               </small>
+              <FieldError path={at(f.key)} />
               <div className="admin-grid">
                 {[4, 6, 8, 12, 24].map((n) => (
                   <TextField
                     key={n}
                     label={`${n} pieces`}
                     type="number"
+                    path={`${at(f.key)}.${n}`}
                     value={prices[n] ?? ""}
                     onChange={(s) => {
                       const next = { ...prices };
@@ -303,6 +316,7 @@ function ObjectFields({
           return (
             <fieldset className="admin-fieldset" key={f.key}>
               <legend>{f.label}</legend>
+              <FieldError path={at(f.key)} />
               {!enabled ? (
                 <button
                   type="button"
@@ -336,6 +350,7 @@ function ObjectFields({
                     <ObjectFields
                       value={val as Row}
                       fields={f.fields || []}
+                      path={at(f.key)}
                       onChange={(v) => set(f.key, v)}
                     />
                   ) : (
@@ -373,6 +388,7 @@ function ObjectFields({
                           <ObjectFields
                             value={row}
                             fields={f.fields || []}
+                            path={`${at(f.key)}.${i}`}
                             onChange={(v) =>
                               set(
                                 f.key,
@@ -406,6 +422,7 @@ function ObjectFields({
             label={f.label}
             type={f.type === "number" ? "number" : "text"}
             lang={f.key.endsWith("Ar") ? "ar" : undefined}
+            path={at(f.key)}
             value={(val ?? "") as string | number}
             onChange={(s) =>
               set(
@@ -451,6 +468,7 @@ export function OptionsEditor({
       <ObjectFields
         value={value}
         fields={kindFields(String(value.type))}
+        path="kind"
         onChange={onChange}
       />
     </>
@@ -470,6 +488,7 @@ export function OtherOptions({
         list("extras", "Additional extras", extraFields, true),
         list("freeDips", "Free dip choices", choiceFields, true),
       ]}
+      path=""
       onChange={onChange}
     />
   );

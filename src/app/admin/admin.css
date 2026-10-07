@@ -413,6 +413,28 @@
   margin: 12px 0;
   white-space: pre-wrap;
 }
+.admin .admin-field-error {
+  color: #a01725;
+  font-weight: 400;
+}
+.admin [aria-invalid="true"] {
+  border-color: #c03546;
+}
+/* Settings: the save action and its state stay in reach on long forms. */
+.admin-savebar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 12px 0;
+  background: #f5f7fa;
+}
+.admin-savebar .admin-error {
+  flex-basis: 100%;
+  margin: 0;
+}
 .admin-toast {
   position: fixed;
   right: 24px;
