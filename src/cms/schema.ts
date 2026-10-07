@@ -70,7 +70,7 @@ const included = z
   })
   .strict()
   .refine((v) => v.min <= v.max, "Minimum cannot exceed maximum");
-export const kindSchema = z
+const kindSchema = z
   .discriminatedUnion("type", [
     z.object({ type: z.literal("simple"), priceQar: price }).strict(),
     z
@@ -183,7 +183,7 @@ export const categorySchema = z
     featured: z.boolean(),
   })
   .strict();
-export const settingsSchema = z
+const settingsSchema = z
   .object({
     name,
     nameAr: name,
@@ -203,7 +203,7 @@ export const settingsSchema = z
     currencyAr: name,
   })
   .strict();
-export const COPY_KEYS = [
+const COPY_KEYS = [
   "langButton",
   "langButtonLabel",
   "brand",
@@ -281,7 +281,6 @@ export const COPY_KEYS = [
   "thankBody",
   "missingTitle",
   "missingBody",
-  "ticketWord",
   "commentWord",
   "privacyTitle",
   "termsTitle",
@@ -295,8 +294,6 @@ export const COPY_KEYS = [
   "inOrderOther",
   "fewerOf",
   "moreOf",
-  "oneFewer",
-  "oneMore",
   "piecesHint",
   "company",
   "menuBlurb",
@@ -307,7 +304,7 @@ export const COPY_KEYS = [
   "missingBlurb",
   "address",
 ] as const;
-export const FIELD_KEYS = [
+const FIELD_KEYS = [
   "Sauce",
   "Heat",
   "Protein",
@@ -397,7 +394,6 @@ export const menuSchema = z
 export type MenuData = z.infer<typeof menuSchema>;
 export type CmsDish = z.infer<typeof dishSchema>;
 export type Category = z.infer<typeof categorySchema>;
-export type Settings = z.infer<typeof settingsSchema>;
 export type MenuSnapshot = { revision: number; menu: MenuData };
 export function publicMenu(m: MenuData): MenuData {
   const categories = m.categories

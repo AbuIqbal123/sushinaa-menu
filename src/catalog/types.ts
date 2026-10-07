@@ -1,6 +1,5 @@
 export type Section = string;
 
-export type CategoryFilter = "all" | Section;
 export type DietFilter = "all" | "veg" | "spicy" | "seafood";
 export type Tag = "veg" | "spicy" | "seafood";
 

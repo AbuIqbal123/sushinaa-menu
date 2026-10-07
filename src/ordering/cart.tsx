@@ -67,9 +67,7 @@ type CartValue = {
   add: (id: string, sel: Selection, count?: number, note?: string) => void;
   inc: (key: string) => void;
   dec: (key: string) => void;
-  remove: (key: string) => void;
   clear: () => void;
-
   itemCount: number;
   lines: CartLine[];
   totalQar: number;
@@ -146,14 +144,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const remove = useCallback((key: string) => {
-    setQtys((prev) => {
-      const next = { ...prev };
-      delete next[key];
-      return next;
-    });
-  }, []);
-
   const clear = useCallback(() => {
     setQtys({});
   }, []);
@@ -201,8 +191,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ add, inc, dec, remove, clear, itemCount, lines, totalQar }),
-    [add, inc, dec, remove, clear, itemCount, lines, totalQar],
+    () => ({ add, inc, dec, clear, itemCount, lines, totalQar }),
+    [add, inc, dec, clear, itemCount, lines, totalQar],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

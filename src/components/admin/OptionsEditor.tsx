@@ -62,7 +62,7 @@ const basePrice: Field = {
   label: "Base price",
   type: "number",
 };
-export const kindLabels = {
+const kindLabels = {
   simple: "Fixed price",
   "spicy-toggle": "Regular / spicy prices",
   "sauce-price": "Price by sauce",
@@ -72,7 +72,7 @@ export const kindLabels = {
   "size-price": "Sizes & flavours",
   addons: "Add-ons & included choices",
 };
-export function newKind(type: string): Row {
+function newKind(type: string): Row {
   switch (type) {
     case "simple":
       return { type, priceQar: 0 };
@@ -208,7 +208,7 @@ function kindFields(type: string): Field[] {
       ];
   }
 }
-export function ObjectFields({
+function ObjectFields({
   value,
   fields,
   onChange,

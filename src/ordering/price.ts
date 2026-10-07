@@ -93,12 +93,6 @@ export function defaultSelection(dish: Dish): Selection {
   }
 }
 
-export function configuresEach(dish: Dish): boolean {
-  const kind = dish.kind;
-  if (kind.type === "simple") return Boolean(dish.freeDips?.length || dish.extras?.length);
-  return true;
-}
-
 export function selectionForDiet(dish: Dish, diet: DietFilter): Selection {
   const sel = defaultSelection(dish);
   const kind = dish.kind;

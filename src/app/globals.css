@@ -64,10 +64,6 @@ body {
   touch-action: none;
 }
 
-.shell.is-sheet .dish-photo {
-  animation-play-state: paused;
-}
-
 .feed {
   display: flex;
   flex-direction: column;
@@ -105,7 +101,6 @@ body {
 
 .dish-photo {
   object-fit: cover;
-  transform-origin: 50% 40%;
   user-select: none;
   pointer-events: none;
   transform: translateZ(0);
@@ -116,30 +111,16 @@ body {
   object-position: center;
 }
 
-.feed.is-scrolling .dish-photo {
-  animation-play-state: paused;
-}
-
 .dish-photo-pattern {
   position: absolute;
   inset: 0;
   height: 100% !important;
   top: 0 !important;
   bottom: 0 !important;
-  animation: none;
   background-color: #14110f;
   background-size: 140px;
   background-repeat: repeat;
   transform: none;
-}
-
-@keyframes kenburns {
-  from {
-    transform: scale(1) translate3d(0, 0, 0);
-  }
-  to {
-    transform: scale(1.06) translate3d(-1%, 0, 0);
-  }
 }
 
 .scrim {
@@ -381,33 +362,6 @@ body {
   color: #fff;
 }
 
-.chip-new {
-  border-color: rgba(240, 217, 168, 0.85);
-  color: #f0d9a8;
-}
-
-.chip-new::before {
-  content: "";
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-inline-end: 7px;
-  border-radius: 50%;
-  background: #d52029;
-  box-shadow: 0 0 0 3px rgba(213, 32, 41, 0.28);
-  vertical-align: 1px;
-}
-
-.chip-new.chip-on {
-  color: #fff;
-  border-color: #d52029;
-}
-
-.chip-new.chip-on::before {
-  background: #f3e4c4;
-  box-shadow: 0 0 0 3px rgba(243, 228, 196, 0.28);
-}
-
 .chip:disabled {
   opacity: 0.38;
   cursor: default;
@@ -619,14 +573,6 @@ body {
   color: #d52029;
 }
 
-.choice-count {
-  margin: 0;
-  font-size: var(--text-caption);
-  font-weight: 700;
-  line-height: var(--leading-caption);
-  color: #7a4a2a;
-}
-
 .choice-note {
   margin: 0;
   font-family: var(--font-sans);
@@ -813,7 +759,6 @@ body {
 [dir="rtl"] .empty-filter,
 [dir="rtl"] .tap-hint,
 [dir="rtl"] .ticket-kicker,
-[dir="rtl"] .wa-btn,
 [dir="rtl"] .clear-ticket {
   font-family: var(--font-arabic), Tahoma, sans-serif;
   letter-spacing: 0;
@@ -1182,28 +1127,6 @@ button {
   color: #d52029;
 }
 
-.ticket-note {
-  margin: 8px 0 12px;
-  font-size: var(--text-body);
-  line-height: var(--leading-body);
-  color: #6a5640;
-}
-
-.wa-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-height: 48px;
-  border: 0;
-  border-radius: 12px;
-  background: #128c7e;
-  color: #fff;
-  font-weight: 700;
-  text-decoration: none;
-  cursor: pointer;
-}
-
 .clear-ticket {
   display: block;
   margin: 4px 0 0 auto;
@@ -1219,7 +1142,6 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dish-photo,
   .swipe-hint,
   .swipe-chevron,
   .cart-btn-pop,

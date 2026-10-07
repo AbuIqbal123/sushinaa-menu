@@ -11,7 +11,7 @@ type TextKey =
   | "pickStarter" | "addonsAvailable" | "newOnMenu" | "pickTwoSauces" | "saucesIncluded" | "sizeFlavour"
   | "or" | "pick" | "contactTitle" | "contactFrom" | "contactLead" | "name" | "phone" | "message"
   | "enterName" | "enterPhone" | "tellMore" | "thankTitle" | "thankBody" | "missingTitle" | "missingBody"
-  | "ticketWord" | "commentWord" | "privacyTitle" | "termsTitle" | "updated" | "termsUpdated" | "company"
+  | "commentWord" | "privacyTitle" | "termsTitle" | "updated" | "termsUpdated" | "company"
   | "menuBlurb" | "privacyBlurb" | "termsBlurb" | "contactBlurb" | "thankBlurb" | "missingBlurb" | "address";
 
 export type Copy = Record<TextKey, string> & {
@@ -23,8 +23,6 @@ export type Copy = Record<TextKey, string> & {
   itemNumber: (n: number) => string;
   fewerOf: (name: string) => string;
   moreOf: (name: string) => string;
-  oneFewer: (name: string) => string;
-  oneMore: (name: string) => string;
   piecesHint: (list: string) => string;
 };
 
@@ -43,8 +41,6 @@ export function strings(lang: Lang, copy: Record<Lang, Record<string, string>>):
     itemNumber: (n: number) => format("itemNumber", n),
     fewerOf: (s: string) => format("fewerOf", s),
     moreOf: (s: string) => format("moreOf", s),
-    oneFewer: (s: string) => format("oneFewer", s),
-    oneMore: (s: string) => format("oneMore", s),
     piecesHint: (s: string) => format("piecesHint", s),
   } as Copy;
 }

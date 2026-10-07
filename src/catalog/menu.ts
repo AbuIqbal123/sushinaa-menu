@@ -1,6 +1,6 @@
 import type { DietFilter, Dish } from "./types";
 import { dishIsSeafood, dishIsSpicy, dishIsVeg, selectionForDiet } from "@/ordering/price";
-export type { DietFilter, Dish, Section, CategoryFilter } from "./types";
+export type { DietFilter, Dish, Section } from "./types";
 export function matchesDiet(dish: Dish, filter: DietFilter): boolean {
   if (filter === "all") return true;
   const sel = selectionForDiet(dish, filter);
