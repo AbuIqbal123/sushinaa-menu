@@ -237,6 +237,7 @@ function FeedInner() {
             return <DishSlide key={item.key} dish={item.dish} diet={diet} marked={item.copy === 1}
               active={item.copy === 1 && item.real === activeIndex}
               eager={(item.copy === 1 && distance <= 2) || seam}
+              inert={item.copy !== 1}
               showHint={item.copy === 1 && item.real === 0 && n > 1} onOpen={setDetail} />;
           })}
       </div>

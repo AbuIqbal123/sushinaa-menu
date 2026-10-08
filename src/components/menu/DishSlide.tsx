@@ -18,6 +18,7 @@ type Props = {
   eager?: boolean;
   marked?: boolean;
   showHint?: boolean;
+  inert?: boolean;
   onOpen: (dish: Dish) => void;
 };
 
@@ -28,6 +29,7 @@ export const DishSlide = memo(function DishSlide({
   eager = false,
   marked = false,
   showHint = false,
+  inert = false,
   onOpen,
 }: Props) {
   const { lang, t } = useLocale();
@@ -50,6 +52,7 @@ export const DishSlide = memo(function DishSlide({
       className={`slide${active ? " is-active" : ""}`}
       id={marked ? `dish-${dish.id}` : undefined}
       data-section={dish.section}
+      inert={inert}
       aria-label={`${title}, ${from ? `${t.from} ` : ""}${formatQar(price, lang)}. ${t.tapForDetails}`}
     >
       <button
