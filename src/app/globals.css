@@ -149,11 +149,12 @@ body {
   z-index: 2;
   padding: 0 20px calc(28px + env(safe-area-inset-bottom, 0px));
   pointer-events: none;
-  transition: padding-bottom 0.28s ease;
+  transition: transform 240ms var(--ease-out);
 }
 
+/* Make room for the order bar by moving, not re-laying out, the copy. */
 .shell.has-order .slide-copy {
-  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  transform: translateY(-60px);
 }
 
 .section-label {
@@ -364,6 +365,7 @@ body {
   touch-action: pan-x;
   cursor: pointer;
   white-space: nowrap;
+  transition: background-color 160ms var(--ease-out), border-color 160ms var(--ease-out), color 160ms var(--ease-out);
 }
 
 .chip-on {
@@ -405,7 +407,7 @@ body {
   color: #14110f;
   border-radius: 22px 22px 0 0;
   box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.35);
-  animation: sheet-up 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  animation: sheet-up 280ms cubic-bezier(0.32, 0.72, 0, 1);
   transform: translateZ(0);
   backface-visibility: hidden;
   touch-action: pan-y;
@@ -714,7 +716,7 @@ body {
   font-size: 0.88rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+  transition: background 160ms var(--ease-out), color 160ms var(--ease-out), border-color 160ms var(--ease-out);
 }
 
 .opt em {
@@ -957,6 +959,8 @@ body {
 
 button {
   touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .sheet-root {
@@ -992,7 +996,7 @@ button {
   color: #14110f;
   border-radius: 22px 22px 0 0;
   box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.35);
-  animation: sheet-up 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  animation: sheet-up 280ms cubic-bezier(0.32, 0.72, 0, 1);
   transform: translateZ(0);
   backface-visibility: hidden;
   touch-action: pan-y;
@@ -1216,6 +1220,11 @@ button {
   .ticket,
   .detail-sheet {
     animation: none;
+  }
+  .slide-copy,
+  .opt,
+  .chip {
+    transition: none;
   }
 }
 

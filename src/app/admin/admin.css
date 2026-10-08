@@ -27,6 +27,18 @@
 .admin a {
   touch-action: manipulation;
 }
+.admin button {
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* 16px keeps iOS from zooming into a field on focus. */
+@media (pointer: coarse) {
+  .admin input,
+  .admin select,
+  .admin textarea {
+    font-size: 16px;
+  }
+}
 .admin button,
 .admin .admin-upload {
   cursor: pointer;
@@ -36,9 +48,12 @@
   background: #eef1f5;
   color: var(--ink);
 }
-.admin button:hover,
-.admin .admin-upload:hover {
-  background: #e4e8ee;
+/* Hover only where there is a real pointer; touch would leave it stuck on. */
+@media (hover: hover) and (pointer: fine) {
+  .admin button:hover,
+  .admin .admin-upload:hover {
+    background: #e4e8ee;
+  }
 }
 .admin button:focus-visible,
 .admin a:focus-visible {
