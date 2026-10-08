@@ -1589,7 +1589,7 @@ button {
 .picker-option {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   min-height: 44px; padding: 10px 12px; border-radius: 9px; color: #f3e4c4;
-  cursor: pointer; user-select: none; -webkit-user-select: none; overflow-wrap: anywhere;
+  cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; overflow-wrap: anywhere;
 }
 .picker-option.is-active { background: rgba(243,228,196,.1); }
 .picker-option[aria-selected="true"] { background: #d52029; color: #fff; }

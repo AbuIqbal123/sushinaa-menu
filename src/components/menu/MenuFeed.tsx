@@ -194,10 +194,23 @@ function FeedInner() {
     currentCategory.current = section;
     setCategory(section);
     if (search) { pendingJump.current = section; setQuery(""); return; }
+    const feed = feedRef.current;
     const index = dishes.findIndex((dish) => dish.section === section);
-    if (index < 0) return;
+    if (!feed || index < 0) return;
+    const top = (dishes.length + index) * feed.clientHeight;
     setActiveIndex(index);
-    feedRef.current?.scrollTo({ top: (dishes.length + index) * feedRef.current.clientHeight, behavior: "instant" });
+    // A phone ignores a scroll made while the tap is still down, then snap
+    // stays on the dish already on screen. Move after the tap ends.
+    window.setTimeout(() => {
+      const node = feedRef.current;
+      if (!node) return;
+      const snap = node.style.scrollSnapType;
+      node.style.scrollSnapType = "none";
+      node.scrollTop = top;
+      window.requestAnimationFrame(() => {
+        node.style.scrollSnapType = snap;
+      });
+    }, 0);
   }
 
   function clearFilters() { setQuery(""); setDiet("all"); }
