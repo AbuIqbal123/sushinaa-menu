@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { db, initDb } from "./db";
+import { withCardPhotos } from "./card-photos";
 import { menuSchema, normalizeStoredMenu, type MenuSnapshot } from "./schema";
 import { menuLimitIssues } from "./limits";
 import { ZodError } from "zod";
@@ -46,11 +47,14 @@ export async function readMenu(): Promise<MenuSnapshot> {
   );
   if (!result.rows[0])
     throw new Error("Menu is not initialised. Run npm run cms:seed.");
+  const stored = menuSchema.parse(
+    normalizeStoredMenu(JSON.parse(String(result.rows[0].content))),
+  );
+  // The live menu still points at the original jpgs. The card crops ship in
+  // the app; use them until a save stores the new paths.
   return {
     revision: Number(result.rows[0].revision),
-    menu: menuSchema.parse(
-      normalizeStoredMenu(JSON.parse(String(result.rows[0].content))),
-    ),
+    menu: withCardPhotos(stored).menu,
   };
 }
 export const MENU_CACHE_TAG = "cms-menu";
