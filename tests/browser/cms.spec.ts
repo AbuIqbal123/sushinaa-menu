@@ -671,6 +671,47 @@ test("the options photo opens full screen and closes back to the sheet", async (
   await expect(viewer).toHaveCount(0);
 });
 
+test("search opens from its button toward the logo and closes back to it", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  const toggle = page.locator(".chrome-actions .search-toggle");
+  await expect(
+    page.locator(".chrome-actions > *").first().locator(".search-toggle"),
+  ).toHaveCount(1);
+  const others = page.locator(".chrome-actions > :not(.header-search)");
+  const before = await others.evaluateAll((els) =>
+    els.map((el) => el.getBoundingClientRect().x),
+  );
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect(toggle).toHaveAttribute("aria-label", "Clear search");
+  const input = page.locator("#menu-search");
+  await expect(input).toBeFocused();
+  const logo = (await page.locator(".wordmark-img").boundingBox())!;
+  const field = (await page.locator(".header-search-field").boundingBox())!;
+  expect(field.x).toBeLessThanOrEqual(logo.x + 1);
+  await expect(page.locator(".wordmark-img")).toHaveCSS("opacity", "0");
+  expect(
+    await others.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().x)),
+  ).toEqual(before);
+  await input.pressSequentially("burger");
+  await expect(
+    page.locator(".search-result", { hasText: "Sushinaa burger" }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(toggle).toBeFocused();
+  await expect(input).toHaveValue("");
+  await expect(page.locator(".search-result")).toHaveCount(0);
+  await toggle.click();
+  await expect(input).toBeFocused();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+});
+
 // break-ui stress: the longest text the limits allow, an unbroken word,
 // 4-digit prices and big quantities, at the narrowest phone in both languages.
 test("the longest allowed text and 4-digit prices keep the card and sheet intact", async ({

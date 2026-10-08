@@ -36,6 +36,9 @@ function FeedInner() {
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const searchButtonRef = useRef<HTMLButtonElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  // How far the open field reaches: from the search button to the logo's edge.
+  const [searchWidth, setSearchWidth] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const currentCategory = useRef<Section>(firstSection);
   const pendingJump = useRef<Section | null>(null);
@@ -113,6 +116,39 @@ function FeedInner() {
     };
   }, [search, syncCategory, wrapLoop]);
 
+  const measureSearch = useCallback(() => {
+    const button = searchButtonRef.current;
+    const header = button?.closest("header");
+    if (!button || !header) return;
+    const b = button.getBoundingClientRect();
+    const h = header.getBoundingClientRect();
+    const pad = parseFloat(getComputedStyle(header).paddingInlineStart);
+    setSearchWidth(lang === "ar" ? h.right - pad - b.left : b.right - h.left - pad);
+  }, [lang]);
+
+  function openSearch() {
+    measureSearch();
+    setSearchOpen(true);
+  }
+
+  // Focus in the same task as the tap, so phones raise the keyboard.
+  useLayoutEffect(() => {
+    if (searchOpen) searchInputRef.current?.focus({ preventScroll: true });
+  }, [searchOpen]);
+
+  // Follow rotation and split view; a phone keyboard only changes the height.
+  useEffect(() => {
+    if (!searchOpen) return;
+    let width = window.innerWidth;
+    const onResize = () => {
+      if (window.innerWidth === width) return;
+      width = window.innerWidth;
+      measureSearch();
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [searchOpen, measureSearch]);
+
   function closeSearch() {
     setQuery("");
     setSearchOpen(false);
@@ -134,18 +170,31 @@ function FeedInner() {
 
   return (
     <div className={`shell${sheetOpen ? " is-sheet" : ""}${itemCount > 0 ? " has-order" : ""}`}>
-      <header className="chrome-header">
+      <header className={`chrome-header${searchOpen ? " search-open" : ""}`}>
         <img src={menu.settings.logo} alt={t.brand} className="wordmark-img" width={46} height={44} />
         <div className="chrome-actions">
+          {/* One element: the button's pill opens into the field, toward the logo. */}
+          <div className="header-search">
+            <div id="menu-search-panel" className="header-search-field" role="search"
+              style={{ width: searchWidth || undefined }} inert={!searchOpen}>
+              <label htmlFor="menu-search" className="sr-only">{t.searchMenu}</label>
+              <input ref={searchInputRef} id="menu-search" type="search" value={query} placeholder={t.searchMenu}
+                onChange={(e) => setQuery(e.target.value)} autoComplete="off" maxLength={100} enterKeyHint="search"
+                onKeyDown={(e) => { if (e.key === "Escape") closeSearch(); }} />
+            </div>
+            <button ref={searchButtonRef} type="button" className="cart-btn search-toggle"
+              aria-label={searchOpen ? t.clearSearch : t.searchMenu} aria-expanded={searchOpen} aria-controls="menu-search-panel"
+              onClick={() => searchOpen ? closeSearch() : openSearch()}>
+              <svg className="search-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" strokeWidth="1.6" />
+                <path d="m16 16 4.5 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+              <svg className="close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
           <LangButton />
-          <button ref={searchButtonRef} type="button" className="cart-btn search-toggle"
-            aria-label={t.searchMenu} aria-expanded={searchOpen} aria-controls="menu-search-panel"
-            onClick={() => searchOpen ? closeSearch() : setSearchOpen(true)}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" strokeWidth="1.6" />
-              <path d="m16 16 4.5 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-          </button>
           <button type="button" className="cart-btn" onClick={() => setOpen(true)} aria-label={t.openOrder(itemCount)}>
             <TicketIcon />
             {itemCount > 0 ? <span className="cart-badge">{itemCount}</span> : null}
@@ -153,7 +202,7 @@ function FeedInner() {
         </div>
       </header>
       <div className="filter-bar" aria-label={t.filters} inert={sheetOpen ? true : undefined}>
-        <div className={`menu-tools${searchOpen ? " search-open" : ""}`}>
+        <div className="menu-tools">
           <label className="category-picker">
             <span className="sr-only">{t.category}</span>
             <select value={category} onChange={(e) => jumpTo(e.target.value)}>
@@ -163,13 +212,6 @@ function FeedInner() {
               <path d="m1 1 5 5 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </label>
-          {searchOpen ? <div id="menu-search-panel" className="menu-search" role="search">
-            <label htmlFor="menu-search" className="sr-only">{t.searchMenu}</label>
-            <input id="menu-search" type="search" value={query} placeholder={t.searchMenu}
-              onChange={(e) => setQuery(e.target.value)} autoComplete="off" maxLength={100} autoFocus
-              onKeyDown={(e) => { if (e.key === "Escape") closeSearch(); }} />
-            {query ? <button type="button" onClick={() => setQuery("")} aria-label={t.clearSearch}>×</button> : null}
-          </div> : null}
         </div>
         <div className="chip-row chip-row-diet" aria-label={t.dietary}>
           {dietChips.map((chip) => <button key={chip.id} type="button"

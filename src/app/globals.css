@@ -19,6 +19,8 @@
   --leading-caption: 1.35;
   --leading-body: 1.5;
   --leading-title: 1.1;
+  /* Strong ease-out for UI motion: quick to respond, soft to settle. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 * {
@@ -857,6 +859,7 @@ body {
   height: 44px;
   width: auto;
   filter: drop-shadow(0 1px 8px rgba(20, 17, 15, 0.9));
+  transition: opacity 160ms var(--ease-out);
 }
 
 .cart-btn {
@@ -1449,18 +1452,12 @@ button {
 
 /* Menu discovery controls stay available above the photo feed. */
 .menu-tools { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 0 12px; }
-.category-picker select, .menu-search input {
+.category-picker select {
   width: 100%; min-height: 44px; border: 1px solid rgba(243,228,196,.35);
   border-radius: 12px; background: rgba(20,17,15,.92); color: #f3e4c4;
   font: inherit; font-size: 16px; padding: 8px 12px;
 }
 .category-picker select { cursor: pointer; }
-.menu-search { position: relative; }
-.menu-search input { padding-inline-end: 44px; }
-.menu-search input::placeholder { color: #d6cbb7; }
-.menu-search input::-webkit-search-cancel-button { display: none; }
-.menu-search button { position: absolute; inset-inline-end: 0; top: 0; width: 44px; height: 44px;
-  border: 0; background: transparent; color: #f3e4c4; font-size: 24px; cursor: pointer; }
 .menu-tools :focus-visible { outline: 2px solid #f3e4c4; outline-offset: 2px; }
 .feed-search { scroll-snap-type: none; background: #14110f; }
 .search-results { padding: calc(164px + env(safe-area-inset-top, 0px)) 16px 100px; }
@@ -1476,7 +1473,7 @@ button {
 .view-only-notice { color: #655c50; font-size: 14px; line-height: 1.5; }
 .ticket .line-main { min-width: 0; }
 
-.category-picker, .menu-search { min-width: 0; }
+.category-picker { min-width: 0; }
 .category-picker { position: relative; }
 .category-picker select {
   appearance: none; -webkit-appearance: none;
@@ -1490,6 +1487,38 @@ button {
 .search-result-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .search-result { gap: 10px; }
 
-.menu-tools.search-open { grid-template-columns: minmax(110px, .8fr) minmax(0, 1.2fr); }
-.chrome-actions .search-toggle[aria-expanded="true"] { background: #d52029; color: #fff; }
 .chrome-actions .search-toggle:focus-visible { outline: 2px solid #f3e4c4; outline-offset: 2px; }
+
+/* Header search: the button's pill opens into a field that reaches the logo.
+   The field is laid out at full width from the start and revealed with a
+   clip, so nothing around it moves. */
+.header-search { position: relative; width: 44px; height: 44px; }
+.header-search-field {
+  position: absolute; top: 0; inset-inline-end: 0; width: 44px; height: 44px;
+  border: 1px solid rgba(213, 32, 41, 0.55); border-radius: 22px;
+  background: rgba(20, 17, 15, 0.92);
+  clip-path: inset(0 0 0 calc(100% - 44px) round 22px);
+  transition: clip-path 220ms var(--ease-out);
+}
+[dir="rtl"] .header-search-field { clip-path: inset(0 calc(100% - 44px) 0 0 round 22px); }
+.search-open .header-search-field { clip-path: inset(0 round 22px); }
+.header-search-field input {
+  width: 100%; height: 100%; padding: 0; padding-inline: 16px 44px;
+  border: 0; border-radius: inherit; background: transparent; color: #f3e4c4;
+  font: inherit; font-size: 16px; opacity: 0; transition: opacity 160ms var(--ease-out);
+}
+.header-search-field input::placeholder { color: #d6cbb7; }
+.header-search-field input::-webkit-search-cancel-button { display: none; }
+.header-search-field input:focus-visible { outline: none; }
+.header-search-field:focus-within { border-color: rgba(243, 228, 196, 0.6); }
+.search-open .header-search-field input { opacity: 1; }
+.header-search .search-toggle { position: absolute; inset: 0; }
+.search-open .search-toggle { background: transparent; border-color: transparent; }
+.search-toggle svg { grid-area: 1 / 1; transition: opacity 160ms var(--ease-out); }
+.search-toggle .close-icon,
+.search-open .search-toggle .search-icon { opacity: 0; }
+.search-open .search-toggle .close-icon { opacity: 1; }
+.search-open .wordmark-img { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .header-search-field, .header-search-field input, .search-toggle svg, .wordmark-img { transition: none; }
+}
