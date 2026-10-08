@@ -122,7 +122,7 @@
       "section": "New",
       "description": "Sushi burger with shrimp, crab stick, avocado, cucumber and spicy mayo, finished with furikake and sweet soy sauce.",
       "descriptionAr": "برجر سوشي مع الروبيان، أصابع السلطعون، الأفوكادو، الخيار والمايونيز الحار، مزين بالفوريكاكي وصلصة الصويا الحلوة.",
-      "image": "/dishes/sushinaa-burger.jpg",
+      "image": "/dishes/card/sushinaa-burger.webp",
       "tags": [
         "seafood"
       ],
@@ -167,10 +167,7 @@
       "available": true,
       "imageAlt": "",
       "imageAltAr": "",
-      "imageFocus": {
-        "x": 17.3,
-        "y": 50
-      }
+      "optionsImage": "/dishes/sushinaa-burger.jpg"
     },
     {
       "id": "crispy-calamari",
@@ -179,7 +176,7 @@
       "section": "New",
       "description": "Crispy calamari rings seasoned with garlic and paprika, served with spicy mayo and lemon garlic mayo.",
       "descriptionAr": "حلقات كاليماري مقرمشة متبلة بالثوم والبابريكا، تقدم مع المايونيز الحار ومايونيز الثوم والليمون.",
-      "image": "/dishes/crispy-calamari.jpg",
+      "image": "/dishes/card/crispy-calamari.webp",
       "tags": [
         "seafood"
       ],
@@ -206,10 +203,7 @@
       "available": true,
       "imageAlt": "",
       "imageAltAr": "",
-      "imageFocus": {
-        "x": 65,
-        "y": 50
-      }
+      "optionsImage": "/dishes/crispy-calamari.jpg"
     },
     {
       "id": "gyoza-chicken",
@@ -283,7 +277,7 @@
       "section": "New",
       "description": "Beef-filled gyoza with cabbage, red onion, ginger and garlic, seasoned with soy sauce and sesame oil. Served with your choice of 2 sauces.",
       "descriptionAr": "جيوزا محشوة باللحم البقري، الملفوف، البصل الأحمر، الزنجبيل والثوم، متبلة بصلصة الصويا وزيت السمسم، تقدم مع اختيارك من صوصين.",
-      "image": "/dishes/gyoza-beef.jpg",
+      "image": "/dishes/card/gyoza-beef.webp",
       "tags": [],
       "kind": {
         "type": "addons",
@@ -339,10 +333,7 @@
       "available": true,
       "imageAlt": "",
       "imageAltAr": "",
-      "imageFocus": {
-        "x": 69.9,
-        "y": 50
-      }
+      "optionsImage": "/dishes/gyoza-beef.jpg"
     },
     {
       "id": "gyoza-shrimp",
@@ -658,7 +649,7 @@
       "section": "Starters",
       "description": "Six pieces. Crab, mayonnaise, caviar, breadcrumbs.",
       "descriptionAr": "ست حبات. سلطعون، مايونيز، كفيار",
-      "image": "/dishes/crispy-rice-crab.jpg",
+      "image": "/dishes/card/crispy-rice-crab.webp",
       "tags": [
         "seafood"
       ],
@@ -672,10 +663,7 @@
       "available": true,
       "imageAlt": "",
       "imageAltAr": "",
-      "imageFocus": {
-        "x": 65,
-        "y": 50
-      }
+      "optionsImage": "/dishes/crispy-rice-crab.jpg"
     },
     {
       "id": "crab-rangoon",
@@ -836,7 +824,7 @@
       "nameAr": "أرز مقلي بالجمبري",
       "section": "Fried rice",
       "description": "Shrimp, rice, soy sauce, yellow pepper, green pepper, red pepper, mushroom, carrot, black pepper.",
-      "image": "/dishes/shrimp-fried-rice.jpg",
+      "image": "/dishes/card/shrimp-fried-rice.webp",
       "tags": [
         "seafood"
       ],
@@ -850,10 +838,7 @@
       "available": true,
       "imageAlt": "",
       "imageAltAr": "",
-      "imageFocus": {
-        "x": 59.8,
-        "y": 50
-      }
+      "optionsImage": "/dishes/shrimp-fried-rice.jpg"
     },
     {
       "id": "vegi-fried-rice",
@@ -883,7 +868,7 @@
       "nameAr": "بوك بول خضار",
       "section": "Poke bowls",
       "description": "Rice, cucumber, edamame, avocado, mango, white cabbage, red cabbage, breadcrumbs, nori. Crispy potato on the side.",
-      "image": "/dishes/vegi-poke-bowl.jpg",
+      "image": "/dishes/card/vegi-poke-bowl.webp",
       "tags": [
         "veg"
       ],
@@ -897,10 +882,7 @@
       "available": true,
       "imageAlt": "",
       "imageAltAr": "",
-      "imageFocus": {
-        "x": 61.9,
-        "y": 50
-      }
+      "optionsImage": "/dishes/vegi-poke-bowl.jpg"
     },
     {
       "id": "chicken-poke",
@@ -908,7 +890,7 @@
       "nameAr": "بوك بول دجاج",
       "section": "Poke bowls",
       "description": "Crispy chicken with sauce, rice, cucumber, corn, avocado, white cabbage, red cabbage, nori. Crispy potato on the side.",
-      "image": "/dishes/chicken-poke-bowl.jpg",
+      "image": "/dishes/card/chicken-poke-bowl.webp",
       "tags": [],
       "kind": {
         "type": "simple",
@@ -920,10 +902,7 @@
       "available": true,
       "imageAlt": "",
       "imageAltAr": "",
-      "imageFocus": {
-        "x": 65.4,
-        "y": 50
-      }
+      "optionsImage": "/dishes/chicken-poke-bowl.jpg"
     },
     {
       "id": "shrimp-poke",
@@ -931,7 +910,7 @@
       "nameAr": "بوك بول روبيان",
       "section": "Poke bowls",
       "description": "Crispy shrimp with sauce, rice, cucumber, edamame, avocado, crab, mayonnaise, caviar, corn, nori. Crispy potato on the side.",
-      "image": "/dishes/shrimp-poke-bowl.jpg",
+      "image": "/dishes/card/shrimp-poke-bowl.webp",
       "tags": [
         "seafood"
       ],
@@ -945,10 +924,7 @@
       "available": true,
       "imageAlt": "",
       "imageAltAr": "",
-      "imageFocus": {
-        "x": 66,
-        "y": 50
-      }
+      "optionsImage": "/dishes/shrimp-poke-bowl.jpg"
     },
     {
       "id": "shrimp-box",
@@ -957,7 +933,7 @@
       "section": "Deal box",
       "description": "One starter and one sushi type (6 pieces). Shrimp only.",
       "descriptionAr": "مقبلات ونوع سوشي (٦ حبات). روبيان فقط.",
-      "image": "/dishes/shrimp-deal-box.jpg",
+      "image": "/dishes/card/shrimp-deal-box.webp",
       "tags": [
         "seafood"
       ],
@@ -1017,10 +993,7 @@
       "available": true,
       "imageAlt": "",
       "imageAltAr": "",
-      "imageFocus": {
-        "x": 70.6,
-        "y": 50
-      }
+      "optionsImage": "/dishes/shrimp-deal-box.jpg"
     },
     {
       "id": "chicken-box",
@@ -1029,7 +1002,7 @@
       "section": "Deal box",
       "description": "One starter and one sushi type (6 pieces). Chicken only.",
       "descriptionAr": "مقبلات ونوع سوشي (٦ حبات). دجاج فقط.",
-      "image": "/dishes/chicken-deal-box.jpg",
+      "image": "/dishes/card/chicken-deal-box.webp",
       "tags": [],
       "kind": {
         "type": "deal-box",
@@ -1077,10 +1050,7 @@
       "available": true,
       "imageAlt": "",
       "imageAltAr": "",
-      "imageFocus": {
-        "x": 68.5,
-        "y": 50
-      }
+      "optionsImage": "/dishes/chicken-deal-box.jpg"
     },
     {
       "id": "seafood-box",
@@ -1089,7 +1059,7 @@
       "section": "Deal box",
       "description": "One starter and one sushi type (6 pieces). Seafood only.",
       "descriptionAr": "مقبلات ونوع سوشي (٦ حبات). بحري فقط.",
-      "image": "/dishes/seafood-deal-box.jpg",
+      "image": "/dishes/card/seafood-deal-box.webp",
       "tags": [
         "seafood"
       ],
@@ -1137,10 +1107,7 @@
       "available": true,
       "imageAlt": "",
       "imageAltAr": "",
-      "imageFocus": {
-        "x": 63.4,
-        "y": 50
-      }
+      "optionsImage": "/dishes/seafood-deal-box.jpg"
     },
     {
       "id": "veggie-box",
@@ -1149,7 +1116,7 @@
       "section": "Deal box",
       "description": "One starter and one sushi type (6 pieces). Vegetarian only.",
       "descriptionAr": "مقبلات ونوع سوشي (٦ حبات). خضار فقط.",
-      "image": "/dishes/vegi-deal-box.jpg",
+      "image": "/dishes/card/vegi-deal-box.webp",
       "tags": [
         "veg"
       ],
@@ -1201,10 +1168,7 @@
       "available": true,
       "imageAlt": "",
       "imageAltAr": "",
-      "imageFocus": {
-        "x": 54.9,
-        "y": 50
-      }
+      "optionsImage": "/dishes/vegi-deal-box.jpg"
     },
     {
       "id": "spicy-mango-salad",
@@ -2451,7 +2415,7 @@
       "nameAr": "بوريتو سوشي",
       "section": "Sushi burrito",
       "description": "Crab, caviar, shrimp tempura, lettuce, sesame, chips, two sauces.",
-      "image": "/dishes/agr-sushi-burrito.jpg",
+      "image": "/dishes/card/agr-sushi-burrito.webp",
       "tags": [
         "seafood"
       ],
@@ -2490,10 +2454,7 @@
       "available": true,
       "imageAlt": "",
       "imageAltAr": "",
-      "imageFocus": {
-        "x": 81.7,
-        "y": 50
-      }
+      "optionsImage": "/dishes/agr-sushi-burrito.jpg"
     },
     {
       "id": "tempura-roll",
@@ -3106,7 +3067,7 @@
       "nameAr": "نودلز خضار",
       "section": "Noodles",
       "description": "Bell pepper, carrot, red cabbage, onion, garlic, sauce. Spicy optional.",
-      "image": "/dishes/vegi-noodles.jpg",
+      "image": "/dishes/card/vegi-noodles.webp",
       "tags": [
         "veg"
       ],
@@ -3159,10 +3120,7 @@
       "available": true,
       "imageAlt": "",
       "imageAltAr": "",
-      "imageFocus": {
-        "x": 77.5,
-        "y": 50
-      }
+      "optionsImage": "/dishes/vegi-noodles.jpg"
     },
     {
       "id": "sushinaa-box-mini",
@@ -3170,7 +3128,7 @@
       "nameAr": "بوكس سوشينا ميني",
       "section": "Sushinaa box",
       "description": "Nine sushi types, one piece of each, plus one starter of your choice. Serves 1–2. WhatsApp 55075933 for the mix.",
-      "image": "/dishes/mini-sushinaa-box.jpg",
+      "image": "/dishes/card/mini-sushinaa-box.webp",
       "tags": [],
       "kind": {
         "type": "party-box",
@@ -3257,10 +3215,7 @@
       "available": true,
       "imageAlt": "",
       "imageAltAr": "",
-      "imageFocus": {
-        "x": 56,
-        "y": 50
-      }
+      "optionsImage": "/dishes/mini-sushinaa-box.jpg"
     },
     {
       "id": "sushinaa-box-regular",
@@ -3268,7 +3223,7 @@
       "nameAr": "بوكس سوشينا عادي",
       "section": "Sushinaa box",
       "description": "Nine sushi types, two pieces of each, plus 1 or 2 starters of your choice. The same starter twice is fine. Serves 3–4. WhatsApp 55075933 for the mix.",
-      "image": "/dishes/sushinaa-box-regular.jpg",
+      "image": "/dishes/card/sushinaa-box-regular.webp",
       "tags": [],
       "kind": {
         "type": "party-box",
@@ -3355,10 +3310,7 @@
       "available": true,
       "imageAlt": "",
       "imageAltAr": "",
-      "imageFocus": {
-        "x": 47.5,
-        "y": 50
-      }
+      "optionsImage": "/dishes/sushinaa-box-regular.jpg"
     },
     {
       "id": "sauces",

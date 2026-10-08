@@ -307,7 +307,7 @@ test("admin controls edit, reorder and delete content and options", async ({
       expect(changed.kind.extras[1].priceQar).toBe(6);
       expect(changed.kind.extras[1].name).toBe("Spicy mayo");
     }
-    expect(changed.image).toBe("/dishes/sushinaa-burger.jpg");
+    expect(changed.image).toBe("/dishes/card/sushinaa-burger.webp");
     const mario = page.locator(".admin-row").filter({
       has: page.locator("strong", { hasText: /^Mario roll$/ }),
     });
@@ -592,18 +592,18 @@ test("card focal point and options photo round-trip to the public menu", async (
     const focus = page.getByRole("slider", { name: "Card focal point" });
     await expect(focus).toHaveAttribute(
       "aria-valuetext",
-      "17.3% across, 50% down",
+      "50% across, 50% down",
     );
     await focus.focus();
     await page.keyboard.press("Shift+ArrowRight");
     await page.keyboard.press("ArrowDown");
     await expect(focus).toHaveAttribute(
       "aria-valuetext",
-      "27% across, 51% down",
+      "60% across, 51% down",
     );
     await expect(page.locator(".admin-focus-preview img")).toHaveCSS(
       "object-position",
-      "27% 51%",
+      "60% 51%",
     );
     await page
       .getByLabel("Options photo", { exact: true })
@@ -617,12 +617,12 @@ test("card focal point and options photo round-trip to the public menu", async (
       await page.request.get("/api/admin/menu")
     ).json();
     const burger = saved.menu.dishes.find((d) => d.id === "sushinaa-burger")!;
-    expect(burger.imageFocus).toEqual({ x: 27, y: 51 });
+    expect(burger.imageFocus).toEqual({ x: 60, y: 51 });
     expect(burger.optionsImage).toMatch(/^\/api\/media\//);
-    expect(burger.image).toBe("/dishes/sushinaa-burger.jpg");
+    expect(burger.image).toBe("/dishes/card/sushinaa-burger.webp");
     await page.goto("/");
     const card = page.locator("#dish-sushinaa-burger img.dish-photo");
-    await expect(card).toHaveCSS("object-position", "27% 51%");
+    await expect(card).toHaveCSS("object-position", "60% 51%");
     await page.locator("#dish-sushinaa-burger .slide-hit").click();
     await expect(page.locator(".detail-photo")).toHaveAttribute(
       "src",

@@ -34,8 +34,8 @@ test("the seed is the original menu with card photos applied, and applying again
   assert.deepEqual(withCardPhotos(seed).changed, []);
   assert.ok(menuSchema.safeParse(seed).success);
   const dishes = seed.dishes;
-  assert.equal(dishes.filter((d) => d.image.startsWith("/dishes/card/")).length, 58);
-  assert.equal(dishes.filter((d) => d.imageFocus).length, 16);
+  assert.equal(dishes.filter((d) => d.image.startsWith("/dishes/card/")).length, 74);
+  assert.equal(dishes.filter((d) => d.imageFocus).length, 0);
   // Cropped photos fill the card; only uncropped originals carry a focal point.
   for (const d of dishes)
     assert.ok(!(d.imageFocus && d.image.startsWith("/dishes/card/")), d.id);

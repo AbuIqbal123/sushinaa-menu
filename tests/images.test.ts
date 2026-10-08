@@ -60,7 +60,7 @@ test("the card shows the card photo; the sheet shows the full photo behind it", 
   assert.equal(sheetImageFor(uploaded, chicken), "/api/media/new.webp");
 });
 test("the focal point applies to the dish's own card photo only", () => {
-  const dish = { ...burger, optionsImage: "/api/media/wide.webp" };
+  const dish = { ...burger, optionsImage: "/api/media/wide.webp", imageFocus: { x: 17.3, y: 50 } };
   assert.equal(photoPosition(dish, dish.image), "17.3% 50%");
   assert.equal(photoPosition(dish, "/api/media/wide.webp"), undefined);
   assert.equal(
