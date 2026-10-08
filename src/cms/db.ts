@@ -1,6 +1,7 @@
 import { createClient } from "@libsql/client";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import { AUDIT_SCHEMA } from "./audit";
 const url = process.env.CMS_DATABASE_URL || "file:./data/menu.db";
 if (process.env.VERCEL && url.startsWith("file:"))
   throw new Error(
@@ -20,6 +21,7 @@ export function initDb() {
         `CREATE TABLE IF NOT EXISTS menu (id INTEGER PRIMARY KEY CHECK(id=1), revision INTEGER NOT NULL, content TEXT NOT NULL)`,
         `CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, expires INTEGER NOT NULL)`,
         `CREATE TABLE IF NOT EXISTS media (id TEXT PRIMARY KEY, content BLOB NOT NULL, type TEXT NOT NULL)`,
+        ...AUDIT_SCHEMA,
       ],
       "write",
     )

@@ -4,6 +4,7 @@ import { db, initDb } from "./db";
 import { menuSchema, type MenuSnapshot } from "./schema";
 import { menuLimitIssues } from "./limits";
 import { ZodError } from "zod";
+import { auditInsert, menuChanges, type AuditContext } from "./audit";
 import shipped from "./static-images.json";
 const staticImages = new Set(shipped);
 export class ConflictError extends Error {}
@@ -60,25 +61,44 @@ export const getMenu = cache(
     revalidate: 300,
   }),
 );
+const conflict = () =>
+  new ConflictError(
+    "The menu changed in another session. Reload before saving to avoid overwriting those changes.",
+  );
+/** Saves the menu and, in the same transaction, one activity row per change. */
 export async function saveMenu(
   input: unknown,
   revision: number,
+  audit: AuditContext,
 ): Promise<MenuSnapshot> {
   const menu = menuSchema.parse(input);
   await initDb();
-  // Only new or changed text has to fit; what is already saved stays valid.
-  const stored = await readMenu().catch(() => undefined);
-  const over = menuLimitIssues(menu, stored?.menu);
-  if (over.length) throw new ZodError(over);
   await validateImages(menu);
-  const result = await db.execute({
-    sql: "UPDATE menu SET content=?,revision=revision+1 WHERE id=1 AND revision=?",
-    args: [JSON.stringify(menu), revision],
-  });
-  if (result.rowsAffected !== 1)
-    throw new ConflictError(
-      "The menu changed in another session. Reload before saving to avoid overwriting those changes.",
-    );
+  const tx = await db.transaction("write");
+  try {
+    const row = (
+      await tx.execute({
+        sql: "SELECT revision,content FROM menu WHERE id=1",
+        args: [],
+      })
+    ).rows[0];
+    if (!row || Number(row.revision) !== revision) throw conflict();
+    const stored = menuSchema.parse(JSON.parse(String(row.content)));
+    // Only new or changed text has to fit; what is already saved stays valid.
+    const over = menuLimitIssues(menu, stored);
+    if (over.length) throw new ZodError(over);
+    const result = await tx.execute({
+      sql: "UPDATE menu SET content=?,revision=revision+1 WHERE id=1 AND revision=?",
+      args: [JSON.stringify(menu), revision],
+    });
+    if (result.rowsAffected !== 1) throw conflict();
+    const changes = menuChanges(stored, menu);
+    if (changes.length)
+      await tx.batch(changes.map((change) => auditInsert(audit, change)));
+    await tx.commit();
+  } finally {
+    tx.close();
+  }
   return { menu, revision: revision + 1 };
 }
 export async function seedMenu(input: unknown) {

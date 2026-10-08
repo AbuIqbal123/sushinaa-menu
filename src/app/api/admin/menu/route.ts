@@ -1,6 +1,7 @@
 import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
-import { authenticated, sameOrigin } from "@/cms/auth";
+import { adminName, authenticated, sameOrigin } from "@/cms/auth";
+import { auditContext } from "@/cms/audit";
 import {
   readMenu,
   saveMenu,
@@ -29,7 +30,11 @@ export async function PUT(request: Request) {
     const { menu, revision } = JSON.parse(raw);
     if (!Number.isSafeInteger(revision) || revision < 1)
       return NextResponse.json({ error: "Invalid revision" }, { status: 400 });
-    const saved = await saveMenu(menu, revision);
+    const saved = await saveMenu(
+      menu,
+      revision,
+      auditContext(request, adminName()),
+    );
     // Publish immediately: the next public request reads the new revision.
     revalidateTag(MENU_CACHE_TAG, { expire: 0 });
     return NextResponse.json(saved);

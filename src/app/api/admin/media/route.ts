@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import sharp from "sharp";
-import { authenticated, sameOrigin } from "@/cms/auth";
+import { adminName, authenticated, sameOrigin } from "@/cms/auth";
+import { auditContext, auditInsert } from "@/cms/audit";
 import { db, initDb } from "@/cms/db";
 export async function POST(request: Request) {
   if (!(await authenticated()))
@@ -34,10 +35,22 @@ export async function POST(request: Request) {
       .toBuffer();
     const id = createHash("sha256").update(data).digest("hex");
     await initDb();
-    await db.execute({
-      sql: "INSERT OR IGNORE INTO media(id,content,type) VALUES (?,?,?)",
-      args: [id, data, "image/webp"],
-    });
+    await db.batch(
+      [
+        {
+          sql: "INSERT OR IGNORE INTO media(id,content,type) VALUES (?,?,?)",
+          args: [id, data, "image/webp"],
+        },
+        auditInsert(auditContext(request, adminName()), {
+          action: "media.upload",
+          entityType: "media",
+          entityId: id,
+          label: file.name,
+          diff: { type: "image/webp", bytes: data.length },
+        }),
+      ],
+      "write",
+    );
     return NextResponse.json({ url: `/api/media/${id}` });
   } catch {
     return NextResponse.json(

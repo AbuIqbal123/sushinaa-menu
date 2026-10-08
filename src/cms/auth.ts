@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { db, initDb } from "./db";
+import { auditInsert, type AuditContext } from "./audit";
 const COOKIE = "sushinaa-admin";
 const digest = (s: string) => createHash("sha256").update(s).digest("hex");
 // Replace this adapter when moving to a real identity provider.
@@ -15,6 +16,10 @@ export function validCredentials(username: string, password: string) {
   const passwordOk = equal(password, expectedPassword);
   return userOk && passwordOk;
 }
+// The one admin account; recorded as who made each change.
+export function adminName() {
+  return process.env.CMS_ADMIN_USERNAME ?? null;
+}
 export async function authenticated() {
   const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return false;
@@ -25,18 +30,21 @@ export async function authenticated() {
   });
   return r.rows.length > 0;
 }
-export async function login() {
+export async function login(audit: AuditContext) {
   await initDb();
   const token = randomBytes(32).toString("hex");
   const maxAge = 60 * 60 * 8;
-  await db.execute({
-    sql: "DELETE FROM sessions WHERE expires<=?",
-    args: [Date.now()],
-  });
-  await db.execute({
-    sql: "INSERT INTO sessions(token,expires) VALUES (?,?)",
-    args: [digest(token), Date.now() + maxAge * 1000],
-  });
+  await db.batch(
+    [
+      { sql: "DELETE FROM sessions WHERE expires<=?", args: [Date.now()] },
+      {
+        sql: "INSERT INTO sessions(token,expires) VALUES (?,?)",
+        args: [digest(token), Date.now() + maxAge * 1000],
+      },
+      auditInsert(audit, { action: "session.sign_in", entityType: "session" }),
+    ],
+    "write",
+  );
   (await cookies()).set(COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -45,15 +53,21 @@ export async function login() {
     maxAge,
   });
 }
-export async function logout() {
+/** Ends the session; a signed-in session is recorded as a sign-out. */
+export async function logout(audit: AuditContext | null) {
   const jar = await cookies();
   const token = jar.get(COOKIE)?.value;
   if (token) {
     await initDb();
-    await db.execute({
-      sql: "DELETE FROM sessions WHERE token=?",
-      args: [digest(token)],
-    });
+    await db.batch(
+      [
+        { sql: "DELETE FROM sessions WHERE token=?", args: [digest(token)] },
+        ...(audit
+          ? [auditInsert(audit, { action: "session.sign_out", entityType: "session" })]
+          : []),
+      ],
+      "write",
+    );
   }
   jar.delete(COOKIE);
 }

@@ -30,7 +30,11 @@ async function main() {
     console.log(`${where}, revision ${revision}: ${changed.length} dishes to update.`);
     if (changed.length) console.log(changed.join("\n"));
     if (!changed.length || mode !== "--write") return;
-    const saved = await saveMenu(next, revision);
+    const saved = await saveMenu(next, revision, {
+      actor: "card-photos migration",
+      ip: null,
+      userAgent: null,
+    });
     console.log(`Saved as revision ${saved.revision}.`);
   } finally {
     db.close();

@@ -755,6 +755,87 @@ test("the category picker is a listbox that follows the feed", async ({
   await expect(picker).toHaveText("Poke");
 });
 
+test("every admin write leaves an activity row and failed writes leave none", async ({
+  page,
+  baseURL,
+}) => {
+  const headers = { Origin: baseURL!, "x-forwarded-for": "203.0.113.7, 10.0.0.1" };
+  const api = page.request;
+  const wrong = "not-the-password-4821";
+  expect(
+    (await api.post("/api/admin/session", { headers, data: { username: "admin", password: wrong } })).status(),
+  ).toBe(401);
+  await api.post("/api/admin/session", { headers, data: { username: "admin", password: "admin" } });
+  type Row = { id: number; action: string; actor: string | null; entityId: string | null; ip: string | null };
+  const rows = async (): Promise<Row[]> => (await (await api.get("/api/admin/activity")).json()).rows;
+  const latest = await rows();
+  expect(latest.slice(0, 2).map((r) => r.action)).toEqual(["session.sign_in", "session.sign_in_failed"]);
+  expect(latest[1].actor).toBe("admin");
+  expect(latest[0].ip).toBe("203.0.113.7");
+  const since = latest[0].id;
+  const newer = async () => (await rows()).filter((r) => r.id > since);
+  const snapshot: MenuSnapshot = await (await api.get("/api/admin/menu")).json();
+  const original = structuredClone(snapshot.menu);
+  // Refused writes: stale revision, over-limit text, a non-image upload.
+  const stale = structuredClone(snapshot);
+  stale.revision -= 1;
+  stale.menu.dishes[0].description = "Stale";
+  expect((await api.put("/api/admin/menu", { headers, data: stale })).status()).toBe(409);
+  const long = structuredClone(snapshot);
+  long.menu.dishes[0].name = "x".repeat(80);
+  expect((await api.put("/api/admin/menu", { headers, data: long })).status()).toBe(422);
+  expect(
+    (await api.post("/api/admin/media", {
+      headers,
+      multipart: { file: { name: "note.png", mimeType: "image/png", buffer: Buffer.from("not an image") } },
+    })).status(),
+  ).toBe(422);
+  expect(await newer()).toEqual([]);
+  // Accepted writes.
+  const next = structuredClone(snapshot);
+  next.menu.dishes[0].description = "Audited change";
+  next.menu.dishes[1].visible = false;
+  next.menu.settings.tagline = "Audited tagline";
+  const saved = await api.put("/api/admin/menu", { headers, data: next });
+  expect(saved.status()).toBe(200);
+  const upload = await api.post("/api/admin/media", {
+    headers,
+    multipart: { file: { name: "burger.jpg", mimeType: "image/jpeg", buffer: readFileSync("public/dishes/sushinaa-burger.jpg") } },
+  });
+  expect(upload.status()).toBe(200);
+  const restored = await api.put("/api/admin/menu", {
+    headers,
+    data: { revision: (await saved.json()).revision, menu: original },
+  });
+  expect(restored.status()).toBe(200);
+  await page.goto("/admin");
+  await page.getByRole("button", { name: "Activity", exact: true }).click();
+  await expect(page.getByText(`Changed item “${original.dishes[0].name}”: description`).first()).toBeVisible();
+  await page.getByLabel("Show activity for").selectOption("settings");
+  await expect(page.getByText("Changed settings: tagline").first()).toBeVisible();
+  await expect(page.locator(".admin-activity li").first()).toContainText("Changed settings: tagline");
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/login/);
+  await api.post("/api/admin/session", { headers, data: { username: "admin", password: "admin" } });
+  const all = await newer();
+  const actions = all.map((r) => `${r.action} ${r.entityId ?? ""}`.trim());
+  for (const want of [
+    `item.update ${original.dishes[0].id}`,
+    `item.hide ${original.dishes[1].id}`,
+    "settings.update",
+    "media.upload " + (await upload.json()).url.split("/").pop(),
+    `item.show ${original.dishes[1].id}`,
+    "session.sign_out",
+  ])
+    expect(actions).toContain(want);
+  // No password, cookie or session token in any row.
+  const cookie = (await page.context().cookies()).find((c) => c.name === "sushinaa-admin")!.value;
+  const dump = JSON.stringify(await (await api.get("/api/admin/activity?page=1")).json());
+  expect(dump).not.toContain(wrong);
+  expect(dump).not.toContain(cookie);
+  expect(dump).not.toMatch(/password|cookie|token/i);
+});
+
 // break-ui stress: the longest text the limits allow, an unbroken word,
 // 4-digit prices and big quantities, at the narrowest phone in both languages.
 test("the longest allowed text and 4-digit prices keep the card and sheet intact", async ({

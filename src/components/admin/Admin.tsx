@@ -13,6 +13,7 @@ import { CategoryEditor } from "./CategoryEditor";
 import { CategoryList } from "./CategoryList";
 import { MenuList } from "./MenuList";
 import { Dashboard } from "./Dashboard";
+import { Activity } from "./Activity";
 import { confirmDiscard } from "./Fields";
 export function Admin({ initial }: { initial: MenuSnapshot }) {
   const [snapshot, setSnapshot] = useState(initial);
@@ -93,7 +94,7 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
     <>
       <aside className="admin-sidebar">
         <div className="admin-brand">{menu.settings.name}</div>
-        {["Dashboard", "Menu", "Categories", "Settings"].map((s) => (
+        {["Dashboard", "Menu", "Categories", "Settings", "Activity"].map((s) => (
           <button
             key={s}
             className={section === s ? "active" : ""}
@@ -185,6 +186,7 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
               onChange={run}
             />
           )}
+          {section === "Activity" && <Activity />}
           {section === "Settings" && (
             <SettingsEditor key={snapshot.revision} menu={menu} onSave={save} />
           )}
