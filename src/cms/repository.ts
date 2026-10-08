@@ -2,7 +2,12 @@ import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { db, initDb } from "./db";
 import { withCardPhotos } from "./card-photos";
-import { menuSchema, normalizeStoredMenu, type MenuSnapshot } from "./schema";
+import {
+  menuSchema,
+  normalizeStoredMenu,
+  type MenuData,
+  type MenuSnapshot,
+} from "./schema";
 import { menuLimitIssues } from "./limits";
 import { ZodError } from "zod";
 import { auditInsert, menuChanges, type AuditContext } from "./audit";
@@ -40,6 +45,11 @@ async function validateImages(input: unknown) {
   );
 }
 
+/** The database may still hold a menu from before the current schema. */
+function menuFromStored(raw: unknown): MenuData {
+  return withCardPhotos(menuSchema.parse(normalizeStoredMenu(raw))).menu;
+}
+
 export async function readMenu(): Promise<MenuSnapshot> {
   await initDb();
   const result = await db.execute(
@@ -47,14 +57,9 @@ export async function readMenu(): Promise<MenuSnapshot> {
   );
   if (!result.rows[0])
     throw new Error("Menu is not initialised. Run npm run cms:seed.");
-  const stored = menuSchema.parse(
-    normalizeStoredMenu(JSON.parse(String(result.rows[0].content))),
-  );
-  // The live menu still points at the original jpgs. The card crops ship in
-  // the app; use them until a save stores the new paths.
   return {
     revision: Number(result.rows[0].revision),
-    menu: withCardPhotos(stored).menu,
+    menu: menuFromStored(JSON.parse(String(result.rows[0].content))),
   };
 }
 export const MENU_CACHE_TAG = "cms-menu";
@@ -77,7 +82,7 @@ export async function saveMenu(
   revision: number,
   audit: AuditContext,
 ): Promise<MenuSnapshot> {
-  const menu = menuSchema.parse(input);
+  const menu = menuFromStored(input);
   await initDb();
   await validateImages(menu);
   const tx = await db.transaction("write");
@@ -89,7 +94,7 @@ export async function saveMenu(
       })
     ).rows[0];
     if (!row || Number(row.revision) !== revision) throw conflict();
-    const stored = menuSchema.parse(JSON.parse(String(row.content)));
+    const stored = menuFromStored(JSON.parse(String(row.content)));
     // Only new or changed text has to fit; what is already saved stays valid.
     const over = menuLimitIssues(menu, stored);
     if (over.length) throw new ZodError(over);

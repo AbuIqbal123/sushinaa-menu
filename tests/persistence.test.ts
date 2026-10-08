@@ -50,6 +50,27 @@ test("seed is idempotent; writes persist on a new connection; stale writes fail"
       JSON.parse(String(rows.rows[0].diff)).description.to,
       "Persistence test",
     );
+    // A menu saved before areasAr existed, with the retired order-count wording.
+    const stale = JSON.parse(readFileSync("data/initial-menu.json", "utf8"));
+    for (const lang of ["en", "ar"] as const) {
+      stale.copy[lang].inOrderZero = "old";
+      stale.copy[lang].inOrderOne = "old";
+      stale.copy[lang].inOrderOther = "old";
+    }
+    delete stale.settings.areasAr;
+    const open = await readMenu();
+    await db.execute({
+      sql: "UPDATE menu SET content=? WHERE id=1",
+      args: [JSON.stringify(stale)],
+    });
+    open.menu.settings.tagline = "Still saving";
+    const saved = await saveMenu(open.menu, open.revision, who);
+    assert.equal(saved.menu.settings.tagline, "Still saving");
+    assert.equal("inOrderZero" in saved.menu.copy.en, false);
+    assert.ok(saved.menu.settings.areasAr.length > 0);
+    const again = await readMenu();
+    assert.equal(again.menu.settings.tagline, "Still saving");
+    assert.equal("inOrderZero" in again.menu.copy.ar, false);
   } finally {
     db.close();
     rmSync(dir, { recursive: true, force: true });
