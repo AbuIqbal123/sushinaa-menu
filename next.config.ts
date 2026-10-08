@@ -43,6 +43,32 @@ const nextConfig: NextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },
+  // Vercel runs linux-x64 glibc, so that libsql and sharp pair stays in the
+  // trace. The other native builds, and sharp's wasm builds, do not.
+  outputFileTracingExcludes: {
+    "/*": [
+      "node_modules/@libsql/darwin-*/**/*",
+      "node_modules/@libsql/win32-*/**/*",
+      "node_modules/@libsql/linux-arm*/**/*",
+      "node_modules/@libsql/linux-x64-musl/**/*",
+      "node_modules/@img/sharp-darwin-*/**/*",
+      "node_modules/@img/sharp-win32-*/**/*",
+      "node_modules/@img/sharp-linux-arm*/**/*",
+      "node_modules/@img/sharp-linux-ppc64/**/*",
+      "node_modules/@img/sharp-linux-riscv64/**/*",
+      "node_modules/@img/sharp-linux-s390x/**/*",
+      "node_modules/@img/sharp-linuxmusl-*/**/*",
+      "node_modules/@img/sharp-wasm32/**/*",
+      "node_modules/@img/sharp-freebsd-wasm32/**/*",
+      "node_modules/@img/sharp-webcontainers-wasm32/**/*",
+      "node_modules/@img/sharp-libvips-darwin-*/**/*",
+      "node_modules/@img/sharp-libvips-linux-arm*/**/*",
+      "node_modules/@img/sharp-libvips-linux-ppc64/**/*",
+      "node_modules/@img/sharp-libvips-linux-riscv64/**/*",
+      "node_modules/@img/sharp-libvips-linux-s390x/**/*",
+      "node_modules/@img/sharp-libvips-linuxmusl-*/**/*",
+    ],
+  },
   async headers() {
     return [
       {
