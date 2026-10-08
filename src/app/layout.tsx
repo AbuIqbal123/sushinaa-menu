@@ -23,9 +23,9 @@ const display = localFont({
 
 const sans = localFont({
   src: [
-    { path: "../../public/fonts/ZenKakuGothicAntique-Regular.ttf", weight: "400" },
-    { path: "../../public/fonts/ZenKakuGothicAntique-Medium.ttf", weight: "500" },
-    { path: "../../public/fonts/ZenKakuGothicAntique-Bold.ttf", weight: "700" },
+    { path: "../../public/fonts/ZenKakuGothicAntique-Regular.woff2", weight: "400" },
+    { path: "../../public/fonts/ZenKakuGothicAntique-Medium.woff2", weight: "500" },
+    { path: "../../public/fonts/ZenKakuGothicAntique-Bold.woff2", weight: "700" },
   ],
   variable: "--font-sans",
   display: "swap",
@@ -37,6 +37,7 @@ const arabic = localFont({
   src: [{ path: "../../public/fonts/ArbFONTS-Greta-Arabic-Medium.ttf", weight: "500" }],
   variable: "--font-arabic",
   display: "swap",
+  preload: false,
   fallback: ["Tahoma", "Arial", "sans-serif"],
 });
 
