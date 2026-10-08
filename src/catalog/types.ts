@@ -1,134 +1,25 @@
-export type Section = string;
+import type { z } from "zod";
+import type { dishSchema, menuSchema } from "@/cms/schema";
 
-export type DietFilter = "all" | "veg" | "spicy" | "seafood";
-export type Tag = "veg" | "spicy" | "seafood";
+export type Dish = z.infer<typeof dishSchema>;
+export type DishKind = Dish["kind"];
+export type Section = Dish["section"];
+export type Tag = Dish["tags"][number];
+export type DietFilter = z.infer<typeof menuSchema>["filters"][number]["id"];
 
+type Kind<T extends DishKind["type"]> = Extract<DishKind, { type: T }>;
+
+export type Choice = Kind<"deal-box">["starters"][number];
+export type Extra = NonNullable<Dish["extras"]>[number];
+export type ChoiceGroup = NonNullable<Kind<"roll">["topping"]>;
+export type IncludedPicks = NonNullable<Kind<"addons">["includedPicks"]>;
+export type Protein = Kind<"roll">["proteins"][number];
+export type SaucePrice = Kind<"sauce-price">["sauces"][number];
+export type SizePrice = Kind<"size-price">["sizes"][number];
+export type PiecePrices = Protein["prices"];
+
+// Selections store the count as a number. The schema keys each price with that count's digits.
 export type PieceCount = 4 | 6 | 8 | 12 | 24;
-export type PiecePrices = Partial<Record<PieceCount, number>>;
-
-export type Extra = {
-  id: string;
-  name: string;
-  nameAr?: string;
-  priceQar: number;
-};
-
-export type Choice = {
-  id: string;
-  name: string;
-  nameAr?: string;
-  image?: string;
-  /** Full photo behind `image` for the options sheet and viewer. */
-  optionsImage?: string;
-  spicy?: boolean;
-  veg?: boolean;
-};
-
-export type ChoiceGroup = {
-  id: string;
-  name: string;
-  nameAr?: string;
-  options: Choice[];
-};
-
-export type IncludedPicks = {
-  name: string;
-  nameAr?: string;
-  min: number;
-  max: number;
-  options: Choice[];
-};
-
-export type Protein = {
-  id: string;
-  name: string;
-  nameAr?: string;
-  image?: string;
-  /** Full photo behind `image` for the options sheet and viewer. */
-  optionsImage?: string;
-  veg?: boolean;
-  spicy?: boolean;
-  seafood?: boolean;
-  prices: PiecePrices;
-};
-
-export type SaucePrice = {
-  id: string;
-  name: string;
-  nameAr?: string;
-  spicy?: boolean;
-  priceQar: number;
-};
-
-export type SizePrice = {
-  id: string;
-  name: string;
-  nameAr?: string;
-  priceQar: number;
-};
-
-export type DishKind =
-  | { type: "simple"; priceQar: number }
-  | { type: "spicy-toggle"; mildQar: number; spicyQar: number }
-  | {
-      type: "sauce-price";
-      sauces: SaucePrice[];
-      freeDips?: Choice[];
-    }
-  | {
-      type: "roll";
-      proteins: Protein[];
-      topping?: ChoiceGroup;
-      style?: ChoiceGroup;
-    }
-  | {
-      type: "deal-box";
-      priceQar: number;
-      starters: Choice[];
-      sushi: Choice[];
-    }
-  | {
-      type: "party-box";
-      priceQar: number;
-      starterMin: number;
-      starterMax: number;
-      starters: Choice[];
-    }
-  | {
-      type: "size-price";
-      sizes: SizePrice[];
-      flavors?: ChoiceGroup;
-    }
-  | {
-      type: "addons";
-      priceQar: number;
-      extras: Extra[];
-      spicyOptional?: boolean;
-      freeChoices?: ChoiceGroup[];
-      includedPicks?: IncludedPicks;
-    };
-
-export type Dish = {
-  id: string;
-  name: string;
-  nameAr: string;
-  section: Section;
-  description: string;
-  descriptionAr?: string;
-  /** Card photo. A 9:16 photo fills the card; any other shape is cropped at `imageFocus`. */
-  image: string;
-  /** Full photo for the options sheet and viewer (the uncropped original or an upload); falls back to `image`. */
-  optionsImage?: string;
-  /** Focal point of `image` in percent; the card crop keeps it in view. Unset is the centre. */
-  imageFocus?: { x: number; y: number };
-  tags: Tag[];
-  kind: DishKind;
-  extras?: Extra[];
-  freeDips?: Choice[];
-  piecesNote?: string;
-  imageAlt?: string;
-  imageAltAr?: string;
-};
 
 export type Selection = {
   protein?: string;
