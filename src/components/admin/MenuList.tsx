@@ -77,6 +77,7 @@ export function MenuList({
           onChange={(e) => setQuery(e.target.value)}
         />
         <select
+          className="toolbar-category"
           aria-label="Filter by category"
           value={category}
           onChange={(e) => setCategory(e.target.value)}

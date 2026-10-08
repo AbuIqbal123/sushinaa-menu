@@ -183,6 +183,11 @@
   width: auto;
   min-width: 0;
 }
+.admin .admin-toolbar select.toolbar-category {
+  flex-basis: 10.5rem;
+  flex-shrink: 0;
+  min-width: 10.5rem;
+}
 @media (min-width: 801px) {
   .admin-toolbar input {
     flex-basis: 240px;
