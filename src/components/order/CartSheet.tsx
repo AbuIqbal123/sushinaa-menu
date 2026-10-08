@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type PointerEvent } from "react";
+import { useEffect, useRef, type CSSProperties, type PointerEvent } from "react";
 import Link from "next/link";
 import { useCart } from "@/ordering/cart";
 import { useLocale } from "@/i18n/locale";
@@ -86,19 +86,19 @@ export function CartSheet({ open, onClose }: Props) {
         ) : (
           <>
             <ul className="ticket-lines">
-              {lines.map((line) => (
-                <li key={line.key} className="ticket-line">
+              {lines.map((line, i) => (
+                <li key={line.key} className="ticket-line stagger" style={{ "--i": Math.min(i, 6) } as CSSProperties}>
                   <div className="line-main">
                     <p className="line-name">{line.displayName}</p>
                     {line.meta ? <p className="line-meta">{line.meta}</p> : null}
+                    {line.qty > 1 ? (
+                      <p className="line-meta line-unit">
+                        {line.qty} × {formatQar(line.unitQar, lang, settings)}
+                      </p>
+                    ) : null}
                     {line.note ? (
                       <p className="line-note">
                         {t.commentWord}: {line.note}
-                      </p>
-                    ) : null}
-                    {line.qty > 1 ? (
-                      <p className="line-meta">
-                        {line.qty} × {formatQar(line.unitQar, lang, settings)}
                       </p>
                     ) : null}
                   </div>

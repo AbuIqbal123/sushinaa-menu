@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { matchesDiet, type DietFilter, type Dish, type Section } from "@/catalog/menu";
 import { useMenu } from "@/cms/context";
 import { CartProvider, useCart } from "@/ordering/cart";
@@ -219,10 +219,11 @@ function FeedInner() {
           <button type="button" className="chip chip-on" onClick={clearFilters}>{t.clearFilters}</button></div>
           : search ? <div className="search-results">
             <p className="search-summary">{t.searchResults(dishes.length)}</p>
-            {dishes.map((dish) => {
+            {dishes.map((dish, i) => {
               const sel = selectionForDiet(dish, diet);
               const thumb = imageFor(dish, sel);
-              return <button type="button" className="search-result" key={dish.id} onClick={() => setDetail(dish)}>
+              return <button type="button" className="search-result stagger" key={dish.id} onClick={() => setDetail(dish)}
+                style={{ "--i": Math.min(i, 6) } as CSSProperties}>
                 <Image className="search-thumbnail" src={thumb} width={52} height={52} sizes="52px" alt="" unoptimized
                   style={{ objectPosition: photoPosition(dish, thumb) }} />
                 <span className="search-result-name"><strong>{pickName(dish, lang)}</strong><small>{sectionName(dish.section, lang)}</small></span>

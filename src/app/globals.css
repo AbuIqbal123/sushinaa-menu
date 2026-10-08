@@ -1086,19 +1086,29 @@ button {
   color: #6a5640;
 }
 
+/* One grid for every line, so steppers and prices share columns: name and
+   notes, a fixed stepper, then prices ending on the same edge. */
 .ticket-lines {
-  list-style: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  column-gap: 10px;
   margin: 0;
   padding: 0;
+  list-style: none;
 }
 
 .ticket-line {
+  grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 8px 10px;
-  align-items: center;
+  grid-template-columns: subgrid;
+  align-items: start;
   padding: 12px 0;
   border-bottom: 1px dashed rgba(20, 17, 15, 0.18);
+}
+
+/* Centre the first line of the name on the 36px stepper. */
+.ticket-line .line-main {
+  padding-top: calc((36px - 1.125rem * 1.1) / 2);
 }
 
 .line-name {
@@ -1124,6 +1134,7 @@ button {
 }
 
 .qty-btn {
+  position: relative;
   width: 36px;
   height: 36px;
   border: 1px solid rgba(20, 17, 15, 0.18);
@@ -1134,18 +1145,30 @@ button {
   cursor: pointer;
 }
 
+/* A 44px touch target around the 36px circle. */
+.ticket .qty-btn::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+}
+
 .qty-num {
-  min-width: 18px;
+  width: 2ch;
   text-align: center;
   font-family: var(--font-sans);
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .line-total {
+  min-width: 4.5em;
   margin: 0;
   font-family: var(--font-sans);
   font-weight: 700;
-  text-align: right;
+  font-variant-numeric: tabular-nums;
+  line-height: 36px;
+  white-space: nowrap;
+  text-align: end;
 }
 
 .order-comment {
@@ -1471,10 +1494,11 @@ button {
   color: #f3e4c4; background: #24201b; font: inherit; cursor: pointer; }
 .search-result strong, .search-result small { display: block; }
 .search-result small { color: #d6cbb7; margin-top: 4px; }
-.search-result > span:last-child { flex-shrink: 0; font-size: 14px; }
+.search-result > span:last-child { flex-shrink: 0; font-size: 14px; font-variant-numeric: tabular-nums; }
 .line-note { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; color: #8b2025; margin-top: 6px; }
 .view-only-notice { color: #655c50; font-size: 14px; line-height: 1.5; }
-.ticket .line-main { min-width: 0; }
+.ticket .line-main { min-width: 0; overflow-wrap: anywhere; }
+.line-unit { font-variant-numeric: tabular-nums; }
 
 .category-picker { position: relative; min-width: 0; }
 .category-arrow {
@@ -1561,3 +1585,12 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .picker-list, .is-open .picker-list, .category-arrow { transition: none; }
 }
+
+/* Lists that arrive together come in one after another: 30ms apart,
+   at most 180ms, so a long list never waits. */
+.stagger { animation: rise 200ms var(--ease-out) both; animation-delay: calc(var(--i, 0) * 30ms); }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .stagger { animation: none; } }
+
+/* Prices line up digit for digit wherever they stack. */
+.dish-price, .detail-unit, .ticket-sum strong { font-variant-numeric: tabular-nums; }
