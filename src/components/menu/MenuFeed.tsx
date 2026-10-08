@@ -20,6 +20,40 @@ function normalizeSearch(value: string) {
     .replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
 
+// Safari redraws a filtered SVG the first time it fades, which is the hitch on
+// the first search open. The shadow is painted into a bitmap while the page loads.
+function bakeWordmarkShadow(img: HTMLImageElement, shadow: HTMLCanvasElement) {
+  if (shadow.dataset.baked === "1" || !img.naturalWidth) return false;
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  const height = 44;
+  const width = Math.max(1, Math.round((img.naturalWidth / img.naturalHeight) * height));
+  const blur = 8;
+  const pad = blur * 2;
+  const cssW = width + pad * 2;
+  const cssH = height + pad * 2;
+  shadow.width = Math.ceil(cssW * dpr);
+  shadow.height = Math.ceil(cssH * dpr);
+  shadow.style.width = `${cssW}px`;
+  shadow.style.height = `${cssH}px`;
+  const ctx = shadow.getContext("2d");
+  if (!ctx) return false;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.shadowColor = "rgba(20, 17, 15, 0.9)";
+  ctx.shadowBlur = blur;
+  ctx.shadowOffsetY = 1;
+  ctx.drawImage(img, pad, pad, width, height);
+  const pixels = ctx.getImageData(0, 0, shadow.width, shadow.height).data;
+  for (let i = 3; i < pixels.length; i += 32) {
+    if (pixels[i] > 8) {
+      shadow.dataset.baked = "1";
+      return true;
+    }
+  }
+  shadow.width = 0;
+  shadow.height = 0;
+  return false;
+}
+
 function FeedInner() {
   const menu = useMenu();
   const { itemCount, totalQar } = useCart();
@@ -38,9 +72,17 @@ function FeedInner() {
   const [searchOpen, setSearchOpen] = useState(false);
   const searchButtonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchFieldRef = useRef<HTMLDivElement>(null);
+  const wordmarkRef = useRef<HTMLSpanElement>(null);
+  const shadowRef = useRef<HTMLCanvasElement>(null);
+  const searchPrimed = useRef(false);
+  const [logoBaked, setLogoBaked] = useState(false);
   // How far the open field reaches: from the search button to the logo's edge.
   const [searchWidth, setSearchWidth] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
+  // Scroll index across the three copies. The loop jump happens after the swipe,
+  // so this stays on the copy actually on screen.
+  const [visualIndex, setVisualIndex] = useState<number | null>(null);
   const currentCategory = useRef<Section>(firstSection);
   const pendingJump = useRef<Section | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
@@ -69,11 +111,30 @@ function FeedInner() {
     dishes.map((dish, real) => ({ dish, copy, real, key: `${copy}-${dish.id}` })),
   ), [dishes]);
 
+  // Decode the slide on screen and the ones a swipe will reach. The feed used
+  // to leave those photos lazy, so each swipe started the download.
+  const warmed = useRef(new Set<string>());
+  useEffect(() => {
+    if (search || !dishes.length) return;
+    const n = dishes.length;
+    for (let delta = -1; delta <= 3; delta++) {
+      const dish = dishes[(activeIndex + delta + n) % n];
+      const photo = imageFor(dish, selectionForDiet(dish, diet));
+      if (photo.startsWith("/brand/") || warmed.current.has(photo)) continue;
+      warmed.current.add(photo);
+      const img = document.createElement("img");
+      img.decoding = "async";
+      img.src = photo;
+      img.decode().catch(() => {});
+    }
+  }, [activeIndex, dishes, diet, search]);
+
   const syncCategory = useCallback(() => {
     const feed = feedRef.current;
     if (!feed || search || !dishes.length || !feed.clientHeight) return;
     const visual = Math.round(feed.scrollTop / feed.clientHeight);
     const real = ((visual % dishes.length) + dishes.length) % dishes.length;
+    setVisualIndex(visual);
     setActiveIndex(real);
     currentCategory.current = dishes[real].section;
     setCategory(dishes[real].section);
@@ -92,11 +153,13 @@ function FeedInner() {
   useLayoutEffect(() => {
     const feed = feedRef.current;
     if (!feed) return;
-    if (search || !dishes.length) { feed.scrollTo({ top: 0 }); return; }
+    if (search || !dishes.length) { feed.scrollTo({ top: 0 }); setVisualIndex(0); return; }
     const target = pendingJump.current ?? currentCategory.current;
     pendingJump.current = null;
     const index = Math.max(0, dishes.findIndex((dish) => dish.section === target));
-    feed.scrollTo({ top: (dishes.length + index) * feed.clientHeight, behavior: "instant" });
+    const visual = dishes.length + index;
+    feed.scrollTo({ top: visual * feed.clientHeight, behavior: "instant" });
+    setVisualIndex(visual);
     // `dishes` is read through `listKey` so refreshed data with the same list keeps the position.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listKey, search]);
@@ -132,8 +195,51 @@ function FeedInner() {
     setSearchWidth(lang === "ar" ? h.right - pad - b.left : b.right - h.left - pad);
   }, [lang]);
 
-  function openSearch() {
+  // Width is known before the first tap, so opening only starts the animation.
+  useLayoutEffect(() => {
     measureSearch();
+  }, [measureSearch]);
+
+  useLayoutEffect(() => {
+    const img = wordmarkRef.current?.querySelector("img");
+    const shadow = shadowRef.current;
+    if (!img || !shadow) return;
+    let cancel = false;
+    const bake = () => {
+      if (cancel || !img.naturalWidth) return;
+      if (bakeWordmarkShadow(img, shadow)) setLogoBaked(true);
+    };
+    // An SVG can already be complete before its width is known, and then load never fires.
+    if (img.complete && img.naturalWidth) bake();
+    else img.decode().then(bake).catch(() => img.addEventListener("load", bake, { once: true }));
+    return () => {
+      cancel = true;
+      img.removeEventListener("load", bake);
+    };
+  }, []);
+
+  // Safari's first text-field layout and focus are a long task. Pay for both
+  // before the tap, clipped to the button so nothing flashes.
+  useLayoutEffect(() => {
+    const input = searchInputRef.current;
+    const field = searchFieldRef.current;
+    const root = field?.parentElement;
+    if (!input || !field || !root || !searchWidth || searchPrimed.current) return;
+    searchPrimed.current = true;
+    root.style.overflow = "hidden";
+    field.style.transition = "none";
+    input.style.transition = "none";
+    field.style.width = `${searchWidth}px`;
+    input.focus({ preventScroll: true });
+    input.blur();
+    void field.offsetWidth;
+    field.style.width = "44px";
+    field.style.transition = "";
+    input.style.transition = "";
+    root.style.overflow = "";
+  }, [searchWidth]);
+
+  function openSearch() {
     setSearchOpen(true);
   }
 
@@ -144,7 +250,6 @@ function FeedInner() {
 
   // Follow rotation and split view; a phone keyboard only changes the height.
   useEffect(() => {
-    if (!searchOpen) return;
     let width = window.innerWidth;
     const onResize = () => {
       if (window.innerWidth === width) return;
@@ -153,7 +258,7 @@ function FeedInner() {
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, [searchOpen, measureSearch]);
+  }, [measureSearch]);
 
   function closeSearch() {
     setQuery("");
@@ -177,15 +282,20 @@ function FeedInner() {
   return (
     <div className={`shell${sheetOpen ? " is-sheet" : ""}${itemCount > 0 ? " has-order" : ""}`}>
       <header className={`chrome-header${searchOpen ? " search-open" : ""}`} inert={sheetOpen}>
-        <img src={menu.settings.logo} alt={t.brand} className="wordmark-img" width={46} height={44} />
+        <span ref={wordmarkRef} className={`wordmark${logoBaked ? " is-baked" : ""}`}>
+          <canvas ref={shadowRef} className="wordmark-shadow" aria-hidden="true" />
+          <img src={menu.settings.logo} alt={t.brand} className="wordmark-img" width={46} height={44} />
+        </span>
         <div className="chrome-actions">
           {/* One element: the button's pill opens into the field, toward the logo. */}
           <div className="header-search">
-            <div id="menu-search-panel" className="header-search-field" role="search"
-              style={{ width: searchWidth || undefined }} inert={!searchOpen}>
+            <div ref={searchFieldRef} id="menu-search-panel" className="header-search-field" role="search"
+              style={{ width: searchOpen && searchWidth ? searchWidth : 44 }}>
               <label htmlFor="menu-search" className="sr-only">{t.searchMenu}</label>
-              <input ref={searchInputRef} id="menu-search" type="search" value={query} placeholder={t.searchMenu}
-                onChange={(e) => setQuery(e.target.value)} autoComplete="off" maxLength={100} enterKeyHint="search"
+              <input ref={searchInputRef} id="menu-search" type="text" inputMode="search" value={query}
+                placeholder={t.searchMenu} tabIndex={searchOpen ? 0 : -1}
+                onChange={(e) => setQuery(e.target.value)} autoComplete="off" autoCorrect="off" autoCapitalize="off"
+                spellCheck={false} maxLength={100} enterKeyHint="search"
                 onKeyDown={(e) => { if (e.key === "Escape") closeSearch(); }} />
             </div>
             <button ref={searchButtonRef} type="button" className="cart-btn search-toggle"
@@ -237,11 +347,16 @@ function FeedInner() {
             })}
           </div> : looped.map((item) => {
             const n = dishes.length;
-            const distance = Math.min(Math.abs(item.real - activeIndex), n - Math.abs(item.real - activeIndex));
-            const seam = (item.copy === 0 && item.real >= n - 2) || (item.copy === 2 && item.real <= 1);
+            // Keep the slide on screen, the next few, and the copy the loop jumps to.
+            // Wrapping used to drop the photo and show the empty slide for a moment.
+            const parked = visualIndex ?? n + activeIndex;
+            const delta = item.copy * n + item.real - parked;
+            const spot = ((parked % n) + n) % n;
+            const atSeam = spot <= 3 || spot >= n - 2;
+            const close = (d: number) => d >= -1 && d <= 3;
             return <DishSlide key={item.key} dish={item.dish} diet={diet} marked={item.copy === 1}
               active={item.copy === 1 && item.real === activeIndex}
-              eager={(item.copy === 1 && distance <= 2) || seam}
+              eager={close(delta) || (atSeam && (close(delta - n) || close(delta + n)))}
               inert={item.copy !== 1}
               showHint={item.copy === 1 && item.real === 0 && n > 1} onOpen={setDetail} />;
           })}

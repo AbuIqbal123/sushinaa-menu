@@ -690,10 +690,10 @@ test("search opens from its button toward the logo and closes back to it", async
   await expect(toggle).toHaveAttribute("aria-label", "Clear search");
   const input = page.locator("#menu-search");
   await expect(input).toBeFocused();
+  await expect(page.locator(".wordmark")).toHaveCSS("opacity", "0");
   const logo = (await page.locator(".wordmark-img").boundingBox())!;
   const field = (await page.locator(".header-search-field").boundingBox())!;
   expect(field.x).toBeLessThanOrEqual(logo.x + 1);
-  await expect(page.locator(".wordmark-img")).toHaveCSS("opacity", "0");
   expect(
     await others.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().x)),
   ).toEqual(before);

@@ -95,6 +95,11 @@ body {
   background: #1a1512;
 }
 
+/* The next slides stay painted, so their photos finish before the swipe. */
+.slide.is-near {
+  content-visibility: visible;
+}
+
 .dish-photo-ph {
   position: absolute;
   inset: 0;
@@ -111,6 +116,12 @@ body {
   top: 0 !important;
   bottom: 0 !important;
   object-position: center;
+}
+
+/* Drink cans sit high in the frame and meet the diet filters. Nudge them
+   down by the same amount the notch pushes those filters. */
+.slide[data-section="Drinks"] .dish-photo {
+  transform: translate3d(0, calc(28px + env(safe-area-inset-top, 0px)), 0);
 }
 
 .dish-photo-pattern {
@@ -857,11 +868,31 @@ body {
   font-family: var(--font-sans), sans-serif;
 }
 
+.wordmark {
+  position: relative;
+  display: flex;
+  /* Fade this box. After load the shadow is a bitmap, so the fade does not redraw the logo. */
+  transition: opacity var(--search-motion, 560ms) var(--search-ease, cubic-bezier(0.22, 0.61, 0.36, 1));
+}
+
+.wordmark-shadow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
 .wordmark-img {
+  position: relative;
   height: 44px;
   width: auto;
   filter: drop-shadow(0 1px 8px rgba(20, 17, 15, 0.9));
-  transition: opacity 160ms var(--ease-out);
+}
+
+.wordmark.is-baked .wordmark-img {
+  filter: none;
+  opacity: 0;
 }
 
 .cart-btn {
@@ -1511,38 +1542,45 @@ button {
 
 .chrome-actions .search-toggle:focus-visible { outline: 2px solid #f3e4c4; outline-offset: 2px; }
 
-/* Header search: the button's pill opens into a field that reaches the logo.
-   The field is laid out at full width from the start and revealed with a
-   clip, so nothing around it moves. */
-.header-search { position: relative; width: 44px; height: 44px; }
+/* Header search: the button's pill grows toward the logo. It is taken out of
+   the header row, so the language button and ticket stay where they are. */
+.header-search {
+  position: relative; width: 44px; height: 44px;
+  --search-motion: 560ms;
+  --search-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
 .header-search-field {
   position: absolute; top: 0; inset-inline-end: 0; width: 44px; height: 44px;
+  overflow: hidden;
   border: 1px solid rgba(213, 32, 41, 0.55); border-radius: 22px;
   background: rgba(20, 17, 15, 0.92);
-  clip-path: inset(0 0 0 calc(100% - 44px) round 22px);
-  transition: clip-path 220ms var(--ease-out);
+  transition: width var(--search-motion) var(--search-ease);
 }
-[dir="rtl"] .header-search-field { clip-path: inset(0 calc(100% - 44px) 0 0 round 22px); }
-.search-open .header-search-field { clip-path: inset(0 round 22px); }
 .header-search-field input {
   width: 100%; height: 100%; padding: 0; padding-inline: 16px 44px;
   border: 0; border-radius: inherit; background: transparent; color: #f3e4c4;
-  font: inherit; font-size: 16px; opacity: 0; transition: opacity 160ms var(--ease-out);
+  font: inherit; font-size: 16px; opacity: 0;
+  appearance: none; -webkit-appearance: none;
+  transition: opacity 360ms var(--search-ease, cubic-bezier(0.22, 0.61, 0.36, 1));
 }
 .header-search-field input::placeholder { color: #d6cbb7; }
 .header-search-field input::-webkit-search-cancel-button { display: none; }
 .header-search-field input:focus-visible { outline: none; }
 .header-search-field:focus-within { border-color: rgba(243, 228, 196, 0.6); }
-.search-open .header-search-field input { opacity: 1; }
-.header-search .search-toggle { position: absolute; inset: 0; }
+.search-open .header-search-field input { opacity: 1; transition-delay: 160ms; }
+.header-search .search-toggle {
+  position: absolute; inset: 0;
+  transition: background-color var(--search-motion) var(--search-ease), border-color var(--search-motion) var(--search-ease);
+}
 .search-open .search-toggle { background: transparent; border-color: transparent; }
-.search-toggle svg { grid-area: 1 / 1; transition: opacity 160ms var(--ease-out); }
+.search-toggle svg { grid-area: 1 / 1; transition: opacity var(--search-motion) var(--search-ease); }
 .search-toggle .close-icon,
 .search-open .search-toggle .search-icon { opacity: 0; }
 .search-open .search-toggle .close-icon { opacity: 1; }
-.search-open .wordmark-img { opacity: 0; }
+.search-open .wordmark { opacity: 0; }
 @media (prefers-reduced-motion: reduce) {
-  .header-search-field, .header-search-field input, .search-toggle svg, .wordmark-img { transition: none; }
+  .header-search-field, .header-search-field input, .header-search .search-toggle, .search-toggle svg, .wordmark { transition: none; }
+  .search-open .header-search-field input { transition-delay: 0s; }
 }
 
 /* Public category picker: a dark glass list under its button. */

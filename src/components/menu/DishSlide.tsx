@@ -49,7 +49,7 @@ export const DishSlide = memo(function DishSlide({
 
   return (
     <article
-      className={`slide${active ? " is-active" : ""}`}
+      className={`slide${active ? " is-active" : ""}${eager ? " is-near" : ""}`}
       id={marked ? `dish-${dish.id}` : undefined}
       data-section={dish.section}
       inert={inert}
@@ -73,12 +73,13 @@ export const DishSlide = memo(function DishSlide({
             alt={(lang==="ar"?dish.imageAltAr:dish.imageAlt)||`${title}. ${description}`}
             fill
             sizes="(max-width: 430px) 100vw, 430px"
-            priority={active}
+            preload={active}
+            loading={active ? undefined : "eager"}
+            fetchPriority={active ? undefined : "high"}
             unoptimized
             draggable={false}
             className="dish-photo"
             style={{ objectPosition: photoPosition(dish, photo) }}
-            fetchPriority={active ? "high" : "low"}
           />
         ) : (
           <div className="dish-photo-ph" aria-hidden="true" />
