@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { db, initDb } from "./db";
+import type { InStatement } from "@libsql/client";
 import { auditInsert, type AuditContext } from "./audit";
 const COOKIE = "sushinaa-admin";
 const digest = (s: string) => createHash("sha256").update(s).digest("hex");
@@ -30,13 +31,20 @@ export async function authenticated() {
   });
   return r.rows.length > 0;
 }
-export async function login(audit: AuditContext) {
+/** Starts a fresh session; any session this browser already had is ended. */
+export async function login(audit: AuditContext, also: InStatement[] = []) {
   await initDb();
+  const jar = await cookies();
+  const previous = jar.get(COOKIE)?.value;
   const token = randomBytes(32).toString("hex");
   const maxAge = 60 * 60 * 8;
   await db.batch(
     [
+      ...also,
       { sql: "DELETE FROM sessions WHERE expires<=?", args: [Date.now()] },
+      ...(previous
+        ? [{ sql: "DELETE FROM sessions WHERE token=?", args: [digest(previous)] }]
+        : []),
       {
         sql: "INSERT INTO sessions(token,expires) VALUES (?,?)",
         args: [digest(token), Date.now() + maxAge * 1000],
@@ -45,7 +53,7 @@ export async function login(audit: AuditContext) {
     ],
     "write",
   );
-  (await cookies()).set(COOKIE, token, {
+  jar.set(COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",

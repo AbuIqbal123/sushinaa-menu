@@ -836,6 +836,65 @@ test("every admin write leaves an activity row and failed writes leave none", as
   expect(dump).not.toMatch(/password|cookie|token/i);
 });
 
+test("sign-in limits, session rotation, upload sniffing and headers", async ({
+  playwright,
+  baseURL,
+}) => {
+  const origin = baseURL!;
+  const client = (ip: string) =>
+    playwright.request.newContext({ baseURL: origin, extraHTTPHeaders: { Origin: origin, "x-forwarded-for": ip } });
+  // Five wrong passwords from one address lock that name there, even for the right one.
+  const locked = await client("198.51.100.20");
+  for (let i = 0; i < 5; i++)
+    expect((await locked.post("/api/admin/session", { data: { username: "admin", password: `wrong-${i}` } })).status()).toBe(401);
+  const blocked = await locked.post("/api/admin/session", { data: { username: "admin", password: "admin" } });
+  expect(blocked.status()).toBe(429);
+  expect(Number(blocked.headers()["retry-after"])).toBeGreaterThan(0);
+  await locked.dispose();
+  // A new sign-in replaces the session the browser had.
+  const api = await client("198.51.100.21");
+  expect((await api.post("/api/admin/session", { data: { username: "admin", password: "admin" } })).status()).toBe(200);
+  const first = (await api.storageState()).cookies.find((c) => c.name === "sushinaa-admin")!;
+  expect(first.httpOnly).toBe(true);
+  expect(first.sameSite).toBe("Strict");
+  expect(first.path).toBe("/");
+  expect((await api.post("/api/admin/session", { data: { username: "admin", password: "admin" } })).status()).toBe(200);
+  const old = await playwright.request.newContext({
+    baseURL: origin,
+    extraHTTPHeaders: { Cookie: `sushinaa-admin=${first.value}` },
+  });
+  expect((await old.get("/api/admin/menu")).status()).toBe(401);
+  await old.dispose();
+  // Writes need the same origin.
+  expect((await api.put("/api/admin/menu", { headers: { Origin: "https://evil.example" }, data: {} })).status()).toBe(403);
+  // An SVG claiming to be a PNG is refused by its bytes.
+  const svg = await api.post("/api/admin/media", {
+    multipart: { file: { name: "logo.png", mimeType: "image/png", buffer: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>') } },
+  });
+  expect(svg.status()).toBe(422);
+  const photo = await api.post("/api/admin/media", {
+    multipart: { file: { name: "x.txt", mimeType: "text/plain", buffer: readFileSync("public/dishes/sushinaa-burger.jpg") } },
+  });
+  expect(photo.status()).toBe(200);
+  const media = await api.get((await photo.json()).url);
+  expect(media.headers()["content-type"]).toBe("image/webp");
+  expect(media.headers()["x-content-type-options"]).toBe("nosniff");
+  const page = await api.get("/");
+  for (const [k, v] of Object.entries({
+    "x-frame-options": "DENY",
+    "x-content-type-options": "nosniff",
+    "referrer-policy": "strict-origin-when-cross-origin",
+  }))
+    expect(page.headers()[k]).toBe(v);
+  expect(page.headers()["content-security-policy"]).toContain("frame-ancestors 'none'");
+  expect(page.headers()["permissions-policy"]).toContain("camera=()");
+  // The public menu has no admin-only data.
+  const pub = JSON.stringify(await (await api.get("/api/menu")).json());
+  expect(pub).not.toMatch(/updatedAt|sign_in|sessions|audit/);
+  await api.delete("/api/admin/session");
+  await api.dispose();
+});
+
 // break-ui stress: the longest text the limits allow, an unbroken word,
 // 4-digit prices and big quantities, at the narrowest phone in both languages.
 test("the longest allowed text and 4-digit prices keep the card and sheet intact", async ({

@@ -9,6 +9,7 @@ import {
   type RefObject,
 } from "react";
 import { characters } from "@/cms/limits";
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_LABEL } from "@/cms/media";
 // Field-level validation messages, keyed by dotted path ("kind.sauces.0.name").
 export const FieldErrors = createContext<Record<string, string>>({});
 export function FieldError({ path, id }: { path: string; id?: string }) {
@@ -223,6 +224,11 @@ export function ImageField({
               const input = e.currentTarget;
               const file = input.files?.[0];
               if (!file) return;
+              if (file.size > MAX_UPLOAD_BYTES) {
+                setError(`Choose an image under ${MAX_UPLOAD_LABEL}.`);
+                input.value = "";
+                return;
+              }
               setBusy(true);
               setError("");
               try {
@@ -272,7 +278,7 @@ export function ImageField({
           {error}
         </p>
       )}
-      <small>{hint && `${hint} `}JPEG, PNG or WebP, up to 5 MB.</small>
+      <small>{hint && `${hint} `}JPEG, PNG or WebP, up to {MAX_UPLOAD_LABEL}.</small>
     </fieldset>
   );
 }

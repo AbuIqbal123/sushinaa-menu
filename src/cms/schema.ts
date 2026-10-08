@@ -411,7 +411,13 @@ export function publicMenu(m: MenuData): MenuData {
     dishes: categories.flatMap((c) =>
       m.dishes
         .filter((d) => d.section === c.id && d.visible && d.available)
-        .sort((a, b) => a.order - b.order),
+        .sort((a, b) => a.order - b.order)
+        // When an item was last edited is for the admin only.
+        .map((d) => {
+          const shown = { ...d };
+          delete shown.updatedAt;
+          return shown;
+        }),
     ),
   };
 }
