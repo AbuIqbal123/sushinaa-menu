@@ -68,9 +68,7 @@ export function describe(row: Row) {
     case "session.sign_out":
       return "Signed out";
     case "session.sign_in_failed":
-      return row.actor
-        ? `Failed sign-in as “${row.actor}”`
-        : "Failed sign-in";
+      return "Failed sign-in";
     case "media.upload":
       return `Uploaded a photo${row.label ? ` (${row.label})` : ""}`;
     case "settings.update":

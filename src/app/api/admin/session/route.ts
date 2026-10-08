@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const username = typeof body.username === "string" ? body.username : null;
-    const audit = auditContext(request, username);
+    const audit = auditContext(request, null);
     await initDb();
     const wait = await signInWait(audit.ip, username);
     if (wait)
@@ -31,7 +31,6 @@ export async function POST(request: Request) {
       typeof body.password !== "string" ||
       !validCredentials(username, body.password)
     ) {
-      // The attempted name only; never the password.
       await db.batch(
         [
           ...recordFailure(audit.ip, username),

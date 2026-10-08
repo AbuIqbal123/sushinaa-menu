@@ -771,7 +771,7 @@ test("every admin write leaves an activity row and failed writes leave none", as
   const rows = async (): Promise<Row[]> => (await (await api.get("/api/admin/activity")).json()).rows;
   const latest = await rows();
   expect(latest.slice(0, 2).map((r) => r.action)).toEqual(["session.sign_in", "session.sign_in_failed"]);
-  expect(latest[1].actor).toBe(admin.username);
+  expect(latest[1].actor).toBeNull();
   expect(latest[0].ip).toBe("203.0.113.7");
   const since = latest[0].id;
   const newer = async () => (await rows()).filter((r) => r.id > since);

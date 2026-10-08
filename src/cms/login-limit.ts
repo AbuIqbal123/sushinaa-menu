@@ -1,13 +1,17 @@
+import { createHash } from "node:crypto";
 import type { InStatement } from "@libsql/client";
 import { db } from "./db";
 
 // Failed sign-ins are counted in the database (in-memory counters don't
 // survive serverless instances): 5 per address and username, 20 per address,
 // in a 15-minute window. A success clears the address-and-username count.
+// The pair key stores a hash of the username, not the name.
 // The table is created with the others in db.ts.
 const WINDOW_MS = 15 * 60 * 1000;
+const nameHash = (username: string | null) =>
+  createHash("sha256").update((username ?? "").toLowerCase()).digest("hex");
 const keys = (ip: string | null, username: string | null) => ({
-  pair: `pair:${ip ?? "unknown"}|${[...(username ?? "").toLowerCase()].slice(0, 64).join("")}`,
+  pair: `pair:${ip ?? "unknown"}|${nameHash(username)}`,
   ip: `ip:${ip ?? "unknown"}`,
 });
 const LIMITS = { pair: 5, ip: 20 } as const;
