@@ -15,11 +15,18 @@ type LocaleValue = {
 };
 
 const LocaleContext = createContext<LocaleValue | null>(null);
+const SheetOpenContext = createContext(false);
+const SetSheetOpenContext = createContext<(open: boolean) => void>(() => {});
+
+export function useSetSheetOpen() {
+  return useContext(SetSheetOpenContext);
+}
 
 export function LocaleProvider({ initial, children }: { initial: Lang; children: ReactNode }) {
   const router = useRouter();
   const { copy } = useMenu();
   const [lang, setLangState] = useState<Lang>(initial);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const t = useMemo(() => strings(lang, copy), [lang, copy]);
 
   function setLang(next: Lang) {
@@ -32,7 +39,9 @@ export function LocaleProvider({ initial, children }: { initial: Lang; children:
 
   return (
     <LocaleContext.Provider value={{ lang, t, setLang }}>
-      {children}
+      <SetSheetOpenContext.Provider value={setSheetOpen}>
+        <SheetOpenContext.Provider value={sheetOpen}>{children}</SheetOpenContext.Provider>
+      </SetSheetOpenContext.Provider>
     </LocaleContext.Provider>
   );
 }
@@ -60,8 +69,9 @@ export function LangButton({ tone = "dark" }: { tone?: "dark" | "light" }) {
 
 export function SkipLink() {
   const { t } = useLocale();
+  const sheetOpen = useContext(SheetOpenContext);
   return (
-    <a className="skip-link" href="#main">
+    <a className="skip-link" href="#main" inert={sheetOpen}>
       {t.skip}
     </a>
   );

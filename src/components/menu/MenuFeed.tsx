@@ -5,7 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { matchesDiet, type DietFilter, type Dish, type Section } from "@/catalog/menu";
 import { useMenu } from "@/cms/context";
 import { CartProvider, useCart } from "@/ordering/cart";
-import { LangButton, useLocale } from "@/i18n/locale";
+import { LangButton, useLocale, useSetSheetOpen } from "@/i18n/locale";
 import { pickName, sectionName as categoryName, type Lang } from "@/i18n/localize";
 import { hasPriceRange, imageFor, photoPosition, unitPrice, selectionForDiet } from "@/ordering/price";
 import { formatQar } from "@/lib/money";
@@ -59,6 +59,11 @@ function FeedInner() {
   // A language switch refreshes the menu data; only a different list should move the feed.
   const listKey = useMemo(() => dishes.map((dish) => dish.id).join("|"), [dishes]);
   const sheetOpen = open || Boolean(detail);
+  const setSheetInert = useSetSheetOpen();
+  useEffect(() => {
+    setSheetInert(sheetOpen);
+    return () => setSheetInert(false);
+  }, [sheetOpen, setSheetInert]);
 
   const looped = useMemo(() => [0, 1, 2].flatMap((copy) =>
     dishes.map((dish, real) => ({ dish, copy, real, key: `${copy}-${dish.id}` })),
@@ -171,7 +176,7 @@ function FeedInner() {
 
   return (
     <div className={`shell${sheetOpen ? " is-sheet" : ""}${itemCount > 0 ? " has-order" : ""}`}>
-      <header className={`chrome-header${searchOpen ? " search-open" : ""}`}>
+      <header className={`chrome-header${searchOpen ? " search-open" : ""}`} inert={sheetOpen}>
         <img src={menu.settings.logo} alt={t.brand} className="wordmark-img" width={46} height={44} />
         <div className="chrome-actions">
           {/* One element: the button's pill opens into the field, toward the logo. */}
