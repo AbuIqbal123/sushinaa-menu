@@ -202,6 +202,7 @@ const settingsSchema = z
     country: name,
     founded: text,
     areas: z.array(name).max(100),
+    areasAr: z.array(name).max(100),
     addressLine: text,
     logo: image,
     documentLogo: image,

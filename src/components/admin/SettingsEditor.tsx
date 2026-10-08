@@ -27,6 +27,7 @@ const settingLabels: Record<string, string> = {
   country: "Country",
   founded: "Year founded",
   areas: "Delivery areas (one per line)",
+  areasAr: "Delivery areas in Arabic (one per line)",
   addressLine: "Address",
   currencyEn: "Currency (English)",
   currencyAr: "Currency (Arabic)",

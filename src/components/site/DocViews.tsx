@@ -6,6 +6,10 @@ import { ContactForm } from "./ContactForm";
 import { LegalShell } from "./LegalShell";
 import { useLocale } from "@/i18n/locale";
 
+function arabicList(areas: string[]) {
+  if (areas.length <= 1) return areas.join("");
+  return `${areas.slice(0, -1).join("، ")}، و${areas[areas.length - 1]}`;
+}
 
 export function PrivacyView() {
   const { settings: SITE } = useMenu();
@@ -22,8 +26,7 @@ export function PrivacyView() {
         <h2>من نحن</h2>
         <p>
           التواصل: واتساب <a href={wa}>{SITE.whatsappDisplay}</a>. إنستغرام{" "}
-          <a href={SITE.instagram}>{SITE.instagramHandle}</a>. مناطق التوصيل: داون تاون، أسباير،
-          الخور، سيلين، ونعيجة.
+          <a href={SITE.instagram}>{SITE.instagramHandle}</a>. مناطق التوصيل: {arabicList(SITE.areasAr)}.
         </p>
         <h2>ماذا يُحفظ على جهازك</h2>
         <p>

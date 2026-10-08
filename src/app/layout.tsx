@@ -108,9 +108,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const lang: Lang = await requestLang();
   const ar = lang === "ar";
   const brand = strings(lang, menu.copy).brand;
-  const areas = ar
-    ? ["داون تاون", "أسباير", "الخور", "سيلين", "نعيجة"]
-    : SITE.areas;
+  const areas = ar ? SITE.areasAr : SITE.areas;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Restaurant",
