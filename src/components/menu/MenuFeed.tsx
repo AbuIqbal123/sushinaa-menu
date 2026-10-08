@@ -10,6 +10,7 @@ import { pickName, sectionName as categoryName, type Lang } from "@/i18n/localiz
 import { hasPriceRange, imageFor, photoPosition, unitPrice, selectionForDiet } from "@/ordering/price";
 import { formatQar } from "@/lib/money";
 import { CartSheet } from "../order/CartSheet";
+import { CategoryPicker } from "./CategoryPicker";
 import { DishDetailSheet } from "./DishDetailSheet";
 import { DishSlide } from "./DishSlide";
 
@@ -203,15 +204,8 @@ function FeedInner() {
       </header>
       <div className="filter-bar" aria-label={t.filters} inert={sheetOpen ? true : undefined}>
         <div className="menu-tools">
-          <label className="category-picker">
-            <span className="sr-only">{t.category}</span>
-            <select value={category} onChange={(e) => jumpTo(e.target.value)}>
-              {menu.categories.map((c) => <option key={c.id} value={c.id} disabled={!filledSections.has(c.id)}>{sectionName(c.id, lang)}</option>)}
-            </select>
-            <svg className="category-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none" aria-hidden="true">
-              <path d="m1 1 5 5 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </label>
+          <CategoryPicker label={t.category} value={category} onChange={jumpTo}
+            options={menu.categories.map((c) => ({ id: c.id, label: sectionName(c.id, lang), disabled: !filledSections.has(c.id) }))} />
         </div>
         <div className="chip-row chip-row-diet" aria-label={t.dietary}>
           {dietChips.map((chip) => <button key={chip.id} type="button"

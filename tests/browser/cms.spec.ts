@@ -149,9 +149,8 @@ test("authenticated CMS CRUD, persistence, uploads and public integration", asyn
     pub = await (await request.get("/api/menu")).json();
     expect(pub.menu.categories[0].id).toBe(cat.id);
     await page.goto("/");
-    await page
-      .getByRole("combobox", { name: "Category", exact: true })
-      .selectOption({ label: "Test category" });
+    await page.getByRole("combobox", { name: "Category", exact: true }).click();
+    await page.getByRole("option", { name: "Test category" }).click();
     await page
       .locator("#dish-" + dish.id)
       .getByRole("button")
@@ -710,6 +709,50 @@ test("search opens from its button toward the logo and closes back to it", async
   await expect(input).toBeFocused();
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
+});
+
+test("the category picker is a listbox that follows the feed", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  const picker = page.getByRole("combobox", { name: "Category", exact: true });
+  const options = page.getByRole("option");
+  await expect(picker).toHaveText("New");
+  await expect(picker).toHaveAttribute("aria-expanded", "false");
+  await picker.click();
+  await expect(page.getByRole("listbox")).toBeVisible();
+  await expect(options.first()).toHaveAttribute("aria-selected", "true");
+  await options.filter({ hasText: "Poke" }).click();
+  await expect(picker).toHaveAttribute("aria-expanded", "false");
+  await expect(picker).toBeFocused();
+  await expect(picker).toHaveText("Poke");
+  const feed = page.locator(".feed");
+  const firstPoke = await page.evaluate(async () => {
+    const { menu } = await (await fetch("/api/menu")).json();
+    return menu.dishes.find((d: { section: string }) => d.section === "Poke bowls").id;
+  });
+  await expect(page.locator(`#dish-${firstPoke}`)).toBeInViewport();
+  // Keyboard: arrows move the active option, Escape keeps the value.
+  await page.keyboard.press("ArrowDown");
+  await expect(picker).toHaveAttribute("aria-expanded", "true");
+  const active = () => picker.getAttribute("aria-activedescendant");
+  const poke = await options.filter({ hasText: "Poke" }).getAttribute("id");
+  expect(await active()).toBe(poke);
+  await page.keyboard.press("End");
+  expect(await active()).toBe(await options.last().getAttribute("id"));
+  await page.keyboard.press("Home");
+  expect(await active()).toBe(await options.first().getAttribute("id"));
+  await page.keyboard.press("Escape");
+  await expect(picker).toHaveAttribute("aria-expanded", "false");
+  await expect(picker).toHaveText("Poke");
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await expect(picker).toHaveText("Deal box");
+  // Scrolling the feed moves the picker with it.
+  await feed.evaluate((f) => f.scrollBy(0, -f.clientHeight));
+  await expect(picker).toHaveText("Poke");
 });
 
 // break-ui stress: the longest text the limits allow, an unbroken word,
