@@ -12,8 +12,8 @@ import "./globals.css";
 
 const display = localFont({
   src: [
-    { path: "../../public/fonts/KautivaProC-Regular.otf", weight: "400", style: "normal" },
-    { path: "../../public/fonts/KautivaProC-Bold.otf", weight: "700", style: "normal" },
+    { path: "../fonts/KautivaProC-Regular.otf", weight: "400", style: "normal" },
+    { path: "../fonts/KautivaProC-Bold.otf", weight: "700", style: "normal" },
   ],
   variable: "--font-display",
   display: "swap",
@@ -23,9 +23,9 @@ const display = localFont({
 
 const sans = localFont({
   src: [
-    { path: "../../public/fonts/ZenKakuGothicAntique-Regular.woff2", weight: "400" },
-    { path: "../../public/fonts/ZenKakuGothicAntique-Medium.woff2", weight: "500" },
-    { path: "../../public/fonts/ZenKakuGothicAntique-Bold.woff2", weight: "700" },
+    { path: "../fonts/ZenKakuGothicAntique-Regular.woff2", weight: "400" },
+    { path: "../fonts/ZenKakuGothicAntique-Medium.woff2", weight: "500" },
+    { path: "../fonts/ZenKakuGothicAntique-Bold.woff2", weight: "700" },
   ],
   variable: "--font-sans",
   display: "swap",
@@ -34,7 +34,7 @@ const sans = localFont({
 });
 
 const arabic = localFont({
-  src: [{ path: "../../public/fonts/ArbFONTS-Greta-Arabic-Medium.ttf", weight: "500" }],
+  src: [{ path: "../fonts/ArbFONTS-Greta-Arabic-Medium.ttf", weight: "500" }],
   variable: "--font-arabic",
   display: "swap",
   preload: false,
