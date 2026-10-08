@@ -677,6 +677,8 @@ test("search opens from its button toward the logo and closes back to it", async
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   const toggle = page.locator(".chrome-actions .search-toggle");
+  // The menu streams in behind the loading screen; measure once it is shown.
+  await expect(toggle).toBeVisible();
   await expect(
     page.locator(".chrome-actions > *").first().locator(".search-toggle"),
   ).toHaveCount(1);
@@ -690,10 +692,10 @@ test("search opens from its button toward the logo and closes back to it", async
   await expect(toggle).toHaveAttribute("aria-label", "Clear search");
   const input = page.locator("#menu-search");
   await expect(input).toBeFocused();
-  await expect(page.locator(".wordmark")).toHaveCSS("opacity", "0");
   const logo = (await page.locator(".wordmark-img").boundingBox())!;
   const field = (await page.locator(".header-search-field").boundingBox())!;
   expect(field.x).toBeLessThanOrEqual(logo.x + 1);
+  await expect(page.locator(".wordmark-img")).toHaveCSS("opacity", "0");
   expect(
     await others.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().x)),
   ).toEqual(before);
@@ -710,6 +712,79 @@ test("search opens from its button toward the logo and closes back to it", async
   await expect(input).toBeFocused();
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
+});
+
+type SearchProbe = {
+  moved: string[];
+  first: string | null;
+  open?: { handlerMs: number; open: boolean; moving: boolean };
+};
+
+test("search is closed from the first frame and its first open starts on the next frame", async ({
+  page,
+  baseURL,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    const probe: SearchProbe = { moved: [], first: null };
+    (window as unknown as { searchProbe: SearchProbe }).searchProbe = probe;
+    document.addEventListener("transitionrun", (e) => {
+      const el = e.target as Element;
+      if (el.closest(".chrome-header")) probe.moved.push(`${el.className}: ${e.propertyName}`);
+    }, true);
+    // The first frame the field is laid out in: it must already be closed and still.
+    const frame = () => {
+      const field = document.querySelector(".header-search-field");
+      if (!field?.getBoundingClientRect().width) return requestAnimationFrame(frame);
+      probe.first = [
+        getComputedStyle(field).clipPath,
+        document.querySelector("header")!.className,
+        field.getAnimations().length,
+      ].join(" | ");
+    };
+    requestAnimationFrame(frame);
+  });
+  const toggle = page.locator(".chrome-actions .search-toggle");
+  // Time the tap's own work and check the very next frame.
+  const open = async () => {
+    await page.evaluate(() => {
+      const probe = (window as unknown as { searchProbe: SearchProbe }).searchProbe;
+      let start = 0;
+      addEventListener("click", () => {
+        start = performance.now();
+        requestAnimationFrame(() => {
+          const field = document.querySelector(".header-search-field")!;
+          probe.open!.open = document.querySelector("header")!.classList.contains("search-open");
+          probe.open!.moving = field.getAnimations().some(
+            (a) => (a as CSSTransition).transitionProperty === "clip-path" && a.playState === "running",
+          );
+        });
+      }, { capture: true, once: true });
+      addEventListener("click", () => {
+        probe.open = { handlerMs: performance.now() - start, open: false, moving: false };
+      }, { once: true });
+    });
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await page.waitForTimeout(50);
+    return page.evaluate(() => (window as unknown as { searchProbe: SearchProbe }).searchProbe.open!);
+  };
+  for (const lang of ["en", "ar"]) {
+    await page.context().addCookies([{ name: "sushina-lang", value: lang, url: baseURL! }]);
+    await page.goto("/");
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await page.waitForTimeout(800);
+    const load = await page.evaluate(() => (window as unknown as { searchProbe: SearchProbe }).searchProbe);
+    expect(load.moved, lang).toEqual([]);
+    expect(load.first, lang).toMatch(/^inset\(.*calc\(100% - 44px\).* \| chrome-header \| 0$/);
+    const first = await open();
+    await page.keyboard.press("Escape");
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await page.waitForTimeout(300);
+    const later = await open();
+    for (const tap of [first, later]) expect(tap, lang).toMatchObject({ open: true, moving: true });
+    expect(first.handlerMs, lang).toBeLessThan(later.handlerMs + 20);
+  }
 });
 
 test("the category picker is a listbox that follows the feed", async ({

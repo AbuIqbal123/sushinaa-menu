@@ -20,40 +20,6 @@ function normalizeSearch(value: string) {
     .replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
 
-// Safari redraws a filtered SVG the first time it fades, which is the hitch on
-// the first search open. The shadow is painted into a bitmap while the page loads.
-function bakeWordmarkShadow(img: HTMLImageElement, shadow: HTMLCanvasElement) {
-  if (shadow.dataset.baked === "1" || !img.naturalWidth) return false;
-  const dpr = Math.min(window.devicePixelRatio || 1, 3);
-  const height = 44;
-  const width = Math.max(1, Math.round((img.naturalWidth / img.naturalHeight) * height));
-  const blur = 8;
-  const pad = blur * 2;
-  const cssW = width + pad * 2;
-  const cssH = height + pad * 2;
-  shadow.width = Math.ceil(cssW * dpr);
-  shadow.height = Math.ceil(cssH * dpr);
-  shadow.style.width = `${cssW}px`;
-  shadow.style.height = `${cssH}px`;
-  const ctx = shadow.getContext("2d");
-  if (!ctx) return false;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.shadowColor = "rgba(20, 17, 15, 0.9)";
-  ctx.shadowBlur = blur;
-  ctx.shadowOffsetY = 1;
-  ctx.drawImage(img, pad, pad, width, height);
-  const pixels = ctx.getImageData(0, 0, shadow.width, shadow.height).data;
-  for (let i = 3; i < pixels.length; i += 32) {
-    if (pixels[i] > 8) {
-      shadow.dataset.baked = "1";
-      return true;
-    }
-  }
-  shadow.width = 0;
-  shadow.height = 0;
-  return false;
-}
-
 function FeedInner() {
   const menu = useMenu();
   const { itemCount, totalQar } = useCart();
@@ -72,11 +38,6 @@ function FeedInner() {
   const [searchOpen, setSearchOpen] = useState(false);
   const searchButtonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const searchFieldRef = useRef<HTMLDivElement>(null);
-  const wordmarkRef = useRef<HTMLSpanElement>(null);
-  const shadowRef = useRef<HTMLCanvasElement>(null);
-  const searchPrimed = useRef(false);
-  const [logoBaked, setLogoBaked] = useState(false);
   // How far the open field reaches: from the search button to the logo's edge.
   const [searchWidth, setSearchWidth] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -153,13 +114,14 @@ function FeedInner() {
   useLayoutEffect(() => {
     const feed = feedRef.current;
     if (!feed) return;
-    if (search || !dishes.length) { feed.scrollTo({ top: 0 }); setVisualIndex(0); return; }
+    if (search || !dishes.length) { feed.scrollTo({ top: 0 }); return; }
     const target = pendingJump.current ?? currentCategory.current;
     pendingJump.current = null;
     const index = Math.max(0, dishes.findIndex((dish) => dish.section === target));
     const visual = dishes.length + index;
     feed.scrollTo({ top: visual * feed.clientHeight, behavior: "instant" });
-    setVisualIndex(visual);
+    // Read the new position now, so the photos around it render with this commit.
+    syncCategory();
     // `dishes` is read through `listKey` so refreshed data with the same list keeps the position.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listKey, search]);
@@ -199,45 +161,6 @@ function FeedInner() {
   useLayoutEffect(() => {
     measureSearch();
   }, [measureSearch]);
-
-  useLayoutEffect(() => {
-    const img = wordmarkRef.current?.querySelector("img");
-    const shadow = shadowRef.current;
-    if (!img || !shadow) return;
-    let cancel = false;
-    const bake = () => {
-      if (cancel || !img.naturalWidth) return;
-      if (bakeWordmarkShadow(img, shadow)) setLogoBaked(true);
-    };
-    // An SVG can already be complete before its width is known, and then load never fires.
-    if (img.complete && img.naturalWidth) bake();
-    else img.decode().then(bake).catch(() => img.addEventListener("load", bake, { once: true }));
-    return () => {
-      cancel = true;
-      img.removeEventListener("load", bake);
-    };
-  }, []);
-
-  // Safari's first text-field layout and focus are a long task. Pay for both
-  // before the tap, clipped to the button so nothing flashes.
-  useLayoutEffect(() => {
-    const input = searchInputRef.current;
-    const field = searchFieldRef.current;
-    const root = field?.parentElement;
-    if (!input || !field || !root || !searchWidth || searchPrimed.current) return;
-    searchPrimed.current = true;
-    root.style.overflow = "hidden";
-    field.style.transition = "none";
-    input.style.transition = "none";
-    field.style.width = `${searchWidth}px`;
-    input.focus({ preventScroll: true });
-    input.blur();
-    void field.offsetWidth;
-    field.style.width = "44px";
-    field.style.transition = "";
-    input.style.transition = "";
-    root.style.overflow = "";
-  }, [searchWidth]);
 
   function openSearch() {
     setSearchOpen(true);
@@ -282,18 +205,15 @@ function FeedInner() {
   return (
     <div className={`shell${sheetOpen ? " is-sheet" : ""}${itemCount > 0 ? " has-order" : ""}`}>
       <header className={`chrome-header${searchOpen ? " search-open" : ""}`} inert={sheetOpen}>
-        <span ref={wordmarkRef} className={`wordmark${logoBaked ? " is-baked" : ""}`}>
-          <canvas ref={shadowRef} className="wordmark-shadow" aria-hidden="true" />
-          <img src={menu.settings.logo} alt={t.brand} className="wordmark-img" width={46} height={44} />
-        </span>
+        <img src={menu.settings.logo} alt={t.brand} className="wordmark-img" width={46} height={44} />
         <div className="chrome-actions">
           {/* One element: the button's pill opens into the field, toward the logo. */}
           <div className="header-search">
-            <div ref={searchFieldRef} id="menu-search-panel" className="header-search-field" role="search"
-              style={{ width: searchOpen && searchWidth ? searchWidth : 44 }}>
+            <div id="menu-search-panel" className="header-search-field" role="search"
+              style={{ width: searchWidth || undefined }} inert={!searchOpen}>
               <label htmlFor="menu-search" className="sr-only">{t.searchMenu}</label>
               <input ref={searchInputRef} id="menu-search" type="text" inputMode="search" value={query}
-                placeholder={t.searchMenu} tabIndex={searchOpen ? 0 : -1}
+                placeholder={t.searchMenu}
                 onChange={(e) => setQuery(e.target.value)} autoComplete="off" autoCorrect="off" autoCapitalize="off"
                 spellCheck={false} maxLength={100} enterKeyHint="search"
                 onKeyDown={(e) => { if (e.key === "Escape") closeSearch(); }} />
