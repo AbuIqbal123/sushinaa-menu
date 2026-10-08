@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   type MenuSnapshot,
@@ -15,6 +15,7 @@ import { MenuList } from "./MenuList";
 import { Dashboard } from "./Dashboard";
 import { Activity } from "./Activity";
 import { confirmDiscard } from "./Fields";
+import { useNotify } from "./Notices";
 export function Admin({ initial }: { initial: MenuSnapshot }) {
   const [snapshot, setSnapshot] = useState(initial);
   const params = useSearchParams();
@@ -24,20 +25,13 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
   );
   const [item, setItem] = useState<CmsDish | null>(null);
   const [category, setCategory] = useState<Category | null>(null);
-  const [error, setError] = useState("");
-  const [toast, setToast] = useState("");
   const [busy, setBusy] = useState(false);
+  const notify = useNotify();
   const { menu } = snapshot;
   const categories = [...menu.categories].sort((a, b) => a.order - b.order);
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(""), 4000);
-    return () => clearTimeout(t);
-  }, [toast]);
   async function save(next: MenuData) {
     if (busy) throw new Error("Please wait for the current save.");
     setBusy(true);
-    setError("");
     try {
       const r = await fetch("/api/admin/menu", {
         method: "PUT",
@@ -45,9 +39,19 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
         body: JSON.stringify({ menu: next, revision: snapshot.revision }),
       });
       const data = await r.json();
-      if (!r.ok) throw new Error(data.error);
+      if (!r.ok) throw new Error(data.error || "Unable to save");
       setSnapshot(data);
-      setToast("Changes saved");
+      notify({ tone: "ok", text: "Changes saved" });
+    } catch (e) {
+      const text = e instanceof Error ? e.message : "Unable to save";
+      notify({
+        tone: "error",
+        text: `Couldn’t save: ${text}. Your edits are still here.`,
+        action: text.includes("Reload before saving")
+          ? { label: "Reload", onClick: () => window.location.reload() }
+          : undefined,
+      });
+      throw e;
     } finally {
       setBusy(false);
     }
@@ -55,14 +59,14 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
   async function run(next: MenuData) {
     try {
       await save(next);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Unable to save");
+    } catch {
+      // The toast already says the edits are still here.
     }
   }
   function newItem(id = categories[0]?.id) {
     if (!id) {
       setSection("Categories");
-      setToast("Create a category first");
+      notify({ tone: "ok", text: "Create a category first" });
       return;
     }
     setItem({
@@ -102,7 +106,6 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
             onClick={() => {
               if (s === section || !confirmDiscard()) return;
               setSection(s);
-              setError("");
             }}
           >
             {s}
@@ -119,7 +122,10 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
               if (!r.ok) throw new Error("Unable to sign out");
               window.location.assign("/admin/login");
             } catch (e) {
-              setError(String(e));
+              notify({
+                tone: "error",
+                text: e instanceof Error ? e.message : "Unable to sign out",
+              });
             }
           }}
         >
@@ -153,14 +159,6 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
               </button>
             )}
           </div>
-          {error && (
-            <div className="admin-error" role="alert">
-              {error}
-              <button onClick={() => window.location.reload()}>
-                Reload latest menu
-              </button>
-            </div>
-          )}
           {section === "Dashboard" && (
             <Dashboard
               menu={menu}
@@ -192,11 +190,6 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
           )}
         </main>
       </div>
-      {toast && (
-        <div className="admin-toast" role="status">
-          {toast}
-        </div>
-      )}
       {item && (
         <ItemEditor
           key={item.id}

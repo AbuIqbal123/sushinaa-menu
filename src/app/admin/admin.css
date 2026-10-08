@@ -499,14 +499,6 @@
 .admin-dialog-body {
   padding: 0 24px 24px;
 }
-.admin-error {
-  padding: 12px 16px;
-  background: #fff0f0;
-  color: #a01725;
-  border-radius: 8px;
-  margin: 12px 0;
-  white-space: pre-wrap;
-}
 /* Character count: quiet, at the end of the field (the left in Arabic). */
 .admin .admin-count {
   display: block;
@@ -535,10 +527,6 @@
   padding: 12px 0;
   background: #f5f7fa;
 }
-.admin-savebar .admin-error {
-  flex-basis: 100%;
-  margin: 0;
-}
 .admin-hint {
   display: block;
   margin: -6px 0 14px;
@@ -551,16 +539,55 @@
   border-radius: 8px;
   background: #fdf3f4;
 }
-.admin-toast {
+.admin-toasts {
   position: fixed;
-  right: 24px;
-  bottom: 24px;
-  z-index: 100;
+  inset: auto 24px 24px auto;
+  width: min(24rem, calc(100vw - 32px));
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+  color: inherit;
+}
+.admin-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
   background: #18212f;
-  color: white;
-  border-radius: 8px;
-  padding: 14px 22px;
-  box-shadow: 0 8px 30px #0002;
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(20, 17, 15, 0.22);
+}
+.admin-toast p {
+  flex: 1;
+  margin: 0;
+  white-space: pre-wrap;
+}
+.admin .admin-toast button,
+.admin .admin-toast button:hover {
+  flex: none;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.admin-toast.is-error {
+  background: #a01725;
+  color: #fff;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .admin-toast {
+    animation: admin-toast-in 180ms ease-out;
+  }
+}
+@keyframes admin-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
 }
 .admin-login {
   min-height: 100dvh;

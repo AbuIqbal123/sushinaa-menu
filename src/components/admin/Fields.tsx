@@ -10,6 +10,7 @@ import {
 } from "react";
 import { characters } from "@/cms/limits";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_LABEL } from "@/cms/media";
+import { useNotify } from "./Notices";
 // Field-level validation messages, keyed by dotted path ("kind.sauces.0.name").
 export const FieldErrors = createContext<Record<string, string>>({});
 export function FieldError({ path, id }: { path: string; id?: string }) {
@@ -200,8 +201,8 @@ export function ImageField({
   path?: string;
   hint?: string;
 }) {
-  const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const notify = useNotify();
   const invalid = useInvalid(path);
   return (
     <fieldset className="admin-field admin-image-field">
@@ -225,12 +226,14 @@ export function ImageField({
               const file = input.files?.[0];
               if (!file) return;
               if (file.size > MAX_UPLOAD_BYTES) {
-                setError(`Choose an image under ${MAX_UPLOAD_LABEL}.`);
+                notify({
+                  tone: "error",
+                  text: `Choose an image under ${MAX_UPLOAD_LABEL}.`,
+                });
                 input.value = "";
                 return;
               }
               setBusy(true);
-              setError("");
               try {
                 const form = new FormData();
                 form.set("file", file);
@@ -242,7 +245,10 @@ export function ImageField({
                 if (!r.ok) throw new Error(data.error);
                 onChange(data.url);
               } catch (e) {
-                setError(e instanceof Error ? e.message : "Upload failed");
+                notify({
+                  tone: "error",
+                  text: e instanceof Error ? e.message : "Upload failed",
+                });
               } finally {
                 input.value = "";
                 setBusy(false);
@@ -273,11 +279,6 @@ export function ImageField({
       </div>
       {path && <FieldError path={path} id={invalid.id} />}
       {busy && <small role="status">Uploading…</small>}
-      {error && (
-        <p role="alert" className="admin-error">
-          {error}
-        </p>
-      )}
       <small>{hint && `${hint} `}JPEG, PNG or WebP, up to {MAX_UPLOAD_LABEL}.</small>
     </fieldset>
   );

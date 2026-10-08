@@ -42,7 +42,6 @@ export function SettingsEditor({
   const [draft, setDraft] = useState(structuredClone(menu));
   const [tab, setTab] = useState("Restaurant");
   const [query, setQuery] = useState("");
-  const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [checked, setChecked] = useState(false);
   const dirty = JSON.stringify(draft) !== JSON.stringify(menu);
@@ -60,20 +59,16 @@ export function SettingsEditor({
         const result = validate();
         if (!result.success) {
           setChecked(true);
-          setError("");
           setQuery("");
           setTab(tabOf(Object.keys(errorsOf(result))[0]));
           focusFirstInvalid(e.currentTarget);
           return;
         }
         setBusy(true);
-        setError("");
         try {
           await onSave(draft);
-        } catch (e) {
-          setError(
-            `Couldn’t save: ${e instanceof Error ? e.message : "the server didn’t respond"}. Your edits are still here.`,
-          );
+        } catch {
+          // The toast already says the edits are still here.
         } finally {
           setBusy(false);
         }
@@ -234,11 +229,6 @@ export function SettingsEditor({
         )}
       </FieldErrors>
       <div className="admin-savebar">
-        {error && (
-          <p className="admin-error" role="alert">
-            {error}
-          </p>
-        )}
         <button className="primary" disabled={busy}>
           {busy ? "Saving…" : "Save settings"}
         </button>

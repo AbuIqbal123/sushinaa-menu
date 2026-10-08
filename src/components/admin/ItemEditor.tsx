@@ -37,7 +37,6 @@ export function ItemEditor({
 }) {
   const [draft, setDraft] = useState(structuredClone(item));
   const [tab, setTab] = useState("Details");
-  const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   // After the first blocked save, errors track the draft live and clear as fixed.
   const [checked, setChecked] = useState(false);
@@ -78,23 +77,19 @@ export function ItemEditor({
           const result = validate();
           if (!result.success) {
             setChecked(true);
-            setError("");
             setTab(tabOf(Object.keys(errorsOf(result))[0]));
             focusFirstInvalid(dialog.current);
             return;
           }
           setBusy(true);
-          setError("");
           try {
             await onSave({
               ...result.data,
               updatedAt: new Date().toISOString(),
             });
             onClose();
-          } catch (e) {
-            setError(
-              `Couldn’t save: ${e instanceof Error ? e.message : "the server didn’t respond"}. Your edits are still here.`,
-            );
+          } catch {
+            // The toast already says the edits are still here.
           } finally {
             setBusy(false);
           }
@@ -268,11 +263,6 @@ export function ItemEditor({
                   />
                 )}
               </>
-            )}
-            {error && (
-              <p className="admin-error" role="alert">
-                {error}
-              </p>
             )}
           </div>
         </FieldErrors>

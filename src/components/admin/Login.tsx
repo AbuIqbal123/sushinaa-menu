@@ -1,15 +1,15 @@
 "use client";
 import { useState } from "react";
+import { useNotify } from "./Notices";
 export function Login() {
-  const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const notify = useNotify();
   return (
     <div className="admin-login">
       <form
         onSubmit={async (e) => {
           e.preventDefault();
           setBusy(true);
-          setError("");
           const data = new FormData(e.currentTarget);
           try {
             const r = await fetch("/api/admin/session", {
@@ -20,7 +20,10 @@ export function Login() {
             if (!r.ok) throw new Error((await r.json()).error);
             window.location.assign("/admin");
           } catch (e) {
-            setError(e instanceof Error ? e.message : "Unable to sign in");
+            notify({
+              tone: "error",
+              text: e instanceof Error ? e.message : "Unable to sign in",
+            });
             setBusy(false);
           }
         }}
@@ -39,11 +42,6 @@ export function Login() {
             required
           />
         </label>
-        {error && (
-          <p className="admin-error" role="alert">
-            {error}
-          </p>
-        )}
         <button className="primary" disabled={busy}>
           {busy ? "Signing in…" : "Sign in"}
         </button>

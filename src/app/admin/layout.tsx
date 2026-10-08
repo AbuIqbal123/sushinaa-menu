@@ -1,4 +1,5 @@
 import "./admin.css";
+import { Notices } from "@/components/admin/Notices";
 export const metadata = {
   title: "Menu administration",
   robots: { index: false, follow: false },
@@ -10,7 +11,7 @@ export default function AdminLayout({
 }) {
   return (
     <div className="admin" dir="ltr">
-      {children}
+      <Notices>{children}</Notices>
     </div>
   );
 }

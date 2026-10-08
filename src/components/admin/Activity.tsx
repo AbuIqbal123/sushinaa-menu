@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useNotify } from "./Notices";
 
 type Row = {
   id: number;
@@ -113,23 +114,27 @@ export function Activity() {
   const [area, setArea] = useState("");
   const [page, setPage] = useState(1);
   const [data, setData] = useState<{ rows: Row[]; more: boolean } | null>(null);
-  const [error, setError] = useState("");
+  const notify = useNotify();
   useEffect(() => {
     let live = true;
     fetch(`/api/admin/activity?area=${area}&page=${page}`)
       .then(async (r) => {
         const body = await r.json();
         if (!r.ok) throw new Error(body.error);
-        if (live) {
-          setData(body);
-          setError("");
-        }
+        if (live) setData(body);
       })
-      .catch((e) => live && setError(e instanceof Error ? e.message : "Unable to load activity"));
+      .catch(
+        (e) =>
+          live &&
+          notify({
+            tone: "error",
+            text: e instanceof Error ? e.message : "Unable to load activity",
+          }),
+      );
     return () => {
       live = false;
     };
-  }, [area, page]);
+  }, [area, page, notify]);
   return (
     <>
       <div className="admin-toolbar">
@@ -148,11 +153,6 @@ export function Activity() {
           ))}
         </select>
       </div>
-      {error && (
-        <div className="admin-error" role="alert">
-          {error}
-        </div>
-      )}
       {data && !data.rows.length && (
         <p className="admin-empty">Nothing recorded yet.</p>
       )}

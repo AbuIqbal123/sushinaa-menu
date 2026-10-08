@@ -27,7 +27,6 @@ export function CategoryEditor({
   onSave: (c: Category) => Promise<void>;
 }) {
   const [draft, setDraft] = useState(category);
-  const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [checked, setChecked] = useState(false);
   const ref = useRef<HTMLDialogElement>(null);
@@ -60,19 +59,15 @@ export function CategoryEditor({
           const r = validate();
           if (!r.success) {
             setChecked(true);
-            setError("");
             focusFirstInvalid(ref.current);
             return;
           }
           setBusy(true);
-          setError("");
           try {
             await onSave(r.data);
             onClose();
-          } catch (e) {
-            setError(
-              `Couldn’t save: ${e instanceof Error ? e.message : "the server didn’t respond"}. Your edits are still here.`,
-            );
+          } catch {
+            // The toast already says the edits are still here.
           } finally {
             setBusy(false);
           }
@@ -111,11 +106,6 @@ export function CategoryEditor({
               value={draft.featured}
               onChange={(featured) => setDraft({ ...draft, featured })}
             />
-            {error && (
-              <p role="alert" className="admin-error">
-                {error}
-              </p>
-            )}
           </div>
         </FieldErrors>
         <footer className="admin-dialog-foot">
