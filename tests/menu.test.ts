@@ -119,7 +119,7 @@ test("validation rejects invalid money, relationships, empty choices, limits and
     m.dishes[0].image = "javascript:alert(1)";
   });
   invalid((m) => {
-    m.dishes[0].image = "/dishes/../secret";
+    m.dishes[0].image = "/dishes/../private";
   });
 });
 test("visibility, availability and explicit ordering determine the public menu", () => {

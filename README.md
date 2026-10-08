@@ -15,7 +15,7 @@ npm run dev
 
 - Public menu: http://localhost:3005
 - Administration: http://localhost:3005/admin
-- Local sign-in: `admin` / `admin` from `.env.example`. Sign-in is disabled when `CMS_ADMIN_USERNAME` or `CMS_ADMIN_PASSWORD` is missing.
+- Local sign-in: set `CMS_ADMIN_USERNAME` and `CMS_ADMIN_PASSWORD` in `.env.local` first. Sign-in is disabled while either is missing.
 
 For phone testing on the same Wi-Fi, allow the computer's exact LAN address:
 
@@ -43,16 +43,13 @@ Development defaults to the SQLite file `data/menu.db`. Back up that database (i
 
 For **Vercel**, set a remote libSQL database before deployment:
 
-```text
-CMS_DATABASE_URL=libsql://your-database.turso.io
-CMS_DATABASE_AUTH_TOKEN=your-database-token
-CMS_ADMIN_USERNAME=choose-a-username
-CMS_ADMIN_PASSWORD=choose-a-long-unique-password
-```
+- `CMS_DATABASE_URL`: the `libsql://….turso.io` address
+- `CMS_DATABASE_AUTH_TOKEN`: the database token
+- `CMS_ADMIN_USERNAME` and `CMS_ADMIN_PASSWORD`: your admin sign-in (a long, unique password)
 
 Use those same database environment variables locally and run `npm run cms:seed` once before deploying. The CLI reads `.env.local`/`.env` like Next.js. Do not put database tokens in `NEXT_PUBLIC_*` variables. The application deliberately rejects a local-file database on Vercel, where filesystem changes are not durable. No cloud database has been provisioned by this branch.
 
-Uploaded JPEG/PNG/WebP photos (up to 5 MB) are decoded, resized and stored as WebP in the database. Their content-addressed media URLs are immutable. Existing bundled photos remain in `public/`; uploads do not depend on an ephemeral deployment filesystem. Removing a photo association keeps the underlying upload available for other items.
+Uploaded JPEG/PNG/WebP photos (up to 4 MB, under Vercel's request limit) are decoded, resized and stored as WebP in the database. Their content-addressed media URLs are immutable. Existing bundled photos remain in `public/`; uploads do not depend on an ephemeral deployment filesystem. Removing a photo association keeps the underlying upload available for other items.
 
 For a local production check:
 
@@ -88,11 +85,11 @@ npm test
 npm run lint
 npm run build
 npx playwright install chromium
-# With the app running locally, against a disposable/test database:
+# Against a disposable/test database, after `npm run build`:
 npm run test:e2e
 ```
 
-Browser tests edit the menu and restore the prior document afterward. Do not point them at a live customer database. Override `CMS_TEST_URL` for another local server URL.
+`npm run test:e2e` starts the built app on port 3006 with an admin account made up for that run. Browser tests edit the menu and restore the prior document afterward; do not point them at a live customer database. To test a server you started yourself, set `CMS_TEST_URL` plus the `CMS_ADMIN_USERNAME` and `CMS_ADMIN_PASSWORD` it uses.
 
 Tests cover migration parity, all pricing types, bilingual interpolation, invalid values, relationship validation, stale saved selections, visibility/order, idempotent seeding, persistent writes, concurrent-save rejection, authentication, category/item workflows, uploads, settings propagation, empty menus and mobile/desktop English/Arabic cart interactions.
 

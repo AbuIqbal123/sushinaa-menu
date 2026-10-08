@@ -46,12 +46,13 @@ test("a save is described as one row per changed entity", () => {
 });
 
 test("request details are capped and never include cookies", () => {
+  const session = `session-${Date.now()}`;
   const ctx = auditContext(
     new Request("http://x/", {
       headers: {
         "x-forwarded-for": "203.0.113.9, 10.0.0.1",
         "user-agent": "u".repeat(500),
-        cookie: "sushinaa-admin=secret",
+        cookie: `sushinaa-admin=${session}`,
       },
     }),
     "n".repeat(200),
@@ -59,7 +60,7 @@ test("request details are capped and never include cookies", () => {
   assert.equal(ctx.ip, "203.0.113.9");
   assert.equal(ctx.userAgent?.length, 200);
   assert.equal(ctx.actor?.length, 64);
-  assert.ok(!JSON.stringify(ctx).includes("secret"));
+  assert.ok(!JSON.stringify(ctx).includes(session));
   assert.equal(auditContext(new Request("http://x/"), null).ip, null);
 });
 

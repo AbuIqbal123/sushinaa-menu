@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import type { MenuSnapshot } from "../../src/cms/schema";
+import { admin } from "./admin";
 test("authenticated CMS CRUD, persistence, uploads and public integration", async ({
   page,
   request,
@@ -14,11 +15,11 @@ test("authenticated CMS CRUD, persistence, uploads and public integration", asyn
   ).toBe(401);
   await page.goto("/admin");
   await expect(page).toHaveURL(/\/admin\/login/);
-  await page.getByLabel("Username").fill("admin");
-  await page.getByLabel("Password", { exact: true }).fill("wrong");
+  await page.getByLabel("Username").fill(admin.username);
+  await page.getByLabel("Password", { exact: true }).fill(`wrong-${Date.now()}`);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.locator(".admin-error")).toContainText("Invalid");
-  await page.getByLabel("Password", { exact: true }).fill("admin");
+  await page.getByLabel("Password", { exact: true }).fill(admin.password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Dashboard", exact: true }),
@@ -242,7 +243,7 @@ test("admin controls edit, reorder and delete content and options", async ({
   const headers = { Origin: baseURL! };
   await page.request.post("/api/admin/session", {
     headers,
-    data: { username: "admin", password: "admin" },
+    data: admin,
   });
   const original: MenuSnapshot = await (
     await page.request.get("/api/admin/menu")
@@ -408,7 +409,7 @@ test("menu filters combine and survive a reload through the URL", async ({
 }) => {
   await page.request.post("/api/admin/session", {
     headers: { Origin: baseURL! },
-    data: { username: "admin", password: "admin" },
+    data: admin,
   });
   const rows = page.locator(".admin-group .admin-row");
   await page.goto("/admin?category=Starters&show=active&q=shrimp");
@@ -441,7 +442,7 @@ test("unsaved edits are guarded and focus returns to the opener", async ({
 }) => {
   await page.request.post("/api/admin/session", {
     headers: { Origin: baseURL! },
-    data: { username: "admin", password: "admin" },
+    data: admin,
   });
   const prompts: string[] = [];
   let answer = false;
@@ -486,7 +487,7 @@ test("blocked saves show plain errors next to the fields", async ({
 }) => {
   await page.request.post("/api/admin/session", {
     headers: { Origin: baseURL! },
-    data: { username: "admin", password: "admin" },
+    data: admin,
   });
   page.on("dialog", (d) => d.accept());
   await page.goto("/admin");
@@ -531,7 +532,7 @@ test("changing how an item is priced explains itself and confirms inline", async
 }) => {
   await page.request.post("/api/admin/session", {
     headers: { Origin: baseURL! },
-    data: { username: "admin", password: "admin" },
+    data: admin,
   });
   const prompts: string[] = [];
   page.on("dialog", (d) => {
@@ -575,7 +576,7 @@ test("card focal point and options photo round-trip to the public menu", async (
   const headers = { Origin: baseURL! };
   await page.request.post("/api/admin/session", {
     headers,
-    data: { username: "admin", password: "admin" },
+    data: admin,
   });
   const original: MenuSnapshot = await (
     await page.request.get("/api/admin/menu")
@@ -761,16 +762,16 @@ test("every admin write leaves an activity row and failed writes leave none", as
 }) => {
   const headers = { Origin: baseURL!, "x-forwarded-for": "203.0.113.7, 10.0.0.1" };
   const api = page.request;
-  const wrong = "not-the-password-4821";
+  const wrong = `wrong-${Date.now()}`;
   expect(
-    (await api.post("/api/admin/session", { headers, data: { username: "admin", password: wrong } })).status(),
+    (await api.post("/api/admin/session", { headers, data: { username: admin.username, password: wrong } })).status(),
   ).toBe(401);
-  await api.post("/api/admin/session", { headers, data: { username: "admin", password: "admin" } });
+  await api.post("/api/admin/session", { headers, data: admin });
   type Row = { id: number; action: string; actor: string | null; entityId: string | null; ip: string | null };
   const rows = async (): Promise<Row[]> => (await (await api.get("/api/admin/activity")).json()).rows;
   const latest = await rows();
   expect(latest.slice(0, 2).map((r) => r.action)).toEqual(["session.sign_in", "session.sign_in_failed"]);
-  expect(latest[1].actor).toBe("admin");
+  expect(latest[1].actor).toBe(admin.username);
   expect(latest[0].ip).toBe("203.0.113.7");
   const since = latest[0].id;
   const newer = async () => (await rows()).filter((r) => r.id > since);
@@ -816,7 +817,7 @@ test("every admin write leaves an activity row and failed writes leave none", as
   await expect(page.locator(".admin-activity li").first()).toContainText("Changed settings: tagline");
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/login/);
-  await api.post("/api/admin/session", { headers, data: { username: "admin", password: "admin" } });
+  await api.post("/api/admin/session", { headers, data: admin });
   const all = await newer();
   const actions = all.map((r) => `${r.action} ${r.entityId ?? ""}`.trim());
   for (const want of [
@@ -846,19 +847,19 @@ test("sign-in limits, session rotation, upload sniffing and headers", async ({
   // Five wrong passwords from one address lock that name there, even for the right one.
   const locked = await client("198.51.100.20");
   for (let i = 0; i < 5; i++)
-    expect((await locked.post("/api/admin/session", { data: { username: "admin", password: `wrong-${i}` } })).status()).toBe(401);
-  const blocked = await locked.post("/api/admin/session", { data: { username: "admin", password: "admin" } });
+    expect((await locked.post("/api/admin/session", { data: { username: admin.username, password: `wrong-${i}` } })).status()).toBe(401);
+  const blocked = await locked.post("/api/admin/session", { data: admin });
   expect(blocked.status()).toBe(429);
   expect(Number(blocked.headers()["retry-after"])).toBeGreaterThan(0);
   await locked.dispose();
   // A new sign-in replaces the session the browser had.
   const api = await client("198.51.100.21");
-  expect((await api.post("/api/admin/session", { data: { username: "admin", password: "admin" } })).status()).toBe(200);
+  expect((await api.post("/api/admin/session", { data: admin })).status()).toBe(200);
   const first = (await api.storageState()).cookies.find((c) => c.name === "sushinaa-admin")!;
   expect(first.httpOnly).toBe(true);
   expect(first.sameSite).toBe("Strict");
   expect(first.path).toBe("/");
-  expect((await api.post("/api/admin/session", { data: { username: "admin", password: "admin" } })).status()).toBe(200);
+  expect((await api.post("/api/admin/session", { data: admin })).status()).toBe(200);
   const old = await playwright.request.newContext({
     baseURL: origin,
     extraHTTPHeaders: { Cookie: `sushinaa-admin=${first.value}` },
@@ -904,7 +905,7 @@ test("the longest allowed text and 4-digit prices keep the card and sheet intact
   const headers = { Origin: baseURL! };
   await page.request.post("/api/admin/session", {
     headers,
-    data: { username: "admin", password: "admin" },
+    data: admin,
   });
   const original: MenuSnapshot = await (
     await page.request.get("/api/admin/menu")
