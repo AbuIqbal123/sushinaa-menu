@@ -28,7 +28,7 @@ import { DietTags } from "./DietTags";
 import { PhotoViewer } from "./PhotoViewer";
 
 type Props = {
-  dish: Dish | null;
+  dish: Dish;
   diet?: DietFilter;
   onClose: () => void;
 };
@@ -39,7 +39,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
   const menu = useMenu();
   const formatQar = (n: number, l: Lang) => money(n, l, menu.settings);
   const sectionName = (id: string, l: Lang) => categoryName(id, l, menu.categories);
-  const [units, setUnits] = useState<Selection[]>(() => [dish ? selectionForDiet(dish, diet) : {}]);
+  const [units, setUnits] = useState<Selection[]>(() => [selectionForDiet(dish, diet)]);
   const [activeUnit, setActiveUnit] = useState(0);
   const [notes, setNotes] = useState<string[]>([""]);
   const [justAdded, setJustAdded] = useState(false);
@@ -48,21 +48,19 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
   const [viewFrom, setViewFrom] = useState<HTMLElement | null>(null);
   const addedTimer = useRef(0);
   const { sheetRef, backdropRef, trackPointer, movePointer, endPointer, requestClose } =
-    useSheetDismiss(Boolean(dish), onClose);
+    useSheetDismiss(true, onClose);
 
   useEffect(() => {
-    if (!dish) return;
     closeRef.current?.focus();
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") requestClose();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [dish, requestClose]);
+  }, [requestClose]);
 
   useEffect(() => () => window.clearTimeout(addedTimer.current), []);
 
-  if (!dish) return null;
   const current = dish;
   const shown = units[Math.min(activeUnit, units.length - 1)] ?? {};
   const total = units.reduce((sum, item) => sum + unitPrice(current, item), 0);

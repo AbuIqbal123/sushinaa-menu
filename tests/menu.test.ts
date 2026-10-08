@@ -58,7 +58,6 @@ test("English and Arabic wording and interpolations preserve existing copy", () 
     const t = strings(lang, seed.copy);
     assert.ok(!t.openDetails("Dish").includes("{0}"));
     assert.ok(t.ofCount(2, 3).includes("2"));
-    assert.ok(t.inOrder(1).includes("1"));
     assert.ok(t.openOrder(0));
   }
   assert.equal(

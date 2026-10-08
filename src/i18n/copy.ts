@@ -18,7 +18,6 @@ export type Copy = Record<TextKey, string> & {
   openDetails: (name: string) => string;
   ofCount: (n: number, max: number) => string;
   openOrder: (n: number) => string;
-  inOrder: (n: number) => string;
   searchResults: (n: number) => string;
   itemNumber: (n: number) => string;
   fewerOf: (name: string) => string;
@@ -36,7 +35,6 @@ export function strings(lang: Lang, copy: Record<Lang, Record<string, string>>):
     openDetails: (s: string) => format("openDetails", s),
     ofCount: (n: number, m: number) => format("ofCount", n, m),
     openOrder: (n: number) => plural("openOrder", n),
-    inOrder: (n: number) => plural("inOrder", n),
     searchResults: (n: number) => format(n === 1 ? "searchResultsOne" : "searchResultsOther", n),
     itemNumber: (n: number) => format("itemNumber", n),
     fewerOf: (s: string) => format("fewerOf", s),
