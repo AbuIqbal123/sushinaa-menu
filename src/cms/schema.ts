@@ -329,6 +329,33 @@ const FIELD_KEYS = [
 const copySchema = z
   .object(Object.fromEntries(COPY_KEYS.map((k) => [k, text])))
   .strict();
+const RETIRED_COPY_KEYS = ["inOrderZero", "inOrderOne", "inOrderOther"];
+// Menus saved before Arabic delivery areas existed. Same list as the shipped menu.
+const SHIPPED_AREAS_AR = ["داون تاون", "أسباير", "الخور", "سيلين", "نعيجة"];
+
+/** Drop fields the schema no longer stores, so an older database still loads. */
+export function normalizeStoredMenu(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object") return raw;
+  const menu = raw as {
+    copy?: Record<string, unknown>;
+    settings?: Record<string, unknown>;
+  };
+  if (menu.copy && typeof menu.copy === "object") {
+    for (const block of Object.values(menu.copy)) {
+      if (!block || typeof block !== "object") continue;
+      const fields = block as Record<string, unknown>;
+      for (const key of RETIRED_COPY_KEYS) delete fields[key];
+    }
+  }
+  if (
+    menu.settings &&
+    typeof menu.settings === "object" &&
+    !Array.isArray(menu.settings.areasAr)
+  )
+    menu.settings.areasAr = SHIPPED_AREAS_AR;
+  return menu;
+}
+
 export const menuSchema = z
   .object({
     schemaVersion: z.literal(1),

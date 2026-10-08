@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { db, initDb } from "./db";
-import { menuSchema, type MenuSnapshot } from "./schema";
+import { menuSchema, normalizeStoredMenu, type MenuSnapshot } from "./schema";
 import { menuLimitIssues } from "./limits";
 import { ZodError } from "zod";
 import { auditInsert, menuChanges, type AuditContext } from "./audit";
@@ -48,7 +48,9 @@ export async function readMenu(): Promise<MenuSnapshot> {
     throw new Error("Menu is not initialised. Run npm run cms:seed.");
   return {
     revision: Number(result.rows[0].revision),
-    menu: menuSchema.parse(JSON.parse(String(result.rows[0].content))),
+    menu: menuSchema.parse(
+      normalizeStoredMenu(JSON.parse(String(result.rows[0].content))),
+    ),
   };
 }
 export const MENU_CACHE_TAG = "cms-menu";

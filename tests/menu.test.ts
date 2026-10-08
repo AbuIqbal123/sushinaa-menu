@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
-import { menuSchema, publicMenu } from "../src/cms/schema";
+import { menuSchema, normalizeStoredMenu, publicMenu } from "../src/cms/schema";
 import {
   defaultSelection,
   isSelectionComplete,
@@ -64,6 +64,28 @@ test("English and Arabic wording and interpolations preserve existing copy", () 
     seed.dishes.find((d) => d.id === "tempura-roll")?.kind.type,
     "roll",
   );
+});
+test("older stored menus drop retired copy keys and gain Arabic delivery areas", () => {
+  const raw = structuredClone(seed) as {
+    copy: { en: Record<string, string>; ar: Record<string, string> };
+    settings: { areasAr?: string[] };
+  };
+  for (const lang of ["en", "ar"] as const) {
+    raw.copy[lang].inOrderZero = "old";
+    raw.copy[lang].inOrderOne = "old";
+    raw.copy[lang].inOrderOther = "old";
+  }
+  delete raw.settings.areasAr;
+  const parsed = menuSchema.parse(normalizeStoredMenu(raw));
+  assert.equal("inOrderZero" in parsed.copy.en, false);
+  assert.equal("inOrderOther" in parsed.copy.ar, false);
+  assert.deepEqual(parsed.settings.areasAr, [
+    "داون تاون",
+    "أسباير",
+    "الخور",
+    "سيلين",
+    "نعيجة",
+  ]);
 });
 test("all original pricing models retain valid defaults and configurable pricing", () => {
   assert.equal(new Set(seed.dishes.map((d) => d.kind.type)).size, 8);
