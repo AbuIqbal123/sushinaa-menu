@@ -90,9 +90,11 @@ function FeedInner() {
     }
   }, [activeIndex, dishes, diet, search]);
 
+  // A category jump scrolls on a later turn. Ignore the position until the latest one lands.
+  const snapHold = useRef(0);
   const syncCategory = useCallback(() => {
     const feed = feedRef.current;
-    if (!feed || search || !dishes.length || !feed.clientHeight) return;
+    if (!feed || search || !dishes.length || !feed.clientHeight || snapHold.current > 0) return;
     const visual = Math.round(feed.scrollTop / feed.clientHeight);
     const real = ((visual % dishes.length) + dishes.length) % dishes.length;
     setVisualIndex(visual);
@@ -111,15 +113,45 @@ function FeedInner() {
     syncCategory();
   }, [dishes.length, search, syncCategory]);
 
+  // A phone ignores a scroll made while the tap is still down, then snap
+  // stays on the dish already on screen. Move after the tap ends, with snap
+  // off for that one assignment. Drop the inline override afterwards. Restoring
+  // a saved value sticks on "none" when a second tap runs before the first frame.
+  function scrollAfterTap(top: number) {
+    const token = ++snapHold.current;
+    window.setTimeout(() => {
+      const node = feedRef.current;
+      const latest = snapHold.current === token;
+      if (latest) snapHold.current = 0;
+      if (!node || !latest) return;
+      node.style.scrollSnapType = "none";
+      node.scrollTop = top;
+      syncCategory();
+      window.requestAnimationFrame(() => {
+        node.style.removeProperty("scroll-snap-type");
+      });
+    }, 0);
+  }
+
   useLayoutEffect(() => {
     const feed = feedRef.current;
     if (!feed) return;
     if (search || !dishes.length) { feed.scrollTo({ top: 0 }); return; }
     const target = pendingJump.current ?? currentCategory.current;
+    const fromCategoryTap = pendingJump.current !== null;
     pendingJump.current = null;
     const index = Math.max(0, dishes.findIndex((dish) => dish.section === target));
     const visual = dishes.length + index;
-    feed.scrollTo({ top: visual * feed.clientHeight, behavior: "instant" });
+    const top = visual * feed.clientHeight;
+    // Closing search from a category tap still has the finger down, so it needs
+    // the same deferred snap bypass as a direct jump.
+    if (fromCategoryTap) {
+      setActiveIndex(index);
+      setVisualIndex(visual);
+      scrollAfterTap(top);
+      return;
+    }
+    feed.scrollTo({ top, behavior: "instant" });
     // Read the new position now, so the photos around it render with this commit.
     syncCategory();
     // `dishes` is read through `listKey` so refreshed data with the same list keeps the position.
@@ -199,18 +231,7 @@ function FeedInner() {
     if (!feed || index < 0) return;
     const top = (dishes.length + index) * feed.clientHeight;
     setActiveIndex(index);
-    // A phone ignores a scroll made while the tap is still down, then snap
-    // stays on the dish already on screen. Move after the tap ends.
-    window.setTimeout(() => {
-      const node = feedRef.current;
-      if (!node) return;
-      const snap = node.style.scrollSnapType;
-      node.style.scrollSnapType = "none";
-      node.scrollTop = top;
-      window.requestAnimationFrame(() => {
-        node.style.scrollSnapType = snap;
-      });
-    }, 0);
+    scrollAfterTap(top);
   }
 
   function clearFilters() { setQuery(""); setDiet("all"); }
