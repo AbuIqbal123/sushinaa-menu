@@ -34,7 +34,7 @@ const sans = localFont({
 });
 
 const arabic = localFont({
-  src: [{ path: "../fonts/ArbFONTS-Greta-Arabic-Medium.ttf", weight: "500" }],
+  src: [{ path: "../fonts/ArbFONTS-Greta-Arabic-Medium.woff2", weight: "500" }],
   variable: "--font-arabic",
   display: "swap",
   preload: false,
