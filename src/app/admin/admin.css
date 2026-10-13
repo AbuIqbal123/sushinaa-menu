@@ -47,6 +47,13 @@
   padding: 8px 12px;
   background: #eef1f5;
   color: var(--ink);
+  transition: background-color 150ms var(--ease-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin button,
+  .admin .admin-upload {
+    transition: none;
+  }
 }
 /* Hover only where there is a real pointer; touch would leave it stuck on. */
 @media (hover: hover) and (pointer: fine) {
