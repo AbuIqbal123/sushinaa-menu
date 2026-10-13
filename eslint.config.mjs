@@ -5,6 +5,10 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    rules: { "no-console": ["error", { allow: ["warn", "error"] }] },
+  },
   globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
 ]);
 
