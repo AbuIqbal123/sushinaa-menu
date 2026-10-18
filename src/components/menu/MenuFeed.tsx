@@ -39,6 +39,10 @@ function FeedInner() {
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [showCategoryHint, setShowCategoryHint] = useState(true);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShowCategoryHint(false), 3500);
+    return () => window.clearTimeout(timer);
+  }, []);
   const searchButtonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   // How far the open field reaches: from the search button to the logo's edge.
@@ -261,13 +265,12 @@ function FeedInner() {
             <span className="current-category" aria-live="polite" aria-atomic="true">{sectionName(category, lang) || t.category}</span>
           </button>
           {showCategoryHint && !sheetOpen && !searchOpen && activeIndex === 0 ? (
-            <button type="button" className="category-discovery"
-              onClick={() => { setShowCategoryHint(false); setCategoriesOpen(true); }}>
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M12 20V4m-6 6 6-6 6 6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+            <span className="category-discovery">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                <path d="M20 12H4m6-6-6 6 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              <span>{lang === "ar" ? "اضغط هنا لاختيار التصنيف" : "Tap here for categories"}</span>
-            </button>
+              <span>{lang === "ar" ? "اضغط هنا للتصنيفات" : "Tap here for categories"}</span>
+            </span>
           ) : null}
         </div>
         <div className="chrome-actions">
