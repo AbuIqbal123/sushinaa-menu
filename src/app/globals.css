@@ -1609,3 +1609,42 @@ button {
 
 /* Prices line up digit for digit wherever they stack. */
 .dish-price, .detail-unit, .ticket-sum strong { font-variant-numeric: tabular-nums; }
+
+/* Category navigation experiment: keep the photos clear until navigation is needed. */
+.brand-navigation { display: flex; align-items: center; gap: 8px; pointer-events: auto; }
+.search-open .category-toggle { visibility: hidden; pointer-events: none; }
+.brand-navigation .category-toggle:focus-visible,
+.category-overlay button:focus-visible { outline: 2px solid #f3e4c4; outline-offset: 3px; }
+.category-overlay {
+  position: fixed; inset: 0; margin: auto; padding: 0; border: 0;
+  width: min(100%, 430px); max-width: 430px; height: 100dvh; max-height: 100dvh;
+  overflow-y: auto; overscroll-behavior: contain;
+  color: #f3e4c4; background: rgba(8, 7, 6, .86);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+.category-overlay::backdrop { background: rgba(0, 0, 0, .2); }
+.category-overlay[open] { animation: category-reveal 180ms ease-out; }
+.category-overlay-content { padding: calc(10px + env(safe-area-inset-top, 0px)) 20px calc(28px + env(safe-area-inset-bottom, 0px)); }
+.category-overlay-header { display: flex; align-items: center; justify-content: space-between; }
+.category-overlay-intro { margin: 28px 0 22px; }
+.category-overlay-intro p { margin: 0 0 8px; color: #c4a36a; font-size: 12px; }
+.category-overlay-intro h2 { margin: 0; font-family: var(--font-display), var(--font-sans); font-size: 32px; line-height: 1.15; }
+[dir="rtl"] .category-overlay-intro h2 { font-family: var(--font-arabic); }
+.category-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.category-tile {
+  display: grid; grid-template-columns: 1fr auto; gap: 10px 6px; align-items: center;
+  min-height: 76px; padding: 12px 14px; border: 1px solid rgba(243,228,196,.16); border-radius: 14px;
+  font: inherit; text-align: start; color: inherit; background: rgba(255,255,255,.035); cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+.category-tile-number { grid-column: 1 / -1; color: #a3947c; font-size: 10px; letter-spacing: .1em; }
+.category-tile-name { font-size: 15px; line-height: 1.25; overflow-wrap: anywhere; }
+.category-tile-arrow { color: #c4a36a; }
+[dir="rtl"] .category-tile-arrow { transform: scaleX(-1); }
+.category-tile[aria-current="true"] { border-color: #d52029; background: rgba(213,32,41,.22); }
+.category-tile[aria-current="true"] .category-tile-number { color: #f3e4c4; }
+.category-tile:disabled { opacity: .35; cursor: default; }
+@media (hover: hover) { .category-tile:not(:disabled):hover { background: rgba(243,228,196,.1); border-color: #c4a36a; } }
+@keyframes category-reveal { from { opacity: 0; transform: translateY(-8px); } }
+@media (prefers-reduced-motion: reduce) { .category-overlay[open] { animation: none; } .category-tile { transition: none; } }
+.shell .search-results { padding-top: calc(112px + env(safe-area-inset-top, 0px)); }

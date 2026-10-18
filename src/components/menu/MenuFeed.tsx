@@ -10,7 +10,7 @@ import { pickName, sectionName as categoryName, type Lang } from "@/i18n/localiz
 import { hasPriceRange, imageFor, photoPosition, unitPrice, selectionForDiet } from "@/ordering/price";
 import { formatQar } from "@/lib/money";
 import { CartSheet } from "../order/CartSheet";
-import { CategoryPicker } from "./CategoryPicker";
+import { CategoryOverlay } from "./CategoryOverlay";
 import { DishDetailSheet } from "./DishDetailSheet";
 import { DishSlide } from "./DishSlide";
 
@@ -30,6 +30,8 @@ function FeedInner() {
     [menu.filters],
   );
   const [open, setOpen] = useState(false);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const categoryButtonRef = useRef<HTMLButtonElement>(null);
   const [detail, setDetail] = useState<Dish | null>(null);
   const [diet, setDiet] = useState<DietFilter>("all");
   const firstSection = menu.categories[0]?.id ?? "";
@@ -61,7 +63,7 @@ function FeedInner() {
   }, [dietDishes, search, searchNames]);
   // A language switch refreshes the menu data; only a different list should move the feed.
   const listKey = useMemo(() => dishes.map((dish) => dish.id).join("|"), [dishes]);
-  const sheetOpen = open || Boolean(detail);
+  const sheetOpen = open || Boolean(detail) || categoriesOpen;
   const setSheetInert = useSetSheetOpen();
   useEffect(() => {
     setSheetInert(sheetOpen);
@@ -234,12 +236,26 @@ function FeedInner() {
     scrollAfterTap(top);
   }
 
+  function closeCategories() {
+    setCategoriesOpen(false);
+    window.requestAnimationFrame(() => categoryButtonRef.current?.focus());
+  }
+
   function clearFilters() { setQuery(""); setDiet("all"); }
 
   return (
     <div className={`shell${sheetOpen ? " is-sheet" : ""}${itemCount > 0 ? " has-order" : ""}`}>
       <header className={`chrome-header${searchOpen ? " search-open" : ""}`} inert={sheetOpen}>
-        <img src={menu.settings.logo} alt={t.brand} className="wordmark-img" width={46} height={44} />
+        <div className="brand-navigation">
+          <img src={menu.settings.logo} alt={t.brand} className="wordmark-img" width={46} height={44} />
+          <button ref={categoryButtonRef} type="button" className="cart-btn category-toggle" aria-label={t.category}
+            aria-haspopup="dialog" aria-expanded={categoriesOpen} aria-controls="category-overlay"
+            onClick={() => { setSearchOpen(false); setCategoriesOpen(true); }}>
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
         <div className="chrome-actions">
           {/* One element: the button's pill opens into the field, toward the logo. */}
           <div className="header-search">
@@ -272,10 +288,6 @@ function FeedInner() {
         </div>
       </header>
       <div className="filter-bar" aria-label={t.filters} inert={sheetOpen ? true : undefined}>
-        <div className="menu-tools">
-          <CategoryPicker label={t.category} value={category} onChange={jumpTo}
-            options={menu.categories.map((c) => ({ id: c.id, label: sectionName(c.id, lang), disabled: !filledSections.has(c.id) }))} />
-        </div>
         <div className="chip-row chip-row-diet" aria-label={t.dietary}>
           {dietChips.map((chip) => <button key={chip.id} type="button"
             className={`chip chip-diet ${diet === chip.id ? "chip-on" : ""}`} aria-pressed={diet === chip.id}
@@ -317,6 +329,10 @@ function FeedInner() {
       </div>
       {itemCount > 0 && !sheetOpen ? <button type="button" className="sticky-cta" onClick={() => setOpen(true)}>
         {t.viewOrder} · {formatQar(totalQar, lang, menu.settings)}</button> : null}
+      <CategoryOverlay open={categoriesOpen} title={t.menu} label={t.category} closeLabel={t.close}
+        logo={menu.settings.logo} brand={t.brand} value={category}
+        options={menu.categories.map((c) => ({ id: c.id, label: sectionName(c.id, lang), disabled: !filledSections.has(c.id) }))}
+        onClose={closeCategories} onChange={(section) => { jumpTo(section); closeCategories(); }} />
       <div className="sr-only" aria-live="polite">{search ? t.searchResults(dishes.length) : ""}</div>
       {detail ? <DishDetailSheet key={`${detail.id}-${diet}`} dish={detail} diet={diet} onClose={() => setDetail(null)} /> : null}
       <CartSheet open={open} onClose={() => setOpen(false)} />
