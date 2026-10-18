@@ -248,12 +248,14 @@ function FeedInner() {
       <header className={`chrome-header${searchOpen ? " search-open" : ""}`} inert={sheetOpen}>
         <div className="brand-navigation">
           <img src={menu.settings.logo} alt={t.brand} className="wordmark-img" width={46} height={44} />
-          <button ref={categoryButtonRef} type="button" className="cart-btn category-toggle" aria-label={t.category}
+          <button ref={categoryButtonRef} type="button" className="cart-btn category-toggle"
+            aria-label={`${t.category}: ${sectionName(category, lang)}`} title={sectionName(category, lang)}
             aria-haspopup="dialog" aria-expanded={categoriesOpen} aria-controls="category-overlay"
             onClick={() => { setSearchOpen(false); setCategoriesOpen(true); }}>
             <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
+            <span className="current-category" aria-live="polite" aria-atomic="true">{sectionName(category, lang) || t.category}</span>
           </button>
         </div>
         <div className="chrome-actions">
