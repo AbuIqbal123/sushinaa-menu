@@ -1671,3 +1671,17 @@ button {
   .chrome-actions { gap: 4px; }
   .chrome-actions .lang-btn { padding-inline: 8px; font-size: 12px; }
 }
+
+.brand-navigation { position: relative; }
+.category-discovery {
+  position: absolute; top: 92px; inset-inline-start: 54px; z-index: 1;
+  display: flex; align-items: center; gap: 8px; width: max-content; max-width: calc(100vw - 32px);
+  min-height: 40px; padding: 9px 13px; border: 1px solid rgba(243,228,196,.35); border-radius: 12px;
+  color: #f3e4c4; background: rgba(20,17,15,.94); font: inherit; font-size: 13px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.2); cursor: pointer; pointer-events: auto;
+  animation: category-reveal 240ms ease-out;
+}
+.category-discovery svg { flex-shrink: 0; }
+.category-discovery:focus-visible { outline: 2px solid #f3e4c4; outline-offset: 3px; }
+[dir="rtl"] .category-discovery { font-family: var(--font-arabic); }
+@media (prefers-reduced-motion: reduce) { .category-discovery { animation: none; } }

@@ -38,6 +38,7 @@ function FeedInner() {
   const [category, setCategory] = useState<Section>(firstSection);
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [showCategoryHint, setShowCategoryHint] = useState(true);
   const searchButtonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   // How far the open field reaches: from the search button to the logo's edge.
@@ -100,6 +101,7 @@ function FeedInner() {
     const visual = Math.round(feed.scrollTop / feed.clientHeight);
     const real = ((visual % dishes.length) + dishes.length) % dishes.length;
     setVisualIndex(visual);
+    if (real !== 0) setShowCategoryHint(false);
     setActiveIndex(real);
     currentCategory.current = dishes[real].section;
     setCategory(dishes[real].section);
@@ -197,6 +199,7 @@ function FeedInner() {
   }, [measureSearch]);
 
   function openSearch() {
+    setShowCategoryHint(false);
     setSearchOpen(true);
   }
 
@@ -251,12 +254,21 @@ function FeedInner() {
           <button ref={categoryButtonRef} type="button" className="cart-btn category-toggle"
             aria-label={`${t.category}: ${sectionName(category, lang)}`} title={sectionName(category, lang)}
             aria-haspopup="dialog" aria-expanded={categoriesOpen} aria-controls="category-overlay"
-            onClick={() => { setSearchOpen(false); setCategoriesOpen(true); }}>
+            onClick={() => { setShowCategoryHint(false); setSearchOpen(false); setCategoriesOpen(true); }}>
             <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
             <span className="current-category" aria-live="polite" aria-atomic="true">{sectionName(category, lang) || t.category}</span>
           </button>
+          {showCategoryHint && !sheetOpen && !searchOpen && activeIndex === 0 ? (
+            <button type="button" className="category-discovery"
+              onClick={() => { setShowCategoryHint(false); setCategoriesOpen(true); }}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 20V4m-6 6 6-6 6 6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span>{lang === "ar" ? "اضغط هنا لاختيار التصنيف" : "Tap here for categories"}</span>
+            </button>
+          ) : null}
         </div>
         <div className="chrome-actions">
           {/* One element: the button's pill opens into the field, toward the logo. */}
