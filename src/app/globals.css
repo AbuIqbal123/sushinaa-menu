@@ -1677,13 +1677,18 @@ button {
   color: rgba(243,228,196,.8); font: inherit; font-size: 9px; line-height: 1.15;
   pointer-events: none; animation: category-hint-fade 3500ms ease both;
 }
-.category-discovery svg { flex: 0 0 12px; }
+.category-discovery svg { flex: 0 0 12px; animation: category-hint-point 800ms ease-in-out infinite; }
 [dir="rtl"] .category-discovery { font-family: var(--font-arabic); }
-[dir="rtl"] .category-discovery svg { transform: scaleX(-1); }
+[dir="rtl"] .category-discovery svg { animation-name: category-hint-point-rtl; }
+@keyframes category-hint-point { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-3px); } }
+@keyframes category-hint-point-rtl { 0%, 100% { transform: scaleX(-1) translateX(0); } 50% { transform: scaleX(-1) translateX(-3px); } }
 @keyframes category-hint-fade { 0%, 75% { opacity: 1; } 100% { opacity: 0; } }
 @media (max-width: 360px) {
   .brand-navigation:has(.category-discovery) .category-toggle { min-width: 62px; padding-inline: 6px; gap: 4px; }
   .category-discovery { font-size: 8px; gap: 2px; }
   .category-discovery svg { flex-basis: 9px; width: 9px; }
 }
-@media (prefers-reduced-motion: reduce) { .category-discovery { animation: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .category-discovery, .category-discovery svg { animation: none; }
+  [dir="rtl"] .category-discovery svg { transform: scaleX(-1); }
+}
