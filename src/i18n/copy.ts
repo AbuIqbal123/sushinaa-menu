@@ -5,7 +5,7 @@ type TextKey =
   | "viewOrder" | "addToOrder" | "added" | "from" | "close" | "closeDetails" | "closeTicket" | "clear"
   | "total" | "comment" | "commentPlaceholder" | "sendWhatsApp" | "openingWhatsApp" | "emptyTicket"
   | "yourTicket" | "noMatch" | "clearFilters" | "swipeUp" | "fewer" | "more" | "menu" | "contact"
-  | "privacy" | "terms" | "backToMenu" | "filters" | "category" | "searchMenu" | "clearSearch"
+  | "privacy" | "terms" | "backToMenu" | "filters" | "category" | "categoryHint" | "searchMenu" | "clearSearch"
   | "viewOnlyNotice" | "dietary" | "menuFeed" | "loading" | "spicy" | "regular" | "veg" | "seafood"
   | "all" | "dip" | "pcs" | "proteinPieces" | "sauceChanges" | "spicyOrRegular" | "pickStarterSushi"
   | "pickStarter" | "addonsAvailable" | "newOnMenu" | "pickTwoSauces" | "saucesIncluded" | "sizeFlavour"

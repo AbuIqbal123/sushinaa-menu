@@ -39,6 +39,7 @@ function FeedInner() {
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [showCategoryHint, setShowCategoryHint] = useState(true);
+  const [pickedCategory, setPickedCategory] = useState("");
   useEffect(() => {
     const timer = window.setTimeout(() => setShowCategoryHint(false), 3500);
     return () => window.clearTimeout(timer);
@@ -262,14 +263,14 @@ function FeedInner() {
             <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
-            <span className="current-category" aria-live="polite" aria-atomic="true">{sectionName(category, lang) || t.category}</span>
+            <span className="current-category">{sectionName(category, lang) || t.category}</span>
           </button>
           {showCategoryHint && !sheetOpen && !searchOpen && activeIndex === 0 ? (
-            <span className="category-discovery">
+            <span className="category-discovery" aria-hidden="true">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
                 <path d="M20 12H4m6-6-6 6 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              <span>{lang === "ar" ? "اضغط هنا للتصنيفات" : "Tap here for categories"}</span>
+              <span>{t.categoryHint}</span>
             </span>
           ) : null}
         </div>
@@ -349,7 +350,8 @@ function FeedInner() {
       <CategoryOverlay open={categoriesOpen} title={t.menu} label={t.category} closeLabel={t.close}
         logo={menu.settings.logo} brand={t.brand} value={category}
         options={menu.categories.map((c) => ({ id: c.id, label: sectionName(c.id, lang), disabled: !filledSections.has(c.id) }))}
-        onClose={closeCategories} onChange={(section) => { jumpTo(section); closeCategories(); }} />
+        onClose={closeCategories} onChange={(section) => { jumpTo(section); setPickedCategory(sectionName(section, lang)); closeCategories(); }} />
+      <div className="sr-only" aria-live="polite">{pickedCategory}</div>
       <div className="sr-only" aria-live="polite">{search ? t.searchResults(dishes.length) : ""}</div>
       {detail ? <DishDetailSheet key={`${detail.id}-${diet}`} dish={detail} diet={diet} onClose={() => setDetail(null)} /> : null}
       <CartSheet open={open} onClose={() => setOpen(false)} />

@@ -76,9 +76,13 @@ test("older stored menus drop retired copy keys and gain Arabic delivery areas",
     raw.copy[lang].inOrderOther = "old";
   }
   delete raw.settings.areasAr;
+  delete raw.copy.en.categoryHint;
+  delete raw.copy.ar.categoryHint;
   const parsed = menuSchema.parse(normalizeStoredMenu(raw));
   assert.equal("inOrderZero" in parsed.copy.en, false);
   assert.equal("inOrderOther" in parsed.copy.ar, false);
+  assert.equal(parsed.copy.en.categoryHint, "Tap here for categories");
+  assert.equal(parsed.copy.ar.categoryHint, "اضغط هنا للتصنيفات");
   assert.deepEqual(parsed.settings.areasAr, [
     "داون تاون",
     "أسباير",
