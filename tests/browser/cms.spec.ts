@@ -151,8 +151,13 @@ test("authenticated CMS CRUD, persistence, uploads and public integration", asyn
     pub = await (await request.get("/api/menu")).json();
     expect(pub.menu.categories[0].id).toBe(cat.id);
     await page.goto("/");
-    await page.getByRole("combobox", { name: "Category", exact: true }).click();
-    await page.getByRole("option", { name: "Test category" }).click();
+    const categoryMenu = page.getByRole("button", { name: /^Category:/ });
+    await categoryMenu.click();
+    const categories = page.getByRole("dialog", { name: "Menu" });
+    await categories.getByRole("button", { name: "Test category" }).click();
+    await expect(categories).toHaveCount(0);
+    await expect(categoryMenu).toHaveAccessibleName("Category: Test category");
+    await expect(page.locator("#dish-" + dish.id)).toHaveClass(/is-active/);
     await page
       .locator("#dish-" + dish.id)
       .getByRole("button")
@@ -693,10 +698,11 @@ test("search opens from its button toward the logo and closes back to it", async
   await expect(toggle).toHaveAttribute("aria-label", "Clear search");
   const input = page.locator("#menu-search");
   await expect(input).toBeFocused();
-  const logo = (await page.locator(".wordmark-img").boundingBox())!;
+  const logo = page.locator(".brand-navigation > .wordmark-img");
+  const logoBox = (await logo.boundingBox())!;
   const field = (await page.locator(".header-search-field").boundingBox())!;
-  expect(field.x).toBeLessThanOrEqual(logo.x + 1);
-  await expect(page.locator(".wordmark-img")).toHaveCSS("opacity", "0");
+  expect(field.x).toBeLessThanOrEqual(logoBox.x + 1);
+  await expect(logo).toHaveCSS("opacity", "0");
   expect(
     await others.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().x)),
   ).toEqual(before);
@@ -788,48 +794,33 @@ test("search is closed from the first frame and its first open starts on the nex
   }
 });
 
-test("the category picker is a listbox that follows the feed", async ({
-  page,
-}) => {
+test("the header category menu follows the feed", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  const picker = page.getByRole("combobox", { name: "Category", exact: true });
-  const options = page.getByRole("option");
-  await expect(picker).toHaveText("New");
-  await expect(picker).toHaveAttribute("aria-expanded", "false");
-  await picker.click();
-  await expect(page.getByRole("listbox")).toBeVisible();
-  await expect(options.first()).toHaveAttribute("aria-selected", "true");
-  await options.filter({ hasText: "Poke" }).click();
-  await expect(picker).toHaveAttribute("aria-expanded", "false");
-  await expect(picker).toBeFocused();
-  await expect(picker).toHaveText("Poke");
+  const menuButton = page.getByRole("button", { name: /^Category:/ });
+  await expect(menuButton).toHaveAccessibleName("Category: New");
+  await expect(menuButton).toHaveAttribute("aria-expanded", "false");
+  await menuButton.click();
+  const categories = page.getByRole("dialog", { name: "Menu" });
+  await expect(categories).toBeVisible();
+  await expect(categories.getByRole("button", { name: "New" })).toHaveAttribute("aria-current", "true");
+  await categories.getByRole("button", { name: "Poke" }).click();
+  await expect(categories).toHaveCount(0);
+  await expect(menuButton).toBeFocused();
+  await expect(menuButton).toHaveAccessibleName("Category: Poke");
   const feed = page.locator(".feed");
   const firstPoke = await page.evaluate(async () => {
     const { menu } = await (await fetch("/api/menu")).json();
     return menu.dishes.find((d: { section: string }) => d.section === "Poke bowls").id;
   });
   await expect(page.locator(`#dish-${firstPoke}`)).toBeInViewport();
-  // Keyboard: arrows move the active option, Escape keeps the value.
-  await page.keyboard.press("ArrowDown");
-  await expect(picker).toHaveAttribute("aria-expanded", "true");
-  const active = () => picker.getAttribute("aria-activedescendant");
-  const poke = await options.filter({ hasText: "Poke" }).getAttribute("id");
-  expect(await active()).toBe(poke);
-  await page.keyboard.press("End");
-  expect(await active()).toBe(await options.last().getAttribute("id"));
-  await page.keyboard.press("Home");
-  expect(await active()).toBe(await options.first().getAttribute("id"));
+  await menuButton.click();
   await page.keyboard.press("Escape");
-  await expect(picker).toHaveAttribute("aria-expanded", "false");
-  await expect(picker).toHaveText("Poke");
-  await page.keyboard.press("ArrowDown");
-  await page.keyboard.press("ArrowDown");
-  await page.keyboard.press("Enter");
-  await expect(picker).toHaveText("Deal box");
-  // Scrolling the feed moves the picker with it.
+  await expect(categories).toHaveCount(0);
+  await expect(menuButton).toBeFocused();
+  await expect(menuButton).toHaveAccessibleName("Category: Poke");
   await feed.evaluate((f) => f.scrollBy(0, -f.clientHeight));
-  await expect(picker).toHaveText("Poke");
+  await expect(menuButton).not.toHaveAccessibleName("Category: Poke");
 });
 
 test("every admin write leaves an activity row and failed writes leave none", async ({

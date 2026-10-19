@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { PickerOption } from "./CategoryPicker";
+
+export type PickerOption = { id: string; label: string; disabled: boolean };
 
 export function CategoryOverlay({ open, title, label, closeLabel, logo, brand, options, value, onChange, onClose }: {
   open: boolean;

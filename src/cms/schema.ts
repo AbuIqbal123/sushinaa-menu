@@ -245,6 +245,7 @@ const COPY_KEYS = [
   "backToMenu",
   "filters",
   "category",
+  "categoryHint",
   "searchMenu",
   "clearSearch",
   "searchResultsOne",
@@ -330,6 +331,10 @@ const copySchema = z
   .object(Object.fromEntries(COPY_KEYS.map((k) => [k, text])))
   .strict();
 const RETIRED_COPY_KEYS = ["inOrderZero", "inOrderOne", "inOrderOther"];
+const DEFAULT_CATEGORY_HINT: Record<string, string> = {
+  en: "Tap here for categories",
+  ar: "اضغط هنا للتصنيفات",
+};
 // Menus saved before Arabic delivery areas existed. Same list as the shipped menu.
 const SHIPPED_AREAS_AR = ["داون تاون", "أسباير", "الخور", "سيلين", "نعيجة"];
 
@@ -341,10 +346,12 @@ export function normalizeStoredMenu(raw: unknown): unknown {
     settings?: Record<string, unknown>;
   };
   if (menu.copy && typeof menu.copy === "object") {
-    for (const block of Object.values(menu.copy)) {
+    for (const [lang, block] of Object.entries(menu.copy)) {
       if (!block || typeof block !== "object") continue;
       const fields = block as Record<string, unknown>;
       for (const key of RETIRED_COPY_KEYS) delete fields[key];
+      if (typeof fields.categoryHint !== "string")
+        fields.categoryHint = DEFAULT_CATEGORY_HINT[lang] ?? DEFAULT_CATEGORY_HINT.en;
     }
   }
   if (
