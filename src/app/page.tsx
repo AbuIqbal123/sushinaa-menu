@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { getMenu } from "@/cms/repository";
 import { MenuProvider } from "@/cms/context";
 import { publicMenu } from "@/cms/schema";
@@ -9,6 +10,7 @@ export function generateMetadata() {
 }
 
 export default async function Home() {
+  if (process.env.NEXT_PUBLIC_ORDERING_DEMO_MODE === 'true') redirect('/order');
   const { menu } = await getMenu();
   return (
     <div className="app-lock">

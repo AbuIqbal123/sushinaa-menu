@@ -22,6 +22,7 @@ export function OrderingExperience({ initialNow }: { initialNow: string }) {
 function Experience({ initialNow }: { initialNow: string }) {
   const { lang, t } = useLocale();
   const demo = process.env.NEXT_PUBLIC_ORDERING_DEMO_MODE === 'true';
+  const viewMenuHref = demo ? 'https://sushinaa-menu.vercel.app/' : '/';
   const text = (en: string, ar: string) => lang === 'ar' ? ar : en;
   const menu = useMenu();
   const router = useRouter();
@@ -131,7 +132,7 @@ function Experience({ initialNow }: { initialNow: string }) {
   const stepNumber = step === 'basket' ? 1 : step === 'details' ? 2 : 3;
   return <div className="ordering-page" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
     <div className="ordering-content" inert={Boolean(editing)}>
-      <header className="ordering-header"><Link href="/" aria-label={text('View-only menu', 'قائمة التصفح')}><Image src={menu.settings.logo} width={59} height={55} alt={t.brand} unoptimized /></Link><span className="collection-label"><CarIcon />{text('Car collection', 'استلام عند السيارة')}</span><LangButton /></header>
+      <header className="ordering-header"><Link href={viewMenuHref} aria-label={text('View-only menu', 'قائمة التصفح')}><Image src={menu.settings.logo} width={59} height={55} alt={t.brand} unoptimized /></Link><span className="collection-label"><CarIcon />{text('Car collection', 'استلام عند السيارة')}</span><LangButton /></header>
       {step === 'branches' ? <>
         <main id="main" className="branch-page">
           <div className="branch-intro"><span className="eyebrow">{text('SUSHINAA · MADE FOR YOU', 'سوشينا · على ذوقك')}</span><h1 ref={heading} tabIndex={-1}>{title}</h1><p>{text('Choose where you’ll collect. We’ll bring your order to your car.', 'اختر فرع الاستلام. نُحضر طلبك إلى سيارتك.')}</p></div>
@@ -142,7 +143,7 @@ function Experience({ initialNow }: { initialNow: string }) {
           </div>
           <p className="branch-timezone">{text('Opening hours are in Qatar time.', 'ساعات العمل بتوقيت قطر.')}</p>
           <div className="collection-footer-art"><span>巻</span><p>{text('A little ritual.\nA lot of flavour.', 'لحظات بسيطة.\nنكهات استثنائية.')}</p><span className="footer-rule" /></div>
-          <Link className="view-menu-link" href="/">{text('Just exploring? View the menu', 'تستكشف فقط؟ تصفح القائمة')}</Link>
+          <Link className="view-menu-link" href={viewMenuHref}>{text('Just exploring? View the menu', 'تستكشف فقط؟ تصفح القائمة')}</Link>
         </main>
       </> : <>
         <div className="checkout-navigation"><button type="button" className="text-action" disabled={busy} onClick={() => go(step === 'basket' ? 'menu' : step === 'details' ? 'basket' : step === 'review' ? 'details' : 'review')}><span className="back-arrow" aria-hidden="true">←</span> {text('Back', 'رجوع')}</button><span>{text('YOUR COLLECTION', 'طلب الاستلام')}</span></div>
