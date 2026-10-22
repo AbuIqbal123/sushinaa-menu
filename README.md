@@ -39,15 +39,21 @@ Saves are published immediately. Refresh the public menu to load the newest cont
 
 ## Persistence and deployment
 
-Development defaults to the SQLite file `data/menu.db`. Back up that database (including its media and sessions), and keep it on a persistent volume when self-hosting. Do not commit it.
+Read [docs/environments.md](docs/environments.md) before changing a database, a Vercel project, or a deployment. Production and dev are separate.
 
-For **Vercel**, set a remote libSQL database before deployment:
+| Site | URL | Database |
+| --- | --- | --- |
+| Production | https://sushinaa-menu.vercel.app | Live Turso database. Do not write to it, repoint it, redeploy it, or migrate it. |
+| Dev | https://test-dev-abu-iqbal-projects.vercel.app | Dev Turso database, a copy of the menu and photos. |
+| Local | http://localhost:3005 | `data/menu.db` unless you point `CMS_DATABASE_URL` at the dev database. |
 
-- `CMS_DATABASE_URL`: the `libsql://….turso.io` address
-- `CMS_DATABASE_AUTH_TOKEN`: the database token
-- `CMS_ADMIN_USERNAME` and `CMS_ADMIN_PASSWORD`: your admin sign-in (a long, unique password)
+Do not push or merge to `main`. Feature work opens a pull request into `dev`. Abu releases `dev` to `main`.
 
-Use those same database environment variables locally and run `npm run cms:seed` once before deploying. The CLI reads `.env.local`/`.env` like Next.js. Do not put database tokens in `NEXT_PUBLIC_*` variables. The application deliberately rejects a local-file database on Vercel, where filesystem changes are not durable. No cloud database has been provisioned by this branch.
+Local development defaults to the SQLite file `data/menu.db`. Do not commit it. The app reads `CMS_DATABASE_URL` and `CMS_DATABASE_AUTH_TOKEN`. Sign-in stays disabled until both `CMS_ADMIN_USERNAME` and `CMS_ADMIN_PASSWORD` are set, and a deployed dev site must not reuse the production password. Do not put database tokens in `NEXT_PUBLIC_*` variables. The application rejects a local-file database on Vercel.
+
+`CMS_ENV_GUARD=enforce` refuses to start when a deployment is pointed at the wrong database. `report` only logs. Dev is on `enforce`. The running production site has not been rebuilt with that yet. Outside production on the `sushinaa-menu` project, the site sends `noindex`.
+
+`npm run db:copy-to-dev` refreshes the dev database from a read-only view of `menu` and `media` only. `npm run db:migrate` is for disposable databases. Do not run it against Turso.
 
 Uploaded JPEG/PNG/WebP photos (up to 4 MB, under Vercel's request limit) are decoded, resized and stored as WebP in the database. Their content-addressed media URLs are immutable. Existing bundled photos remain in `public/`; uploads do not depend on an ephemeral deployment filesystem. Removing a photo association keeps the underlying upload available for other items.
 
