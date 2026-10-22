@@ -6,7 +6,7 @@ import { publicMenu } from "@/cms/schema";
 import { MenuFeed } from "@/components/menu/MenuFeed";
 import { pageMeta } from "@/lib/page-meta";
 
-type Props = PageProps<"/[branch]">;
+type Props = { params: Promise<{ branch: string }> };
 
 export const dynamicParams = false;
 
