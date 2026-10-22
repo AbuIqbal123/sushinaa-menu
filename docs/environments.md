@@ -12,7 +12,7 @@ Sushinaa has two databases and two sites. Production is the live restaurant menu
 
 "Preview" is a Vercel word for a deployment that is not the production deployment of a project, such as a pull request. It is not the dev site. Do not treat a `sushinaa-menu` preview as a safe place to edit the menu. The dev site is `test-dev`.
 
-The public dev URL is a deploy of `dev` at the split (`99b1499`). A later push to `dev` does not update https://test-dev-abu-iqbal-projects.vercel.app by itself. Redeploy the `test-dev` project to refresh it. `https://test-dev.vercel.app` is not ours.
+https://test-dev-abu-iqbal-projects.vercel.app follows the `dev` branch. A push to `dev` updates that site. It does not update production. `https://test-dev.vercel.app` is not ours. Other branches do not deploy the `test-dev` project.
 
 ## Databases
 
