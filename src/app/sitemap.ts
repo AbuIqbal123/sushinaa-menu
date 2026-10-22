@@ -1,3 +1,4 @@
+import { BRANCHES } from "@/branches/branches";
 import { getMenu } from "@/cms/repository";
 import type { MetadataRoute } from "next";
 
@@ -9,6 +10,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   return [
     { url: SITE.url, lastModified: now, changeFrequency: "weekly", priority: 1 },
+    ...BRANCHES.map((b) => ({
+      url: `${SITE.url}/${b.slug}`, lastModified: now, changeFrequency: "weekly" as const, priority: 0.9,
+    })),
     { url: `${SITE.url}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE.url}/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
     { url: `${SITE.url}/terms`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
