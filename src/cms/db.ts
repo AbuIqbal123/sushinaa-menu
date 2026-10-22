@@ -15,8 +15,10 @@ export const db = createClient({
 });
 let ready: Promise<unknown> | undefined;
 export function initDb() {
-  return (ready ??= db
-    .batch(
+  return (ready ??= (async () => {
+    const { assertDatabaseAllowed } = await import("./env-guard");
+    await assertDatabaseAllowed(db);
+    await db.batch(
       [
         `CREATE TABLE IF NOT EXISTS menu (id INTEGER PRIMARY KEY CHECK(id=1), revision INTEGER NOT NULL, content TEXT NOT NULL)`,
         `CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, expires INTEGER NOT NULL)`,
@@ -25,9 +27,9 @@ export function initDb() {
         ...AUDIT_SCHEMA,
       ],
       "write",
-    )
-    .catch((e) => {
-      ready = undefined;
-      throw e;
-    }));
+    );
+  })().catch((e) => {
+    ready = undefined;
+    throw e;
+  }));
 }

@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { isProductionDeployment } from "./src/lib/deploy-env";
 
 const isDev = process.env.NODE_ENV !== "production";
 
@@ -18,6 +19,9 @@ const csp = [
 ].join("; ");
 
 const securityHeaders = [
+  ...(isProductionDeployment()
+    ? []
+    : [{ key: "X-Robots-Tag", value: "noindex, nofollow" }]),
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
