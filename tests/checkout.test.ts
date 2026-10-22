@@ -38,13 +38,15 @@ test('every day and branch changes status at exactly its configured boundaries',
     assert.equal(branchStatus(b, new Date(midnight + end * 60000)).open, false);
   }
 });
-const customer = { name: 'علي O’Neil', phone: '+974 ٥٥٥٥ ١٢٣٤', plate: '٠٠١٢٣ أ', colour: '', car: '', instructions: '' };
-test('normalises Arabic and Persian digits without losing leading plate zeroes', () => {
+const customer = { name: 'علي O’Neil', phone: '+974 ٥٥٥٥ ١٢٣٤', plate: '٠٠١٢٣', colour: '', car: '', instructions: '' };
+test('normalises Arabic and Persian digits and requires a numeric plate', () => {
   const parsed = customerSchema.parse(customer);
-  assert.equal(parsed.phone, '97455551234'); assert.equal(parsed.plate, '00123 أ');
+  assert.equal(parsed.phone, '97455551234'); assert.equal(parsed.plate, '00123');
   assert.equal(customerSchema.parse({ ...customer, phone: '۰۰۹۷۴۵۵۵۵۱۲۳۴' }).phone, '97455551234');
   assert.equal(customerSchema.safeParse({ ...customer, phone: '111' }).success, false);
   assert.equal(customerSchema.safeParse({ ...customer, plate: '<script>' }).success, false);
+  assert.equal(customerSchema.safeParse({ ...customer, plate: '123 A' }).success, false);
+  assert.equal(customerSchema.safeParse({ ...customer, plate: '123-45' }).success, false);
 });
 const roll = publicMenu(menu).dishes.find(d => d.kind.type === 'roll' && d.kind.proteins.some(p => p.prices[4] && p.prices[8]))!;
 assert.equal(roll.kind.type, 'roll');

@@ -109,11 +109,11 @@ export function BranchMap({ lang, now, onChoose }: Props) {
 
   return <div className="branch-map-experience">
     <div className="branch-map-frame">
-      <div ref={mapNode} className="branch-map-canvas" role="region" aria-label={text('Map of Sushinaa branch areas in Qatar. Tap a marker to explore.', 'خريطة مناطق فروع سوشينا في قطر. اضغط على علامة لاستكشاف الفرع.')} />
+      <div ref={mapNode} className="branch-map-canvas" role="region" aria-label={text('Map of Sushinaa branches in Qatar. Tap a marker to explore.', 'خريطة فروع سوشينا في قطر. اضغط على علامة لاستكشاف الفرع.')} />
       {mapFailed && <div className="branch-map-fallback">{text('Map unavailable. Choose a branch below.', 'الخريطة غير متاحة. اختر فرعاً أدناه.')}</div>}
       <div className="branch-map-topline" aria-hidden="true">DOHA <span>↗</span> AL-KHOR</div>
       {active && <button type="button" className="branch-map-overview" onClick={overview}>{text('↗ All branches', '↗ كل الفروع')}</button>}
-      <div className="branch-map-footnote">{text('Approximate branch areas · drag, tilt & zoom', 'مناطق الفروع تقريبية · حرّك وكبّر الخريطة')}</div>
+      <div className="branch-map-footnote">{text('Drag, tilt & zoom', 'حرّك وأدر وكبّر الخريطة')}</div>
     </div>
     <div className="branch-map-choices" role="group" aria-label={text('Branches', 'الفروع')}>
       {branches.map((branch, index) => <button key={branch.id} type="button" className={`branch-map-choice${active === branch.id ? ' active' : ''}`} onClick={() => setActive(branch.id)} aria-pressed={active === branch.id}>
