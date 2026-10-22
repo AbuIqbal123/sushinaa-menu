@@ -21,6 +21,10 @@ export function MockSadadGateway({ amount, lang, onBack, receipt }: {
     return () => window.clearTimeout(timer);
   }, [phase]);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [phase]);
+
   return <div className="sadad-demo" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
     {phase !== 'confirmed' ? <>
       <div className="sadad-demo-top"><button type="button" onClick={onBack} disabled={phase === 'processing'} aria-label={t('Back to order', 'العودة إلى الطلب')}>←</button><span className="sadad-wordmark">SADAD<span className="sadad-mark">●</span></span><span className="sadad-demo-badge">{t('DEMO', 'تجريبي')}</span></div>
