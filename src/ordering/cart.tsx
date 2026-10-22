@@ -31,7 +31,7 @@ function emptyStored(): StoredCart {
   return { lines: {} };
 }
 
-function readStored(raw: string, DISH_BY_ID: Record<string, Dish>): StoredCart {
+function readStored(raw: string, DISH_BY_ID: Record<string, Dish>, keepUnavailable = false): StoredCart {
   const parsed = JSON.parse(raw) as unknown;
   if (!parsed || typeof parsed !== "object") return emptyStored();
   const record = parsed as { lines?: unknown; comment?: unknown };
@@ -44,7 +44,7 @@ function readStored(raw: string, DISH_BY_ID: Record<string, Dish>): StoredCart {
     if (key === "lines" || key === "comment") continue;
     if (typeof qty !== "number" || !Number.isInteger(qty) || qty <= 0) continue;
     const { id } = parseKey(key);
-    if (!DISH_BY_ID[id]) continue;
+    if (!DISH_BY_ID[id] && !keepUnavailable) continue;
     lines[key] = qty;
   }
   return { lines };
@@ -67,9 +67,12 @@ type CartValue = {
   inc: (key: string) => void;
   dec: (key: string) => void;
   clear: () => void;
+  replace: (key: string, entries: { sel: Selection; note: string }[]) => void;
   itemCount: number;
   lines: CartLine[];
   totalQar: number;
+  unavailableCount: number;
+  discardUnavailable: () => void;
 };
 
 const CartContext = createContext<CartValue | null>(null);
@@ -92,7 +95,7 @@ function parseKey(key: string): { id: string; sel: Selection; note: string } {
   return { id: key.slice(0, i), sel: parseSelection(key.slice(i + 2)), note };
 }
 
-export function CartProvider({ children }: { children: ReactNode }) {
+export function CartProvider({ children, storageKey = STORAGE_KEY }: { children: ReactNode; storageKey?: string }) {
   const { lang, t } = useLocale();
   const { dishes: DISHES } = useMenu();
   const DISH_BY_ID = useMemo(() => Object.fromEntries(DISHES.map((d) => [d.id, d])), [DISHES]);
@@ -103,23 +106,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(storageKey);
       if (raw) {
-        const stored = readStored(raw, DISH_BY_ID);
+        const stored = readStored(raw, DISH_BY_ID, storageKey !== STORAGE_KEY);
         setQtys(stored.lines);
       }
     } catch {
       /* ignore */
     }
     setReady(true);
-  }, [DISH_BY_ID]);
+  }, [DISH_BY_ID, storageKey]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (!ready) return;
     const payload: StoredCart = { lines: qtys };
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); } catch { /* storage may be unavailable */ }
-  }, [qtys, ready]);
+    try { localStorage.setItem(storageKey, JSON.stringify(payload)); } catch { /* storage may be unavailable */ }
+  }, [qtys, ready, storageKey]);
 
   const add = useCallback((id: string, sel: Selection, count = 1, note = "") => {
     const n = Math.max(1, Math.floor(count));
@@ -140,6 +143,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return next;
       }
       return { ...prev, [key]: current - 1 };
+    });
+  }, []);
+
+  const replace = useCallback((key: string, entries: { sel: Selection; note: string }[]) => {
+    setQtys(prev => {
+      const next = { ...prev };
+      delete next[key];
+      const { id } = parseKey(key);
+      for (const entry of entries) {
+        const newKey = lineKey(id, entry.sel, entry.note.trim().slice(0, 400));
+        next[newKey] = (next[newKey] ?? 0) + 1;
+      }
+      return next;
     });
   }, []);
 
@@ -189,9 +205,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [lines],
   );
 
+  const unavailableKeys = useMemo(() => Object.keys(qtys).filter(key => {
+    const { id, sel } = parseKey(key);
+    return !DISH_BY_ID[id] || !isSelectionComplete(DISH_BY_ID[id], sel);
+  }), [qtys, DISH_BY_ID]);
+  const unavailableCount = unavailableKeys.reduce((sum, key) => sum + qtys[key], 0);
+  const discardUnavailable = useCallback(() => setQtys(prev => {
+    const next = { ...prev };
+    unavailableKeys.forEach(key => delete next[key]);
+    return next;
+  }), [unavailableKeys]);
+
   const value = useMemo(
-    () => ({ add, inc, dec, clear, itemCount, lines, totalQar }),
-    [add, inc, dec, clear, itemCount, lines, totalQar],
+    () => ({ add, inc, dec, clear, replace, itemCount, lines, totalQar, unavailableCount, discardUnavailable }),
+    [add, inc, dec, clear, replace, itemCount, lines, totalQar, unavailableCount, discardUnavailable],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
