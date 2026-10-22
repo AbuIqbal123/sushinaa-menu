@@ -12,6 +12,7 @@ import { branches, branchStatus, timeLabel, type BranchId } from '@/ordering/che
 import { customerSchema, type Customer } from '@/ordering/checkout/validation';
 import { imageFor, photoPosition } from '@/ordering/price';
 import type { PaymentStatus } from '@/ordering/checkout/payment';
+import { MockSadadGateway } from './MockSadadGateway';
 
 const emptyCustomer: Customer = { name: '', phone: '', plate: '', colour: '', car: '', instructions: '' };
 type Step = 'branches' | 'menu' | 'basket' | 'details' | 'review' | 'payment';
@@ -109,10 +110,10 @@ function Experience({ initialNow }: { initialNow: string }) {
     <span className="collection-change">{text('Change', 'تغيير')}</span>
   </button>;
   if (step === 'menu' && branch) return <div className="app-lock"><MenuFeed onReview={() => go('basket')} branchBar={branchControl} /></div>;
-  const title = step === 'branches' ? text('Good food.\nYour nearest branch.', 'مذاق تحبّه.\nمن أقرب فرع.')
-    : step === 'basket' ? text('Your favourites,\nyour way.', 'أصنافك المفضلة،\nعلى ذوقك.')
-    : step === 'details' ? text('We’ll find you\nat your car.', 'نصل إليك\nعند سيارتك.')
-    : step === 'review' ? text('One last look.', 'مراجعة أخيرة.') : text('Your payment', 'الدفع');
+  const title = step === 'branches' ? text('Choose a branch', 'اختر الفرع')
+    : step === 'basket' ? text('Your basket', 'سلتك')
+    : step === 'details' ? text('Collection details', 'بيانات الاستلام')
+    : step === 'review' ? text('Review your order', 'راجع طلبك') : text('Payment', 'الدفع');
   const count = cart.itemCount;
   const closedNotice = status && !status.open ? <div className="checkout-notice" role="status"><strong>{text('This branch is currently closed', 'هذا الفرع مغلق حالياً')}</strong><p>{text('Browse and save your favourites, or choose an open branch to continue.', 'تصفح واحفظ أصنافك المفضلة، أو اختر فرعاً مفتوحاً للمتابعة.')}</p><button type="button" className="text-action" onClick={changeBranch}>{text('Choose another branch', 'اختر فرعاً آخر')}</button></div> : null;
   const total = <div className="checkout-total"><span>{text('Total', 'الإجمالي')}</span><strong>{money(Math.round(cart.totalQar * 100))}</strong></div>;
@@ -129,54 +130,49 @@ function Experience({ initialNow }: { initialNow: string }) {
       </li>;
     })}</ul>;
   }
-  const stepNumber = step === 'basket' ? 1 : step === 'details' ? 2 : 3;
+  const receiptBody = (editable: boolean) => <>
+    <section className="review-details"><div className="review-section-title"><h2>{text('At your car', 'عند سيارتك')}</h2>{editable && <button type="button" className="text-action" onClick={() => go('details')}>{text('Edit', 'تعديل')}</button>}</div><strong>{customer.name}</strong><p dir="ltr" className="review-phone">+{customer.phone}</p><div className="plate-card"><span>{text('QATAR', 'قطر')}</span><strong dir="auto">{customer.plate}</strong></div><p>{[customer.colour, customer.car].filter(Boolean).join(' · ')}</p>{customer.instructions && <p className="checkout-note">{customer.instructions}</p>}</section>
+    <div className="review-section-title"><h2>{text('Your order', 'طلبك')}</h2>{editable && <button type="button" className="text-action" onClick={() => go('basket')}>{text('Edit', 'تعديل')}</button>}</div>{basketLines(false)}{total}
+  </>;
+  if (step === 'payment' && receipt && demo) return <MockSadadGateway amount={money(receipt.totalMinor)} lang={lang} onBack={() => go('review')} receipt={receiptBody(false)} />;
   return <div className="ordering-page" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
     <div className="ordering-content" inert={Boolean(editing)}>
-      <header className="ordering-header"><Link href={viewMenuHref} aria-label={text('View-only menu', 'قائمة التصفح')}><Image src={menu.settings.logo} width={59} height={55} alt={t.brand} unoptimized /></Link><span className="collection-label"><CarIcon />{text('Car collection', 'استلام عند السيارة')}</span><LangButton /></header>
+      <header className="ordering-header"><Link href={viewMenuHref} aria-label={text('View-only menu', 'قائمة التصفح')}><Image src={menu.settings.logo} width={59} height={55} alt={t.brand} unoptimized /></Link><LangButton /></header>
       {step === 'branches' ? <>
         <main id="main" className="branch-page">
-          <div className="branch-intro"><span className="eyebrow">{text('SUSHINAA · MADE FOR YOU', 'سوشينا · على ذوقك')}</span><h1 ref={heading} tabIndex={-1}>{title}</h1><p>{text('Choose where you’ll collect. We’ll bring your order to your car.', 'اختر فرع الاستلام. نُحضر طلبك إلى سيارتك.')}</p></div>
+          <div className="branch-intro"><h1 ref={heading} tabIndex={-1}>{title}</h1><p>{text('We’ll bring your order to your car.', 'نُحضر طلبك إلى سيارتك.')}</p></div>
           <div className="branch-list" aria-label={text('Choose your branch', 'اختر فرعك')}>
-            {branches.map((b, i) => { const s = branchStatus(b, now); return <button type="button" className={`branch-card${branchId === b.id ? ' selected' : ''}`} key={b.id} onClick={() => choose(b.id)}>
-              <span className="branch-index">0{i + 1}</span><span className="branch-card-content"><span className="branch-card-heading"><strong>{text(b.name, b.nameAr)}</strong><span className={`branch-status${s.open ? ' is-open' : ''}`}><i />{s.open ? text('Open', 'مفتوح') : text('Closed', 'مغلق')}</span></span><span className="branch-hours" dir="ltr"><bdi dir="ltr">{timeLabel(s.hours[0], lang)}</bdi> – <bdi dir="ltr">{timeLabel(s.hours[1], lang)}</bdi></span><span className="branch-card-detail">{s.open ? text('Collection available', 'الاستلام متاح') : text('Browse the menu', 'تصفح القائمة')}{s.hours[1] > 1440 ? text(' · closes after midnight', ' · يغلق بعد منتصف الليل') : ''}</span></span><span className="branch-arrow" aria-hidden="true">↗</span>
+            {branches.map(b => { const s = branchStatus(b, now); return <button type="button" className={`branch-card${branchId === b.id ? ' selected' : ''}`} key={b.id} onClick={() => choose(b.id)}>
+              <span className="branch-card-content"><span className="branch-card-heading"><strong>{text(b.name, b.nameAr)}</strong><span className={`branch-status${s.open ? ' is-open' : ''}`}><i />{s.open ? text('Open', 'مفتوح') : text('Closed', 'مغلق')}</span></span><span className="branch-hours" dir="ltr"><bdi dir="ltr">{timeLabel(s.hours[0], lang)}</bdi> – <bdi dir="ltr">{timeLabel(s.hours[1], lang)}</bdi></span></span><span className="branch-arrow" aria-hidden="true">↗</span>
             </button>; })}
           </div>
-          <p className="branch-timezone">{text('Opening hours are in Qatar time.', 'ساعات العمل بتوقيت قطر.')}</p>
-          <div className="collection-footer-art"><span>巻</span><p>{text('A little ritual.\nA lot of flavour.', 'لحظات بسيطة.\nنكهات استثنائية.')}</p><span className="footer-rule" /></div>
           <Link className="view-menu-link" href={viewMenuHref}>{text('Just exploring? View the menu', 'تستكشف فقط؟ تصفح القائمة')}</Link>
         </main>
       </> : <>
-        <div className="checkout-navigation"><button type="button" className="text-action" disabled={busy} onClick={() => go(step === 'basket' ? 'menu' : step === 'details' ? 'basket' : step === 'review' ? 'details' : 'review')}><span className="back-arrow" aria-hidden="true">←</span> {text('Back', 'رجوع')}</button><span>{text('YOUR COLLECTION', 'طلب الاستلام')}</span></div>
+        <div className="checkout-navigation"><button type="button" className="text-action" disabled={busy} onClick={() => go(step === 'basket' ? 'menu' : step === 'details' ? 'basket' : step === 'review' ? 'details' : 'review')}><span className="back-arrow" aria-hidden="true">←</span> {text('Back', 'رجوع')}</button></div>
         <main id="main" className="checkout-main">
-          <ol className="checkout-progress" aria-label={text('Checkout steps', 'خطوات الطلب')}>{[text('Basket', 'السلة'), text('Details', 'البيانات'), text('Review', 'المراجعة')].map((label, i) => <li key={label} className={stepNumber >= i + 1 ? 'active' : ''} aria-current={stepNumber === i + 1 ? 'step' : undefined}><span>{i + 1}</span>{label}</li>)}</ol>
           <h1 ref={heading} tabIndex={-1}>{title}</h1>
           {branchControl}
           {step !== 'payment' && closedNotice}
           {cart.unavailableCount > 0 && <div className="checkout-notice" role="alert"><strong>{text('Your basket needs an update', 'تحتاج سلتك إلى تحديث')}</strong><p>{text(`${cart.unavailableCount} serving(s) or their choices are no longer available. Remove them before continuing.`, `${cart.unavailableCount} حصة أو خياراتها لم تعد متوفرة. احذفها قبل المتابعة.`)}</p><button type="button" className="text-action" onClick={cart.discardUnavailable}>{text('Remove unavailable selections', 'حذف الخيارات غير المتوفرة')}</button></div>}
           {step === 'basket' && <>
-            {count ? <><div className="section-caption">{text(`${count} ${count === 1 ? "serving" : "servings"} · individually yours`, `${count} حصص · حسب رغبتك`)}</div>{basketLines(true)}<button type="button" className="text-action add-more" onClick={() => go('menu')}>+ {text('Add something else', 'أضف صنفاً آخر')}</button>{total}<button type="button" className="checkout-primary" disabled={!status?.open || cart.unavailableCount > 0} onClick={() => go('details')}>{text('Collection details', 'بيانات الاستلام')}<Forward /></button></> : <div className="empty-basket"><CarIcon /><h2>{text('Something delicious awaits.', 'أصناف لذيذة بانتظارك.')}</h2><p>{text('Choose your favourites and make each serving your own.', 'اختر أصنافك المفضلة وخصص كل حصة على ذوقك.')}</p><button type="button" className="checkout-primary" onClick={() => go('menu')}>{text('Explore the menu', 'تصفح القائمة')}<Forward /></button></div>}
+            {count ? <>{basketLines(true)}<button type="button" className="text-action add-more" onClick={() => go('menu')}>+ {text('Add item', 'أضف صنفاً')}</button>{total}<button type="button" className="checkout-primary" disabled={!status?.open || cart.unavailableCount > 0} onClick={() => go('details')}>{text('Continue', 'متابعة')}<Forward /></button></> : <div className="empty-basket"><CarIcon /><h2>{text('Your basket is empty', 'سلتك فارغة')}</h2><button type="button" className="checkout-primary" onClick={() => go('menu')}>{text('Browse menu', 'تصفح القائمة')}<Forward /></button></div>}
           </>}
           {step === 'details' && <form onSubmit={validateDetails} noValidate>
-            <p className="checkout-intro">{text('A few details so our team can recognise your car and contact you about collection.', 'بعض البيانات لمساعدة فريقنا في التعرف على سيارتك والتواصل معك بشأن الاستلام.')}</p>
-            <div className="checkout-fields">{(['name', 'phone', 'plate', 'colour', 'car', 'instructions'] as const).map(key => {
+            <div className="checkout-fields">{(['name', 'phone', 'plate'] as const).map(key => {
               const label = { name: text('Your name', 'اسمك'), phone: text('Mobile number', 'رقم الجوال'), plate: text('Qatar plate number', 'رقم اللوحة القطرية'), colour: text('Car colour', 'لون السيارة'), car: text('Make / model', 'نوع / طراز السيارة'), instructions: text('Collection instructions', 'تعليمات الاستلام') }[key];
-              const required = ['name', 'phone', 'plate'].includes(key);
-              const hint = key === 'phone' ? text('Qatar mobile · +974 and 8 digits', 'جوال قطري · ‎+974 و٨ أرقام') : key === 'plate' ? text('As shown on your plate, including any letters.', 'كما يظهر على اللوحة، بما في ذلك الحروف إن وجدت.') : '';
               const invalid = errors.includes(key);
-              return <label key={key} className={`checkout-field field-${key}`} htmlFor={`collection-${key}`}><span>{label}{!required && <small>{text('Optional', 'اختياري')}</small>}</span>
-                {key === 'instructions' ? <textarea id={`collection-${key}`} value={customer[key]} maxLength={400} rows={3} onChange={e => setCustomer({ ...customer, [key]: e.target.value })} /> : <input id={`collection-${key}`} type={key === 'phone' ? 'tel' : 'text'} inputMode={key === 'phone' ? 'tel' : 'text'} autoComplete={key === 'name' ? 'name' : key === 'phone' ? 'tel' : 'off'} dir={key === 'phone' ? 'ltr' : undefined} required={required} maxLength={key === 'name' ? 100 : key === 'phone' ? 30 : key === 'plate' ? 24 : key === 'colour' ? 50 : 80} value={customer[key]} aria-invalid={invalid} aria-describedby={hint || invalid ? `hint-${key}` : undefined} onChange={e => { setCustomer({ ...customer, [key]: e.target.value }); setErrors(errors.filter(x => x !== key)); }} />}
-                {(hint || invalid) && <small id={`hint-${key}`} className={invalid ? 'field-error' : 'field-hint'}>{invalid ? (key === 'phone' ? text('Enter a valid Qatar mobile number.', 'أدخل رقم جوال قطرياً صالحاً.') : key === 'plate' ? text('Enter your plate number, with any letters.', 'أدخل رقم لوحتك مع الحروف إن وجدت.') : text('Please enter your name.', 'يرجى إدخال اسمك.')) : hint}</small>}
+              return <label key={key} className={`checkout-field field-${key}`} htmlFor={`collection-${key}`}><span>{label}</span>
+                <input id={`collection-${key}`} type={key === 'phone' ? 'tel' : 'text'} inputMode={key === 'phone' ? 'tel' : 'text'} autoComplete={key === 'name' ? 'name' : key === 'phone' ? 'tel' : 'off'} dir={key === 'phone' ? 'ltr' : undefined} required maxLength={key === 'name' ? 100 : key === 'phone' ? 30 : 24} value={customer[key]} aria-invalid={invalid} aria-describedby={invalid ? `hint-${key}` : undefined} onChange={e => { setCustomer({ ...customer, [key]: e.target.value }); setErrors(errors.filter(x => x !== key)); }} />
+                {invalid && <small id={`hint-${key}`} className="field-error">{key === 'phone' ? text('Enter a valid Qatar mobile number.', 'أدخل رقم جوال قطرياً صالحاً.') : key === 'plate' ? text('Enter your plate number, with any letters.', 'أدخل رقم لوحتك مع الحروف إن وجدت.') : text('Please enter your name.', 'يرجى إدخال اسمك.')}</small>}
               </label>;
             })}</div>
-            <p className="checkout-privacy">{text('Used for this collection. No account needed.', 'تُستخدم لهذه العملية. لا حاجة لإنشاء حساب.')}</p>
-            <button type="submit" className="checkout-primary" disabled={!status?.open || !count || cart.unavailableCount > 0}>{text('Review my order', 'مراجعة طلبي')}<Forward /></button>
+            <details className="optional-vehicle"><summary>{text('Add vehicle details', 'أضف تفاصيل السيارة')}</summary><div className="checkout-fields">{(['colour', 'car', 'instructions'] as const).map(key => <label key={key} className={`checkout-field field-${key}`} htmlFor={`collection-${key}`}><span>{{ colour: text('Car colour', 'لون السيارة'), car: text('Make / model', 'نوع / طراز السيارة'), instructions: text('Collection instructions', 'تعليمات الاستلام') }[key]}</span>{key === 'instructions' ? <textarea id={`collection-${key}`} value={customer[key]} maxLength={400} rows={3} onChange={e => setCustomer({ ...customer, [key]: e.target.value })} /> : <input id={`collection-${key}`} value={customer[key]} maxLength={key === 'colour' ? 50 : 80} onChange={e => setCustomer({ ...customer, [key]: e.target.value })} />}</label>)}</div></details>
+            <button type="submit" className="checkout-primary" disabled={!status?.open || !count || cart.unavailableCount > 0}>{text('Review order', 'مراجعة الطلب')}<Forward /></button>
           </form>}
           {step === 'review' && <>
-            <section className="review-details"><div className="review-section-title"><h2>{text('At your car', 'عند سيارتك')}</h2><button type="button" className="text-action" onClick={() => go('details')}>{text('Edit', 'تعديل')}</button></div><strong>{customer.name}</strong><p dir="ltr" className="review-phone">+{customer.phone}</p><div className="plate-card"><span>{text('QATAR', 'قطر')}</span><strong dir="auto">{customer.plate}</strong></div><p>{[customer.colour, customer.car].filter(Boolean).join(' · ')}</p>{customer.instructions && <p className="checkout-note">{customer.instructions}</p>}</section>
-            <div className="review-section-title"><h2>{text('Your order', 'طلبك')}</h2><button type="button" className="text-action" onClick={() => go('basket')}>{text('Edit', 'تعديل')}</button></div>{basketLines(false)}{total}
-            <div className="checkout-notice payment-preview"><strong>{text('Preview · payments not connected', 'معاينة · الدفع غير متصل')}</strong><p>{text('You can review the handoff. No payment will be taken and this order will not reach the kitchen.', 'يمكنك معاينة خطوة الدفع. لن يتم خصم أي مبلغ أو إرسال الطلب إلى المطبخ.')}</p></div>
-            <button type="button" className="checkout-primary" disabled={busy || !status?.open || !count || cart.unavailableCount > 0} onClick={checkout}>{busy ? text('Checking your order…', 'جارٍ التحقق من الطلب…') : text(demo ? 'Preview payment step' : 'Continue to payment', demo ? 'معاينة خطوة الدفع' : 'المتابعة إلى الدفع')}<Forward /></button>
-            <p className="checkout-privacy">{text('Secure payment will be hosted by Sadad.', 'ستتم عملية الدفع الآمن عبر سداد.')}</p>
+            {receiptBody(true)}
+            <button type="button" className="checkout-primary" disabled={busy || !status?.open || !count || cart.unavailableCount > 0} onClick={checkout}>{busy ? text('Checking…', 'جارٍ التحقق…') : text(demo ? 'Preview payment' : 'Continue to payment', demo ? 'معاينة الدفع' : 'المتابعة إلى الدفع')}<Forward /></button>
           </>}
           {step === 'payment' && receipt && <PaymentPanel receipt={receipt} demo={demo} money={money} text={text} onBack={() => go('review')} />}
           {error && <div className="checkout-error" role="alert"><p>{error}</p><button className="text-action" type="button" onClick={() => { go('basket'); router.refresh(); }}>{text('Refresh menu', 'تحديث القائمة')}</button></div>}
