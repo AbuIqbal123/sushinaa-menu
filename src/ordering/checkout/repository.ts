@@ -6,8 +6,9 @@ import type { OrderSnapshot } from './validation';
 import { CheckoutError } from './validation';
 
 // Separate from the CMS database. Never silently use production CMS credentials.
-const url = process.env.ORDER_DATABASE_URL || 'file:./data/orders.db';
-if (process.env.VERCEL && url.startsWith('file:')) throw new Error('Configure a durable ORDER_DATABASE_URL before hosting ordering.');
+const demoOnVercel = process.env.VERCEL && process.env.NEXT_PUBLIC_ORDERING_DEMO_MODE === 'true';
+const url = process.env.ORDER_DATABASE_URL || (demoOnVercel ? 'file:/tmp/sushinaa-preview-unused-orders.db' : 'file:./data/orders.db');
+if (process.env.VERCEL && !demoOnVercel && url.startsWith('file:')) throw new Error('Configure a durable ORDER_DATABASE_URL before hosting ordering.');
 if (url.startsWith('file:')) mkdirSync(dirname(url.slice(5)), { recursive: true });
 const db = createClient({ url, authToken: process.env.ORDER_DATABASE_AUTH_TOKEN });
 let ready: Promise<unknown> | undefined;
