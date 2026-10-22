@@ -1,5 +1,5 @@
 export type BranchId = 'down-town' | 'al-thumama' | 'west-bay' | 'al-khor';
-export type Branch = { id: BranchId; name: string; nameAr: string; coordinates: [longitude: number, latitude: number]; hours: (day: number) => [number, number] };
+export type Branch = { id: BranchId; name: string; nameAr: string; mapsUrl: string; coordinates: [longitude: number, latitude: number]; hours: (day: number) => [number, number] };
 // Minutes after midnight. Closing times > 1440 belong to the following day.
 // Coordinates from the four Google Maps pins supplied by the restaurant.
 // Down Town: https://maps.app.goo.gl/ewbskv1D8Dhts5bHA
@@ -7,10 +7,10 @@ export type Branch = { id: BranchId; name: string; nameAr: string; coordinates: 
 // West Bay: https://maps.app.goo.gl/z8PsE8tnStUqso9u6
 // Al-Khor: https://maps.app.goo.gl/NGA7dkWQK1QYhRQ38
 export const branches: Branch[] = [
-  { id: 'down-town', name: 'Down Town', nameAr: 'داون تاون', coordinates: [51.4335831, 25.2671162], hours: day => [day === 5 ? 780 : 720, 1590] },
-  { id: 'al-thumama', name: 'Al-Thumama', nameAr: 'الثمامة', coordinates: [51.5422826, 25.2208925], hours: day => [day === 5 ? 780 : 720, 1620] },
-  { id: 'west-bay', name: 'West Bay', nameAr: 'الخليج الغربي', coordinates: [51.5207116, 25.3184753], hours: () => [840, 1380] },
-  { id: 'al-khor', name: 'Al-Khor', nameAr: 'الخور', coordinates: [51.4956563, 25.6877076], hours: day => [810, [4, 5, 6].includes(day) ? 1470 : 1350] },
+  { id: 'down-town', name: 'Down Town', nameAr: 'داون تاون', mapsUrl: 'https://maps.app.goo.gl/ewbskv1D8Dhts5bHA', coordinates: [51.4335831, 25.2671162], hours: day => [day === 5 ? 780 : 720, 1590] },
+  { id: 'al-thumama', name: 'Al-Thumama', nameAr: 'الثمامة', mapsUrl: 'https://maps.app.goo.gl/ieuqXoY19PY4jxd98', coordinates: [51.5422826, 25.2208925], hours: day => [day === 5 ? 780 : 720, 1620] },
+  { id: 'west-bay', name: 'West Bay', nameAr: 'الخليج الغربي', mapsUrl: 'https://maps.app.goo.gl/z8PsE8tnStUqso9u6', coordinates: [51.5207116, 25.3184753], hours: () => [840, 1380] },
+  { id: 'al-khor', name: 'Al-Khor', nameAr: 'الخور', mapsUrl: 'https://maps.app.goo.gl/NGA7dkWQK1QYhRQ38', coordinates: [51.4956563, 25.6877076], hours: day => [810, [4, 5, 6].includes(day) ? 1470 : 1350] },
 ];
 const qatar = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Qatar', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 export function branchStatus(branch: Branch, now: Date) {

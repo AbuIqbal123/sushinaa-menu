@@ -16,7 +16,7 @@ const optionalText = (max: number) => z.string().trim().max(max).default('');
 export const customerSchema = z.object({
   name: z.string().trim().min(1).max(100),
   phone: z.string().max(30).transform(normalizePhone).pipe(z.string().regex(/^974[3567]\d{7}$/)),
-  plate: z.string().transform(s => digits(s).trim()).pipe(z.string().min(1).max(24).regex(/^\d+$/)),
+  plate: z.string().transform(s => digits(s).trim().toUpperCase()).pipe(z.string().regex(/^[QTR]\d{3,6}$/)),
   colour: optionalText(50), car: optionalText(80), instructions: optionalText(400),
 }).strict();
 export type Customer = z.infer<typeof customerSchema>;
