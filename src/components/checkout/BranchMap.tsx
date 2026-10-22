@@ -123,7 +123,7 @@ export function BranchMap({ lang, now, onChoose }: Props) {
     {selected && <div className="branch-map-selection" aria-live="polite">
       <div><strong>{text(selected.name, selected.nameAr)}</strong><span className={`branch-status${branchStatus(selected, now).open ? ' is-open' : ''}`}><i />{branchStatus(selected, now).open ? text('Open', 'مفتوح') : text('Closed', 'مغلق')}</span></div>
       <p dir="ltr">{timeLabel(branchStatus(selected, now).hours[0], lang)} – {timeLabel(branchStatus(selected, now).hours[1], lang)}</p>
-      <button type="button" className="checkout-primary" onClick={() => onChoose(selected.id)}>{text('Choose this branch', 'اختر هذا الفرع')}<span aria-hidden="true">→</span></button>
+      <button type="button" className="checkout-primary" onClick={() => onChoose(selected.id)}>{text('Continue with this branch', 'المتابعة مع هذا الفرع')}<span aria-hidden="true">→</span></button>
     </div>}
   </div>;
 }
