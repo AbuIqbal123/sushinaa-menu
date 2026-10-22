@@ -51,7 +51,7 @@ Do not push or merge to `main`. Feature work opens a pull request into `dev`. Ab
 
 Local development defaults to the SQLite file `data/menu.db`. Do not commit it. The app reads `CMS_DATABASE_URL` and `CMS_DATABASE_AUTH_TOKEN`. Sign-in stays disabled until both `CMS_ADMIN_USERNAME` and `CMS_ADMIN_PASSWORD` are set, and a deployed dev site must not reuse the production password. Do not put database tokens in `NEXT_PUBLIC_*` variables. The application rejects a local-file database on Vercel.
 
-`CMS_ENV_GUARD=report` logs a bad database setup and continues. `enforce` refuses to start. Leave it on `report` until that switch is deliberate. Outside production on the `sushinaa-menu` project, the site sends `noindex`.
+`CMS_ENV_GUARD=enforce` refuses to start when a deployment is pointed at the wrong database. `report` only logs. Dev is on `enforce`. The running production site has not been rebuilt with that yet. Outside production on the `sushinaa-menu` project, the site sends `noindex`.
 
 `npm run db:copy-to-dev` refreshes the dev database from a read-only view of `menu` and `media` only. `npm run db:migrate` is for disposable databases. Do not run it against Turso.
 

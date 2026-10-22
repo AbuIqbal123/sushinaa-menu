@@ -42,9 +42,9 @@ The dev hostname starts with `sushinaa-cms-dev-`. The dev database has an `env_m
 | `TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN` | Live database. Do not edit. | Not set | Not set |
 | `CMS_ADMIN_USERNAME` / `CMS_ADMIN_PASSWORD` | Live admin. Do not edit. | `dev-admin` and a different password | Old preview values. Ignore. |
 | `DEV_TURSO_DATABASE_URL` / `DEV_TURSO_AUTH_TOKEN` | Not set | Dev database | Dev database |
-| `CMS_ENV_GUARD` | Unset, which means `report` | `report` | Unset |
+| `CMS_ENV_GUARD` | `enforce`. The running production deployment has not been rebuilt with this yet. | `enforce` | `enforce`, and the preview database is the dev database |
 
-`test-dev` production has `CMS_DATABASE_URL`, `CMS_DATABASE_AUTH_TOKEN`, and `CMS_ENV_GUARD=report` for the dev database only. It has no admin password, so its CMS sign-in fails closed. The dev admin password lives in the Development environment of `sushinaa-menu`, not in git.
+`test-dev` has `CMS_DATABASE_URL`, `CMS_DATABASE_AUTH_TOKEN`, and `CMS_ENV_GUARD=enforce` for the dev database only. It has no admin password, so its CMS sign-in fails closed. The dev admin password lives in the Development environment of `sushinaa-menu`, not in git.
 
 ## Guard
 
@@ -53,9 +53,9 @@ The dev hostname starts with `sushinaa-cms-dev-`. The dev database has an `env_m
 - Production (`VERCEL_ENV=production`) must use the live hostname and must not use a mock payment provider.
 - Anything else must not use the live hostname and must see the `development` marker.
 - `CMS_ENV_GUARD=enforce` refuses to start. Any other value, including unset, only logs. The log prefix is `cms-env-guard` and it does not include URLs or tokens.
-- Leave the guard on `report` until Abu switches it, dev first, then `main`.
+- The flag is `enforce` on dev and on the production variable. The live deployment has not been rebuilt, so the running site does not enforce yet. That starts when `dev` is released to `main`.
 
-`test-dev` is the production deployment of its own project, so `VERCEL_ENV` is `production` there. The guard logs that this is not the live hostname and still serves, because the flag is `report`. That log is expected. It also means `test-dev` does not send `noindex`.
+The public dev URL is a preview deployment of the `dev` branch, so `VERCEL_ENV` is not `production`. With `enforce`, it starts only because the database is the dev database and the marker is `development`. It sends `noindex`.
 
 On `sushinaa-menu`, a deployment that is not production sends `X-Robots-Tag: noindex, nofollow`, `robots.ts` disallows all, and the page robots meta is noindex.
 
