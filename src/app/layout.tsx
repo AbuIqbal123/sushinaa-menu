@@ -8,6 +8,7 @@ import { requestLang } from "@/i18n/request-lang";
 import { getMenu } from "@/cms/repository";
 import { publicMenu } from "@/cms/schema";
 import { MenuProvider } from "@/cms/context";
+import { isProductionDeployment } from "@/lib/deploy-env";
 import "./globals.css";
 
 const display = localFont({
@@ -85,7 +86,9 @@ export async function generateMetadata(): Promise<Metadata> {
       description: ar ? "قائمة سوشي في قطر." : `${SITE.tagline}. Sushi QR menu for Qatar.`,
       images: ["/og.jpg"],
     },
-    robots: { index: true, follow: true },
+    robots: isProductionDeployment()
+      ? { index: true, follow: true }
+      : { index: false, follow: false },
     appleWebApp: {
       capable: true,
       statusBarStyle: "black-translucent",
