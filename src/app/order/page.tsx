@@ -2,6 +2,7 @@ import { readMenu } from '@/cms/repository';
 import { MenuProvider } from '@/cms/context';
 import { publicMenu } from '@/cms/schema';
 import { OrderingExperience } from '@/components/checkout/OrderingExperience';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import './order.css';
 import { requestLang } from '@/i18n/request-lang';
 export async function generateMetadata() {

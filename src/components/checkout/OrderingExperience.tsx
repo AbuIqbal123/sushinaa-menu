@@ -8,11 +8,12 @@ import { DishDetailSheet } from '@/components/menu/DishDetailSheet';
 import { CartProvider, useCart, type CartLine } from '@/ordering/cart';
 import { useMenu } from '@/cms/context';
 import { LangButton, useLocale, useSetSheetOpen } from '@/i18n/locale';
-import { branches, branchStatus, timeLabel, type BranchId } from '@/ordering/checkout/branches';
-import { customerSchema, type Customer } from '@/ordering/checkout/validation';
+import { branches, branchStatus, type BranchId } from '@/ordering/checkout/branches';
+import { customerSchema, digits, type Customer } from '@/ordering/checkout/validation';
 import { imageFor, photoPosition } from '@/ordering/price';
 import type { PaymentStatus } from '@/ordering/checkout/payment';
 import { MockSadadGateway } from './MockSadadGateway';
+import { BranchMap } from './BranchMap';
 
 const emptyCustomer: Customer = { name: '', phone: '', plate: '', colour: '', car: '', instructions: '' };
 type Step = 'branches' | 'menu' | 'basket' | 'review' | 'payment' | 'receipt';
@@ -141,11 +142,7 @@ function Experience({ initialNow }: { initialNow: string }) {
       {step === 'branches' ? <>
         <main id="main" className="branch-page">
           <div className="branch-intro"><h1 ref={heading} tabIndex={-1}>{title}</h1><p>{text('We’ll bring your order to your car.', 'نُحضر طلبك إلى سيارتك.')}</p></div>
-          <div className="branch-list" aria-label={text('Choose your branch', 'اختر فرعك')}>
-            {branches.map(b => { const s = branchStatus(b, now); return <button type="button" className={`branch-card${branchId === b.id ? ' selected' : ''}`} key={b.id} onClick={() => choose(b.id)}>
-              <span className="branch-card-content"><span className="branch-card-heading"><strong>{text(b.name, b.nameAr)}</strong><span className={`branch-status${s.open ? ' is-open' : ''}`}><i />{s.open ? text('Open', 'مفتوح') : text('Closed', 'مغلق')}</span></span><span className="branch-hours" dir="ltr"><bdi dir="ltr">{timeLabel(s.hours[0], lang)}</bdi> – <bdi dir="ltr">{timeLabel(s.hours[1], lang)}</bdi></span></span><span className="branch-arrow" aria-hidden="true">↗</span>
-            </button>; })}
-          </div>
+          <BranchMap lang={lang} now={now} onChoose={choose} />
           <Link className="view-menu-link" href={viewMenuHref}>{text('Just exploring? View the menu', 'تستكشف فقط؟ تصفح القائمة')}</Link>
         </main>
       </> : <>
@@ -162,7 +159,8 @@ function Experience({ initialNow }: { initialNow: string }) {
               const label = { name: text('Your name', 'اسمك'), phone: text('Mobile number', 'رقم الجوال'), plate: text('Qatar plate number', 'رقم اللوحة القطرية'), colour: text('Car colour', 'لون السيارة'), car: text('Make / model', 'نوع / طراز السيارة'), instructions: text('Collection instructions', 'تعليمات الاستلام') }[key];
               const invalid = errors.includes(key);
               return <label key={key} className={`checkout-field field-${key}`} htmlFor={`collection-${key}`}><span>{label}</span>
-                <input id={`collection-${key}`} type={key === 'phone' ? 'tel' : 'text'} inputMode={key === 'phone' ? 'tel' : 'text'} autoComplete={key === 'name' ? 'name' : key === 'phone' ? 'tel' : 'off'} dir={key === 'phone' ? 'ltr' : undefined} required maxLength={key === 'name' ? 100 : key === 'phone' ? 30 : 24} value={customer[key]} aria-invalid={invalid} aria-describedby={invalid ? `hint-${key}` : undefined} onChange={e => { setCustomer({ ...customer, [key]: e.target.value }); setErrors(errors.filter(x => x !== key)); }} />
+                {key === 'phone' ? <div className="qatar-phone-field" dir="ltr"><span className="qatar-phone-prefix"><span role="img" aria-label={text('Qatar flag', 'علم قطر')}>🇶🇦</span> +974</span><input id="collection-phone" type="tel" inputMode="numeric" autoComplete="tel-national" pattern="[0-9]*" required maxLength={8} value={customer.phone.replace(/^974/, '')} aria-invalid={invalid} aria-describedby={invalid ? 'hint-phone' : undefined} onChange={e => { const national = digits(e.target.value).replace(/\D/g, '').slice(0, 8); setCustomer({ ...customer, phone: national ? `974${national}` : '' }); setErrors(errors.filter(x => x !== 'phone')); }} /></div>
+                  : <input id={`collection-${key}`} type="text" inputMode="text" autoComplete={key === 'name' ? 'name' : 'off'} required maxLength={key === 'name' ? 100 : 24} value={customer[key]} aria-invalid={invalid} aria-describedby={invalid ? `hint-${key}` : undefined} onChange={e => { setCustomer({ ...customer, [key]: e.target.value }); setErrors(errors.filter(x => x !== key)); }} />}
                 {invalid && <small id={`hint-${key}`} className="field-error">{key === 'phone' ? text('Enter a valid Qatar mobile number.', 'أدخل رقم جوال قطرياً صالحاً.') : key === 'plate' ? text('Enter your plate number, with any letters.', 'أدخل رقم لوحتك مع الحروف إن وجدت.') : text('Please enter your name.', 'يرجى إدخال اسمك.')}</small>}
               </label>;
             })}</div>
