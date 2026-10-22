@@ -21,6 +21,7 @@ export function OrderingExperience({ initialNow }: { initialNow: string }) {
 }
 function Experience({ initialNow }: { initialNow: string }) {
   const { lang, t } = useLocale();
+  const demo = process.env.NEXT_PUBLIC_ORDERING_DEMO_MODE === 'true';
   const text = (en: string, ar: string) => lang === 'ar' ? ar : en;
   const menu = useMenu();
   const router = useRouter();
@@ -80,6 +81,11 @@ function Experience({ initialNow }: { initialNow: string }) {
   }[code] ?? text('We couldn’t continue. Check your connection and try again. Your details are still here.', 'تعذّرت المتابعة. تحقق من الاتصال وحاول مجدداً. بياناتك ما زالت محفوظة.'));
   async function checkout() {
     if (busyRef.current || !branch || !cart.lines.length || cart.unavailableCount > 0) return;
+    if (demo) {
+      setReceipt({ id: '', paymentStatus: 'awaiting_payment', totalMinor: Math.round(cart.totalQar * 100) });
+      go('payment');
+      return;
+    }
     busyRef.current = true; setBusy(true); setError('');
     try {
       const body = JSON.stringify({ branchId, customer, lines: cart.lines.map(line => ({ dishId: line.dish.id, selection: line.sel, quantity: line.qty, note: line.note, expectedUnitMinor: Math.round(line.unitQar * 100) })) });
@@ -168,10 +174,10 @@ function Experience({ initialNow }: { initialNow: string }) {
             <section className="review-details"><div className="review-section-title"><h2>{text('At your car', 'عند سيارتك')}</h2><button type="button" className="text-action" onClick={() => go('details')}>{text('Edit', 'تعديل')}</button></div><strong>{customer.name}</strong><p dir="ltr" className="review-phone">+{customer.phone}</p><div className="plate-card"><span>{text('QATAR', 'قطر')}</span><strong dir="auto">{customer.plate}</strong></div><p>{[customer.colour, customer.car].filter(Boolean).join(' · ')}</p>{customer.instructions && <p className="checkout-note">{customer.instructions}</p>}</section>
             <div className="review-section-title"><h2>{text('Your order', 'طلبك')}</h2><button type="button" className="text-action" onClick={() => go('basket')}>{text('Edit', 'تعديل')}</button></div>{basketLines(false)}{total}
             <div className="checkout-notice payment-preview"><strong>{text('Preview · payments not connected', 'معاينة · الدفع غير متصل')}</strong><p>{text('You can review the handoff. No payment will be taken and this order will not reach the kitchen.', 'يمكنك معاينة خطوة الدفع. لن يتم خصم أي مبلغ أو إرسال الطلب إلى المطبخ.')}</p></div>
-            <button type="button" className="checkout-primary" disabled={busy || !status?.open || !count || cart.unavailableCount > 0} onClick={checkout}>{busy ? text('Checking your order…', 'جارٍ التحقق من الطلب…') : text('Continue to payment', 'المتابعة إلى الدفع')}<Forward /></button>
+            <button type="button" className="checkout-primary" disabled={busy || !status?.open || !count || cart.unavailableCount > 0} onClick={checkout}>{busy ? text('Checking your order…', 'جارٍ التحقق من الطلب…') : text(demo ? 'Preview payment step' : 'Continue to payment', demo ? 'معاينة خطوة الدفع' : 'المتابعة إلى الدفع')}<Forward /></button>
             <p className="checkout-privacy">{text('Secure payment will be hosted by Sadad.', 'ستتم عملية الدفع الآمن عبر سداد.')}</p>
           </>}
-          {step === 'payment' && receipt && <PaymentPanel receipt={receipt} money={money} text={text} onBack={() => go('review')} />}
+          {step === 'payment' && receipt && <PaymentPanel receipt={receipt} demo={demo} money={money} text={text} onBack={() => go('review')} />}
           {error && <div className="checkout-error" role="alert"><p>{error}</p><button className="text-action" type="button" onClick={() => { go('basket'); router.refresh(); }}>{text('Refresh menu', 'تحديث القائمة')}</button></div>}
         </main>
       </>}
@@ -180,7 +186,7 @@ function Experience({ initialNow }: { initialNow: string }) {
     {editing && <DishDetailSheet dish={editing.dish} ordering initialEntries={Array.from({ length: editing.qty }, () => ({ sel: editing.sel, note: editing.note }))} onSave={entries => cart.replace(editing.key, entries)} onClose={() => setEditing(null)} />}
   </div>;
 }
-function PaymentPanel({ receipt, money, text, onBack }: { receipt: Receipt; money: (n: number) => string; text: (en: string, ar: string) => string; onBack: () => void }) {
+function PaymentPanel({ receipt, demo, money, text, onBack }: { receipt: Receipt; demo: boolean; money: (n: number) => string; text: (en: string, ar: string) => string; onBack: () => void }) {
   const content: Record<PaymentStatus, [string, string, string, string]> = {
     awaiting_payment: ['Ready for the next step.', 'جاهز للخطوة التالية.', 'Your preview order is saved. Sadad is not connected yet. Nothing has been charged or sent to the kitchen.', 'تم حفظ طلب المعاينة. سداد غير متصل بعد. لم يتم خصم أي مبلغ أو إرسال الطلب إلى المطبخ.'],
     pending: ['Waiting for confirmation', 'بانتظار التأكيد', 'We are waiting for payment confirmation. Please don’t pay again.', 'ننتظر تأكيد الدفع. يرجى عدم تكرار الدفع.'],
@@ -189,8 +195,8 @@ function PaymentPanel({ receipt, money, text, onBack }: { receipt: Receipt; mone
     cancelled: ['Payment cancelled', 'تم إلغاء الدفع', 'Your basket is saved if you’d like to return.', 'سلتك محفوظة إذا أردت العودة.'],
     expired: ['This payment session expired', 'انتهت جلسة الدفع', 'Return to your basket to check availability and current prices.', 'عُد إلى السلة للتحقق من التوفر والأسعار الحالية.'],
   };
-  const c = content[receipt.paymentStatus] ?? content.pending;
-  return <section className="payment-state" aria-live="polite"><div className="payment-emblem"><CarIcon /></div><span className="eyebrow">{text('ORDER PREVIEW', 'معاينة الطلب')}</span><h2>{text(c[0], c[1])}</h2><p>{text(c[2], c[3])}</p><div className="payment-reference"><span>{text('Reference', 'المرجع')}</span><strong dir="ltr">{receipt.id}</strong><span>{text('Total', 'الإجمالي')}</span><b>{money(receipt.totalMinor)}</b></div><button type="button" className="checkout-primary" onClick={onBack}>{text('Back to review', 'العودة للمراجعة')}<Forward /></button></section>;
+  const c = demo ? ['A look ahead.', 'نظرة على القادم.', 'This is a draft of the payment step. No order was placed, no payment was taken, and nothing was sent to the kitchen.', 'هذه معاينة لخطوة الدفع. لم يُرسل أي طلب ولم يُخصم أي مبلغ ولم يُرسَل شيء إلى المطبخ.'] : content[receipt.paymentStatus] ?? content.pending;
+  return <section className="payment-state" aria-live="polite"><div className="payment-emblem"><CarIcon /></div><span className="eyebrow">{text('ORDER PREVIEW', 'معاينة الطلب')}</span><h2>{text(c[0], c[1])}</h2><p>{text(c[2], c[3])}</p><div className="payment-reference">{receipt.id && <><span>{text('Reference', 'المرجع')}</span><strong dir="ltr">{receipt.id}</strong></>}<span>{text('Total', 'الإجمالي')}</span><b>{money(receipt.totalMinor)}</b></div><button type="button" className="checkout-primary" onClick={onBack}>{text('Back to review', 'العودة للمراجعة')}<Forward /></button></section>;
 }
 function Forward() { return <span className="forward-arrow" aria-hidden="true">→</span>; }
 function CarIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 9 2-5h10l2 5M4 9h16a1 1 0 0 1 1 1v7H3v-7a1 1 0 0 1 1-1ZM5 17v3m14-3v3M6 13h2m8 0h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>; }

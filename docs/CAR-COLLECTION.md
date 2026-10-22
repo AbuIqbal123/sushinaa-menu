@@ -28,7 +28,7 @@ ORDERING_PREVIEW_ENABLED=true
 
 Run `next dev --webpack --hostname 0.0.0.0 --port 3008`, with `SUSHINAA_PREVIEW_HOST` set to the computer's exact LAN IP for phone testing. Open `/order`. The phone must be on the same network. Do not use real customer details for preview testing.
 
-`POST /api/orders` is disabled in production regardless of environment configuration. To release ordering later requires an explicit implementation change after payment and CMS integration testing. No migration touches the CMS database. The order database must be durable (remote libSQL, with its own token) before future hosting; Vercel cannot use local SQLite files.
+A separate public Vercel draft can set `CMS_PUBLIC_MENU_SOURCE_URL=https://sushinaa-menu.vercel.app/api/menu` and `NEXT_PUBLIC_ORDERING_DEMO_MODE=true`. This fetches current published CMS content read-only (and proxies uploaded menu photos if any) without access to the production CMS database. The draft payment step is client-only and creates no order. Its availability depends on the published menu API. `POST /api/orders` is disabled in production regardless of environment configuration. To release ordering later requires an explicit implementation change after payment and CMS integration testing. No migration touches the CMS database. The order database must be durable (remote libSQL, with its own token) before future hosting; Vercel cannot use local SQLite files.
 
 ## Server contract and persistence
 

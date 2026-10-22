@@ -2,8 +2,11 @@ import { createClient } from "@libsql/client";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { AUDIT_SCHEMA } from "./audit";
-const url = process.env.CMS_DATABASE_URL || "file:./data/menu.db";
-if (process.env.VERCEL && url.startsWith("file:"))
+// A separate draft site can consume the published menu through its read-only
+// endpoint without receiving production CMS credentials. Keep libSQL inert there.
+const publicSource = process.env.CMS_PUBLIC_MENU_SOURCE_URL;
+const url = process.env.CMS_DATABASE_URL || (publicSource ? 'file:/tmp/sushinaa-preview-unused-menu.db' : 'file:./data/menu.db');
+if (process.env.VERCEL && url.startsWith("file:") && !publicSource)
   throw new Error(
     "Set CMS_DATABASE_URL to a remote libSQL database on Vercel. Local files are not persistent there.",
   );
@@ -15,6 +18,7 @@ export const db = createClient({
 });
 let ready: Promise<unknown> | undefined;
 export function initDb() {
+  if (publicSource) throw new Error('The draft menu source is read-only.');
   return (ready ??= db
     .batch(
       [
