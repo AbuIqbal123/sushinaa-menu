@@ -10,13 +10,13 @@ import { useMenu } from '@/cms/context';
 import { LangButton, useLocale, useSetSheetOpen } from '@/i18n/locale';
 import { branches, branchStatus, type BranchId } from '@/ordering/checkout/branches';
 import { customerSchema, digits, type Customer } from '@/ordering/checkout/validation';
-import { imageFor, photoPosition } from '@/ordering/price';
+import { formatQar } from '@/lib/money';
 import type { PaymentStatus } from '@/ordering/checkout/payment';
 import { MockSadadGateway } from './MockSadadGateway';
 import { BranchMap } from './BranchMap';
 
 const emptyCustomer: Customer = { name: '', phone: '', plate: 'Q', colour: '', car: '', instructions: '' };
-type Step = 'branches' | 'menu' | 'basket' | 'review' | 'payment' | 'receipt';
+type Step = 'branches' | 'menu' | 'basket' | 'details' | 'review' | 'payment' | 'receipt';
 type Receipt = { id: string; paymentStatus: PaymentStatus; totalMinor: number };
 export function OrderingExperience({ initialNow }: { initialNow: string }) {
   return <CartProvider storageKey="sushinaa-curbside-basket-v1"><Experience initialNow={initialNow} /></CartProvider>;
@@ -52,6 +52,7 @@ function Experience({ initialNow }: { initialNow: string }) {
   const branch = branches.find(b => b.id === branchId);
   const status = branch ? branchStatus(branch, now) : null;
   const money = (minor: number) => `${new Intl.NumberFormat(lang === 'ar' ? 'ar-QA' : 'en-QA', { maximumFractionDigits: 2 }).format(minor / 100)} ${text('QAR', 'ر.ق')}`;
+  const ticketMoney = (qar: number) => formatQar(qar, lang, menu.settings);
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 15000);
     void fetch('/api/orders').catch(() => {});
@@ -61,7 +62,7 @@ function Experience({ initialNow }: { initialNow: string }) {
     if (previousStep.current !== step) heading.current?.focus();
     previousStep.current = step;
   }, [step]);
-  function go(next: Step) { setError(''); setStep(next); }
+  function go(next: Step) { setError(''); setStep(next); window.scrollTo({ top: 0, behavior: 'instant' }); }
   function changeBranch() { setReturnStep(step === 'branches' ? 'menu' : step === 'payment' || step === 'receipt' ? 'review' : step); go('branches'); }
   function choose(id: BranchId) { setBranchId(id); setReceipt(null); go(returnStep); }
   function validateDetails(event: React.FormEvent) {
@@ -112,28 +113,26 @@ function Experience({ initialNow }: { initialNow: string }) {
   </button>;
   if (step === 'menu' && branch) return <div className="app-lock"><MenuFeed onReview={() => go('basket')} branchBar={branchControl} /></div>;
   const title = step === 'branches' ? text('Choose a branch', 'اختر الفرع')
-    : step === 'basket' ? text('Checkout', 'إتمام الطلب')
+    : step === 'basket' ? text('Your basket', 'سلتك')
+    : step === 'details' ? text('Collection details', 'بيانات الاستلام')
     : step === 'review' ? text('Review your order', 'راجع طلبك')
     : step === 'receipt' ? text('Order preview', 'معاينة الطلب') : text('Payment', 'الدفع');
   const count = cart.itemCount;
   const closedNotice = status && !status.open ? <div className="checkout-notice" role="status"><strong>{text('This branch is currently closed', 'هذا الفرع مغلق حالياً')}</strong><p>{text('Browse and save your favourites, or choose an open branch to continue.', 'تصفح واحفظ أصنافك المفضلة، أو اختر فرعاً مفتوحاً للمتابعة.')}</p><button type="button" className="text-action" onClick={changeBranch}>{text('Choose another branch', 'اختر فرعاً آخر')}</button></div> : null;
-  const total = <div className="checkout-total"><span>{text('Total', 'الإجمالي')}</span><strong>{money(Math.round(cart.totalQar * 100))}</strong></div>;
-  function basketLines(editable: boolean) {
-    return <ul className="checkout-lines">{cart.lines.map(line => {
-      const photo = imageFor(line.dish, line.sel);
-      return <li key={line.key}>
-        <Image src={photo} alt="" width={64} height={76} unoptimized style={{ objectPosition: photoPosition(line.dish, photo) }} />
-        <div className="checkout-line-info"><strong>{line.displayName}</strong><p>{line.meta}</p>{line.note && <p className="checkout-note">“{line.note}”</p>}
-          <span className="checkout-line-price">{line.qty} × {money(Math.round(line.unitQar * 100))}</span>
-          {editable && <button type="button" className="text-action" onClick={() => setEditing(line)}>{text('Edit choices & notes', 'تعديل الخيارات والملاحظات')}</button>}
-        </div>
-        {editable ? <div className="checkout-quantity"><button type="button" onClick={() => cart.dec(line.key)} aria-label={t.fewerOf(line.displayName)}>−</button><span>{line.qty}</span><button type="button" onClick={() => cart.inc(line.key)} disabled={line.qty >= 20} aria-label={t.moreOf(line.displayName)}>+</button></div> : <strong className="checkout-line-sum">{money(Math.round(line.lineTotal * 100))}</strong>}
-      </li>;
-    })}</ul>;
-  }
+  function ticket(editable: boolean, canEditBasket = false) { return <section className="ticket checkout-ticket" aria-label={t.yourTicket}>
+    <div className="ticket-scallop" aria-hidden="true" />
+    <header className="ticket-head"><div><p className="ticket-kicker">{t.brand}</p><h2 className="ticket-title">{t.yourTicket}</h2></div>{canEditBasket ? <button type="button" className="ticket-edit" onClick={() => go('basket')}>{text('Edit items', 'تعديل الأصناف')}</button> : <span className="ticket-count">{count} {text(count === 1 ? 'item' : 'items', 'صنف')}</span>}</header>
+    <p className="ticket-rule" aria-hidden="true" />
+    <ul className="ticket-lines">{cart.lines.map(line => <li key={line.key} className="ticket-line">
+      <div className="line-main"><p className="line-name">{line.displayName}</p>{line.meta && <p className="line-meta">{line.meta}</p>}{line.qty > 1 && <p className="line-meta line-unit">{line.qty} × {ticketMoney(line.unitQar)}</p>}{line.note && <p className="line-note">{t.commentWord}: {line.note}</p>}{editable && <button type="button" className="ticket-edit" onClick={() => setEditing(line)}>{text('Edit choices & notes', 'تعديل الخيارات والملاحظات')}</button>}</div>
+      {editable ? <div className="line-qty"><button type="button" className="qty-btn" onClick={() => cart.dec(line.key)} aria-label={t.fewerOf(line.displayName)}>−</button><span className="qty-num">{line.qty}</span><button type="button" className="qty-btn" onClick={() => cart.inc(line.key)} disabled={line.qty >= 20} aria-label={t.moreOf(line.displayName)}>+</button></div> : <span className="ticket-static-qty" aria-label={text(`Quantity ${line.qty}`, `الكمية ${line.qty}`)}>×{line.qty}</span>}
+      <p className="line-total">{ticketMoney(line.lineTotal)}</p>
+    </li>)}</ul>
+    <div className="ticket-sum"><span>{t.total}</span><strong>{ticketMoney(cart.totalQar)}</strong></div>
+  </section>; }
   const receiptBody = (editable: boolean) => <>
-    <section className="review-details"><div className="review-section-title"><h2>{text('At your car', 'عند سيارتك')}</h2>{editable && <button type="button" className="text-action" onClick={() => go('basket')}>{text('Edit', 'تعديل')}</button>}</div><strong>{customer.name}</strong><p dir="ltr" className="review-phone">+{customer.phone}</p><QatarPlate plate={customer.plate} /><p>{[customer.colour, customer.car].filter(Boolean).join(' · ')}</p>{customer.instructions && <p className="checkout-note">{customer.instructions}</p>}</section>
-    <div className="review-section-title"><h2>{text('Your order', 'طلبك')}</h2>{editable && <button type="button" className="text-action" onClick={() => go('basket')}>{text('Edit', 'تعديل')}</button>}</div>{basketLines(false)}{total}
+    <section className="review-details"><div className="review-section-title"><h2>{text('At your car', 'عند سيارتك')}</h2>{editable && <button type="button" className="text-action" onClick={() => go('details')}>{text('Edit', 'تعديل')}</button>}</div><strong>{customer.name}</strong><p dir="ltr" className="review-phone">+{customer.phone}</p><QatarPlate plate={customer.plate} /><p>{[customer.colour, customer.car].filter(Boolean).join(' · ')}</p>{customer.instructions && <p className="checkout-note">{customer.instructions}</p>}</section>
+    {ticket(false, editable)}
   </>;
   if (step === 'payment' && receipt && demo) return <MockSadadGateway amount={money(receipt.totalMinor)} lang={lang} onBack={() => go('review')} onComplete={() => go('receipt')} />;
   return <div className="ordering-page" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
@@ -146,15 +145,17 @@ function Experience({ initialNow }: { initialNow: string }) {
           <Link className="view-menu-link" href={viewMenuHref}>{text('Just exploring? View the menu', 'تستكشف فقط؟ تصفح القائمة')}</Link>
         </main>
       </> : <>
-        <div className="checkout-navigation"><button type="button" className="text-action" disabled={busy} onClick={() => go(step === 'basket' ? 'menu' : step === 'review' ? 'basket' : 'review')}><span className="back-arrow" aria-hidden="true">←</span> {text('Back', 'رجوع')}</button></div>
+        <div className="checkout-navigation"><button type="button" className="text-action" disabled={busy} onClick={() => go(step === 'basket' ? 'menu' : step === 'details' ? 'basket' : step === 'review' ? 'details' : 'review')}><span className="back-arrow" aria-hidden="true">←</span> {text('Back', 'رجوع')}</button>{(['basket', 'details', 'review'] as Step[]).includes(step) && <span aria-label={text(`Step ${['basket', 'details', 'review'].indexOf(step) + 1} of 3`, `الخطوة ${['basket', 'details', 'review'].indexOf(step) + 1} من ٣`)}>{['basket', 'details', 'review'].indexOf(step) + 1} / 3</span>}</div>
         <main id="main" className="checkout-main">
           <h1 ref={heading} tabIndex={-1}>{title}</h1>
           {branchControl}
           {step !== 'payment' && step !== 'receipt' && closedNotice}
           {step !== 'receipt' && cart.unavailableCount > 0 && <div className="checkout-notice" role="alert"><strong>{text('Your basket needs an update', 'تحتاج سلتك إلى تحديث')}</strong><p>{text(`${cart.unavailableCount} serving(s) or their choices are no longer available. Remove them before continuing.`, `${cart.unavailableCount} حصة أو خياراتها لم تعد متوفرة. احذفها قبل المتابعة.`)}</p><button type="button" className="text-action" onClick={cart.discardUnavailable}>{text('Remove unavailable selections', 'حذف الخيارات غير المتوفرة')}</button></div>}
           {step === 'basket' && <>
-            {count ? <>{basketLines(true)}<button type="button" className="text-action add-more" onClick={() => go('menu')}>+ {text('Add item', 'أضف صنفاً')}</button>{total}</> : <div className="empty-basket"><CarIcon /><h2>{text('Your basket is empty', 'سلتك فارغة')}</h2><button type="button" className="checkout-primary" onClick={() => go('menu')}>{text('Browse menu', 'تصفح القائمة')}<Forward /></button></div>}
-            {count > 0 && <form onSubmit={validateDetails} noValidate><h2 className="checkout-subheading">{text('Collection details', 'بيانات الاستلام')}</h2>
+            {count ? <>{ticket(true)}<button type="button" className="text-action add-more" onClick={() => go('menu')}>+ {text('Add item', 'أضف صنفاً')}</button><div className="checkout-step-action"><button type="button" className="checkout-primary" disabled={cart.unavailableCount > 0} onClick={() => go('details')}>{text('Continue to collection details', 'المتابعة لبيانات الاستلام')}<Forward /></button></div></> : <div className="empty-basket"><CarIcon /><h2>{text('Your basket is empty', 'سلتك فارغة')}</h2><button type="button" className="checkout-primary" onClick={() => go('menu')}>{text('Browse menu', 'تصفح القائمة')}<Forward /></button></div>}
+          </>}
+          {step === 'details' && <>
+            <form onSubmit={validateDetails} noValidate>
             <div className="checkout-fields">{(['name', 'phone', 'plate'] as const).map(key => {
               const label = { name: text('Your name', 'اسمك'), phone: text('Mobile number', 'رقم الجوال'), plate: text('Qatar plate number', 'رقم اللوحة القطرية'), colour: text('Car colour', 'لون السيارة'), car: text('Make / model', 'نوع / طراز السيارة'), instructions: text('Collection instructions', 'تعليمات الاستلام') }[key];
               const invalid = errors.includes(key);
@@ -170,12 +171,12 @@ function Experience({ initialNow }: { initialNow: string }) {
               </label>;
             })}</div>
             <details className="optional-vehicle"><summary>{text('Add vehicle details', 'أضف تفاصيل السيارة')}</summary><div className="checkout-fields">{(['colour', 'car', 'instructions'] as const).map(key => <label key={key} className={`checkout-field field-${key}`} htmlFor={`collection-${key}`}><span>{{ colour: text('Car colour', 'لون السيارة'), car: text('Make / model', 'نوع / طراز السيارة'), instructions: text('Collection instructions', 'تعليمات الاستلام') }[key]}</span>{key === 'instructions' ? <textarea id={`collection-${key}`} value={customer[key]} maxLength={400} rows={3} onChange={e => setCustomer({ ...customer, [key]: e.target.value })} /> : <input id={`collection-${key}`} value={customer[key]} maxLength={key === 'colour' ? 50 : 80} onChange={e => setCustomer({ ...customer, [key]: e.target.value })} />}</label>)}</div></details>
-            <button type="submit" className="checkout-primary" disabled={!status?.open || !count || cart.unavailableCount > 0}>{text('Review order', 'مراجعة الطلب')}<Forward /></button>
-          </form>}
+            <div className="checkout-step-action"><button type="submit" className="checkout-primary" disabled={!status?.open || !count || cart.unavailableCount > 0}>{text('Review order', 'مراجعة الطلب')}<Forward /></button></div>
+          </form>
           </>}
           {step === 'review' && <>
             {receiptBody(true)}
-            <button type="button" className="checkout-primary" disabled={busy || !status?.open || !count || cart.unavailableCount > 0} onClick={checkout}>{busy ? text('Checking…', 'جارٍ التحقق…') : text(demo ? 'Preview payment' : 'Continue to payment', demo ? 'معاينة الدفع' : 'المتابعة إلى الدفع')}<Forward /></button>
+            <div className="checkout-step-action"><button type="button" className="checkout-primary" disabled={busy || !status?.open || !count || cart.unavailableCount > 0} onClick={checkout}>{busy ? text('Checking…', 'جارٍ التحقق…') : text(demo ? 'Preview payment' : 'Continue to payment', demo ? 'معاينة الدفع' : 'المتابعة إلى الدفع')}<Forward /></button></div>
           </>}
           {step === 'receipt' && <><div className="demo-receipt-status" role="status"><span aria-hidden="true">✓</span><strong>{text('Payment demo complete', 'اكتملت معاينة الدفع')}</strong><small>{text('No charge or order was made.', 'لم يُخصم مبلغ ولم يُرسل طلب.')}</small></div>{branch && <DirectionsLink branchName={branchName} href={branch.mapsUrl} text={text} />}{receiptBody(false)}<button type="button" className="checkout-primary" onClick={() => go('menu')}>{text('Back to menu', 'العودة للقائمة')}<Forward /></button></>}
           {step === 'payment' && receipt && <PaymentPanel receipt={receipt} demo={demo} money={money} text={text} onBack={() => go('review')} directions={branch && receipt.paymentStatus === 'paid' ? { name: branchName, href: branch.mapsUrl } : undefined} />}

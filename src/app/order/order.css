@@ -46,6 +46,17 @@
 .checkout-navigation > span { font-size: 9px; color: var(--order-muted); letter-spacing: .12em; }
 .text-action { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; border: 0; background: transparent; padding: 4px 0; text-align: start; color: #e7c4a5; font-size: 12px !important; text-decoration: underline; text-underline-offset: 4px; }
 .checkout-main { padding: 4px 24px 24px; }
+.checkout-main:has(.checkout-step-action) { padding-bottom: 104px; }
+.checkout-step-action { position: fixed; z-index: 30; bottom: 0; left: 50%; transform: translateX(-50%); width: min(100%, 480px); padding: 12px 24px calc(12px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(transparent, #181513 20%); }
+.checkout-step-action .checkout-primary { box-shadow: 0 7px 25px #0008; }
+.checkout-ticket { width: 100%; max-height: none; overflow: visible; margin: 8px 0 0; padding: 14px 20px 20px; border-radius: 16px; box-shadow: 0 12px 30px #0005; animation: none; }
+.checkout-ticket .ticket-scallop { margin-top: -10px; }
+.checkout-ticket .ticket-line { animation: none; }
+.checkout-ticket .ticket-head { align-items: center; }
+.ticket-count { color: #6a5640; font-size: 11px; white-space: nowrap; }
+.ticket-edit { min-height: 36px; padding: 0; border: 0; background: none; color: #8b2025; font-size: 11px !important; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.checkout-ticket .line-main .ticket-edit { margin-top: 4px; }
+.ticket-static-qty { min-width: 2ch; color: #6a5640; font-size: 12px; font-weight: 700; line-height: 36px; }
 .checkout-progress { display: flex; gap: 14px; padding: 12px 0 8px; margin: 0; list-style: none; }
 .checkout-progress li { display: flex; align-items: center; gap: 6px; color: #a99b89; font-size: 10px; }
 .checkout-progress li > span { width: 18px; height: 18px; display: grid; place-items: center; border: 1px solid #65594b; border-radius: 50%; font-size: 9px; }
