@@ -3,6 +3,7 @@
 import { useMenu } from "@/cms/context";
 import Link from "next/link";
 import { ContactForm } from "./ContactForm";
+import { CollectionNotice } from "./CollectionNotice";
 import { LegalShell } from "./LegalShell";
 import { useLocale } from "@/i18n/locale";
 
@@ -23,6 +24,7 @@ export function PrivacyView() {
           سوشينا مطبخ سوشي في قطر. هذه القائمة تتيح لك تصفح الأطباق وحفظ اختياراتك لتعرضها على
           الموظفين. لا تُرسل الاختيارات إلينا، ولا يتم الدفع على هذا الموقع.
         </p>
+        <section id="collection"><h2>بيانات الاستلام</h2><CollectionNotice title={t.privacyTitle} /></section>
         <h2>من نحن</h2>
         <p>
           التواصل: واتساب <a href={wa}>{SITE.whatsappDisplay}</a>. إنستغرام{" "}
@@ -55,6 +57,7 @@ export function PrivacyView() {
         selections to show staff. Selections are not sent to us, and we do not take payment on this
         website.
       </p>
+      <section id="collection"><h2>Car collection orders</h2><CollectionNotice title={t.privacyTitle} /></section>
       <h2>Who we are</h2>
       <p>
         Contact: WhatsApp <a href={wa}>{SITE.whatsappDisplay}</a>. Instagram{" "}

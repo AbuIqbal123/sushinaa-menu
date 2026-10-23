@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type CSSProperties } from "react";
 import { matchesDiet, type DietFilter, type Dish, type Section } from "@/catalog/menu";
 import { useMenu } from "@/cms/context";
 import { CartProvider, useCart } from "@/ordering/cart";
@@ -21,7 +21,9 @@ function normalizeSearch(value: string) {
     .replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
 
-function FeedInner({ branch }: { branch: string }) {
+type OrderingFeedProps = { branch?: string; onReview?: () => void; branchBar?: ReactNode };
+
+function FeedInner({ branch, onReview, branchBar }: OrderingFeedProps) {
   const menu = useMenu();
   const { itemCount, totalQar } = useCart();
   const { lang, t } = useLocale();
@@ -253,14 +255,16 @@ function FeedInner({ branch }: { branch: string }) {
   function clearFilters() { setQuery(""); setDiet("all"); }
 
   return (
-    <div className={`shell${sheetOpen ? " is-sheet" : ""}${itemCount > 0 ? " has-order" : ""}`}>
+    <div className={`shell${onReview ? " ordering-feed" : ""}${sheetOpen ? " is-sheet" : ""}${itemCount > 0 ? " has-order" : ""}`}>
       <header className={`chrome-header${searchOpen ? " search-open" : ""}`} inert={sheetOpen}>
         <div className="brand-navigation">
           {/* The logo and the branch name are one link back to the branch picker. */}
+          {onReview ? <span className="brand-mark"><img src={menu.settings.logo} alt={t.brand} className="wordmark-img" width={46} height={44} /></span> : (
           <Link href="/?pick=1" className="brand-mark" aria-label={`${t.brand}, ${branch}, change branch`} prefetch={false}>
             <img src={menu.settings.logo} alt="" className="wordmark-img" width={46} height={44} />
             <span className="branch-switch"><span className="branch-switch-name">{branch}</span><span aria-hidden="true">▾</span></span>
           </Link>
+          )}
           <button ref={categoryButtonRef} type="button" className="cart-btn category-toggle"
             aria-label={`${t.category}: ${sectionName(category, lang)}`} title={sectionName(category, lang)}
             aria-haspopup="dialog" aria-expanded={categoriesOpen} aria-controls="category-overlay"
@@ -304,12 +308,13 @@ function FeedInner({ branch }: { branch: string }) {
             </button>
           </div>
           <LangButton />
-          <button type="button" className="cart-btn" onClick={() => setOpen(true)} aria-label={t.openOrder(itemCount)}>
+          <button type="button" className="cart-btn" onClick={() => onReview ? onReview() : setOpen(true)} aria-label={t.openOrder(itemCount)}>
             <TicketIcon />
             {itemCount > 0 ? <span className="cart-badge">{itemCount}</span> : null}
           </button>
         </div>
       </header>
+      {branchBar ? <div className="order-branch-bar" inert={sheetOpen}>{branchBar}</div> : null}
       <div className="filter-bar" aria-label={t.filters} inert={sheetOpen ? true : undefined}>
         <div className="chip-row chip-row-diet" aria-label={t.dietary}>
           {dietChips.map((chip) => <button key={chip.id} type="button"
@@ -343,22 +348,22 @@ function FeedInner({ branch }: { branch: string }) {
             const spot = ((parked % n) + n) % n;
             const atSeam = spot <= 3 || spot >= n - 2;
             const close = (d: number) => d >= -1 && d <= 3;
-            return <DishSlide key={item.key} dish={item.dish} diet={diet} marked={item.copy === 1}
+            return <DishSlide ordering={Boolean(onReview)} key={item.key} dish={item.dish} diet={diet} marked={item.copy === 1}
               active={item.copy === 1 && item.real === activeIndex}
               eager={close(delta) || (atSeam && (close(delta - n) || close(delta + n)))}
               inert={item.copy !== 1}
               showHint={item.copy === 1 && item.real === 0 && n > 1} onOpen={setDetail} />;
           })}
       </div>
-      {itemCount > 0 && !sheetOpen ? <button type="button" className="sticky-cta" onClick={() => setOpen(true)}>
-        {t.viewOrder} · {formatQar(totalQar, lang, menu.settings)}</button> : null}
+      {itemCount > 0 && !sheetOpen ? <button type="button" className="sticky-cta" onClick={() => onReview ? onReview() : setOpen(true)}>
+        {onReview ? (lang === "ar" ? "عرض السلة" : "View basket") : t.viewOrder} · {formatQar(totalQar, lang, menu.settings)}</button> : null}
       <CategoryOverlay open={categoriesOpen} title={t.menu} label={t.category} closeLabel={t.close}
         logo={menu.settings.logo} brand={t.brand} value={category}
         options={menu.categories.map((c) => ({ id: c.id, label: sectionName(c.id, lang), disabled: !filledSections.has(c.id) }))}
         onClose={closeCategories} onChange={(section) => { jumpTo(section); setPickedCategory(sectionName(section, lang)); closeCategories(); }} />
       <div className="sr-only" aria-live="polite">{pickedCategory}</div>
       <div className="sr-only" aria-live="polite">{search ? t.searchResults(dishes.length) : ""}</div>
-      {detail ? <DishDetailSheet key={`${detail.id}-${diet}`} dish={detail} diet={diet} onClose={() => setDetail(null)} /> : null}
+      {detail ? <DishDetailSheet key={`${detail.id}-${diet}`} dish={detail} diet={diet} ordering={Boolean(onReview)} onClose={() => setDetail(null)} /> : null}
       <CartSheet open={open} onClose={() => setOpen(false)} />
     </div>
   );
@@ -382,10 +387,11 @@ function TicketIcon() {
   );
 }
 
-export function MenuFeed({ branch }: { branch: string }) {
+export function MenuFeed(props: OrderingFeedProps) {
+  if (props.onReview) return <FeedInner {...props} />;
   return (
     <CartProvider>
-      <FeedInner branch={branch} />
+      <FeedInner {...props} />
     </CartProvider>
   );
 }

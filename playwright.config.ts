@@ -22,7 +22,7 @@ export default defineConfig({
   webServer: external
     ? undefined
     : {
-        command: `npx next start -p ${port}`,
+        command: `node --require ./tests/browser/server-clock.cjs node_modules/next/dist/bin/next start -p ${port}`,
         url: `http://localhost:${port}`,
         reuseExistingServer: false,
         env: {

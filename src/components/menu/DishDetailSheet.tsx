@@ -31,17 +31,20 @@ type Props = {
   dish: Dish;
   diet?: DietFilter;
   onClose: () => void;
+  ordering?: boolean;
+  initialEntries?: { sel: Selection; note: string }[];
+  onSave?: (entries: { sel: Selection; note: string }[]) => void;
 };
 
-export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
+export function DishDetailSheet({ dish, diet = "all", onClose, ordering = false, initialEntries, onSave }: Props) {
   const { add } = useCart();
   const { lang, t } = useLocale();
   const menu = useMenu();
   const formatQar = (n: number, l: Lang) => money(n, l, menu.settings);
   const sectionName = (id: string, l: Lang) => categoryName(id, l, menu.categories);
-  const [units, setUnits] = useState<Selection[]>(() => [selectionForDiet(dish, diet)]);
+  const [units, setUnits] = useState<Selection[]>(() => initialEntries?.map(e => e.sel) ?? [selectionForDiet(dish, diet)]);
   const [activeUnit, setActiveUnit] = useState(0);
-  const [notes, setNotes] = useState<string[]>([""]);
+  const [notes, setNotes] = useState<string[]>(() => initialEntries?.map(e => e.note) ?? [""]);
   const [justAdded, setJustAdded] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
   // The photo the full-screen viewer grows from, while it is open.
@@ -51,13 +54,23 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
     useSheetDismiss(true, onClose);
 
   useEffect(() => {
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     closeRef.current?.focus();
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") requestClose();
+      if (ordering && e.key === "Tab" && sheetRef.current?.contains(document.activeElement)) {
+        const controls = Array.from(sheetRef.current.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), [tabindex="0"]')).filter(node => node.getClientRects().length > 0);
+        const first = controls[0], last = controls[controls.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+        if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+      }
     }
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [requestClose]);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      if (ordering && trigger?.isConnected) trigger.focus({ preventScroll: true });
+    };
+  }, [requestClose, ordering, sheetRef]);
 
   useEffect(() => () => window.clearTimeout(addedTimer.current), []);
 
@@ -88,7 +101,8 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
 
   function onAdd() {
     if (!ready || justAdded) return;
-    units.forEach((item, index) => add(current.id, item, 1, notes[index] ?? ""));
+    if (onSave) onSave(units.map((sel, index) => ({ sel, note: notes[index] ?? "" })));
+    else units.forEach((item, index) => add(current.id, item, 1, notes[index] ?? ""));
     setJustAdded(true);
     window.clearTimeout(addedTimer.current);
     addedTimer.current = window.setTimeout(() => requestClose(), 280);
@@ -220,7 +234,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
           <textarea value={notes[activeUnit] ?? ""} maxLength={400} rows={3} placeholder={t.commentPlaceholder}
             onChange={(e) => setNotes((prev) => prev.map((note, index) => index === activeUnit ? e.target.value : note))} />
         </label>
-        <p className="choice-note">{t.viewOnlyNotice}</p>
+        <p className="choice-note">{ordering ? (lang === "ar" ? "يمكنك تخصيص كل حصة وإضافة ملاحظة مختلفة لها." : "Each serving can have its own choices and note.") : t.viewOnlyNotice}</p>
         <div className="detail-foot">
           <div className="line-qty">
             <button
@@ -250,7 +264,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose }: Props) {
             onClick={onAdd}
             disabled={!ready}
           >
-            {justAdded ? t.added : `${t.addToOrder} · ${formatQar(total, lang)}`}
+            {justAdded ? (onSave ? (lang === "ar" ? "تم الحفظ" : "Saved") : t.added) : `${ordering ? (lang === "ar" ? (onSave ? "حفظ التغييرات" : "أضف إلى السلة") : (onSave ? "Save changes" : "Add to basket")) : t.addToOrder} · ${formatQar(total, lang)}`}
           </button>
         </div>
       </div>

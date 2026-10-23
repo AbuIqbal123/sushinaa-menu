@@ -201,7 +201,7 @@ export function hasPriceRange(dish: Dish): boolean {
   }
 }
 
-export function selectionLabel(dish: Dish, sel: Selection, lang: Lang, t:Copy): string {
+export function selectionLabel(dish: Pick<Dish, "kind" | "freeDips" | "extras">, sel: Selection, lang: Lang, t:Copy): string {
   const bits: string[] = [];
   const kind = dish.kind;
 
