@@ -1,14 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { branches, branchStatus } from '../src/ordering/checkout/branches';
+import { BRANCHES as branches } from '../src/branches/branches';
+import { branchStatus, qatarClock } from '../src/branches/hours';
 import { checkoutSchema, customerSchema, quoteOrder, validCheckoutSelection, type CheckoutInput } from '../src/ordering/checkout/validation';
 import { defaultSelection, serializeSelection, parseSelection, isSelectionComplete, unitPrice } from '../src/ordering/price';
 import { menuSchema, publicMenu } from '../src/cms/schema';
 import { beginHostedPayment } from '../src/ordering/checkout/payment';
 const menu = menuSchema.parse(JSON.parse(readFileSync('data/initial-menu.json', 'utf8')));
 const at = (date: string) => new Date(`${date}+03:00`);
-const open = (id: string, date: string) => branchStatus(branches.find(b => b.id === id)!, at(date)).open;
+const open = (id: string, date: string) => branchStatus(branches.find(b => b.slug === id)!.hours, qatarClock(at(date))).open;
 test('Qatar branch boundaries include opening and exclude closing, including Thursday into Friday', () => {
   assert.equal(open('down-town', '2026-10-22T11:59:59'), false);
   assert.equal(open('down-town', '2026-10-22T12:00:00'), true);
@@ -30,12 +31,12 @@ test('Qatar branch boundaries include opening and exclude closing, including Thu
 });
 test('every day and branch changes status at exactly its configured boundaries', () => {
   for (const b of branches) for (let day = 0; day < 7; day++) {
-    const [start, end] = b.hours(day);
+    const { open: start, close: end } = b.hours[day];
     const midnight = new Date(`2026-10-${18 + day}T00:00:00+03:00`).getTime();
-    assert.equal(branchStatus(b, new Date(midnight + start * 60000 - 1)).open, false, `${b.id} ${day} before opening`);
-    assert.equal(branchStatus(b, new Date(midnight + start * 60000)).open, true);
-    assert.equal(branchStatus(b, new Date(midnight + end * 60000 - 1)).open, true);
-    assert.equal(branchStatus(b, new Date(midnight + end * 60000)).open, false);
+    assert.equal(branchStatus(b.hours, qatarClock(new Date(midnight + start * 60000 - 1))).open, false, `${b.slug} ${day} before opening`);
+    assert.equal(branchStatus(b.hours, qatarClock(new Date(midnight + start * 60000))).open, true);
+    assert.equal(branchStatus(b.hours, qatarClock(new Date(midnight + end * 60000 - 1))).open, true);
+    assert.equal(branchStatus(b.hours, qatarClock(new Date(midnight + end * 60000))).open, false);
   }
 });
 const customer = { name: 'علي O’Neil', phone: '+974 ٥٥٥٥ ١٢٣٤', plate: 'q٠٠١٢٣', colour: '', car: '', instructions: '' };

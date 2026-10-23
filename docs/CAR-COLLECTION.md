@@ -1,83 +1,40 @@
-# Car collection — private Stage 2 preview
+# Car collection — Stage 2 preview
 
-Branch: `feature/curbside-ordering`, based on `origin/main` at `4b860d1`.
-The approved category design was already merged in main. No code was copied over newer main changes.
+Work stays on `feature/curbside-ordering`; pull requests target `dev`.
 
-## What can be reviewed now
+## Current build-repair checkpoint
 
-- `/` remains the view-only menu, with its original storage key and copy.
-- `/order` starts with four branches, using their supplied Qatar hours (including the previous day's overnight period). Closed branches can be browsed; checkout is blocked and checked again on the server.
-- Published CMS content drives the feed, images, options, availability and prices. The ordering route reads a fresh menu on server refresh. All branches share this menu because branch-specific stock is not currently modelled by the CMS.
-- Ordering has its own basket. Notes and options distinguish lines. Editing a multi-serving line opens the existing per-serving configurator and replaces that line atomically, preserving other lines.
-- Collection details remain in memory across in-flow back/edit/branch/language changes. The basket survives a page reload; personal collection details deliberately do not. Unavailable selections remain flagged until the customer explicitly removes them.
-- Review shows the branch, vehicle, contact, individual notes, quantities and total. Arabic-Indic and Persian digits are accepted; leading plate zeroes are preserved. Mobile entry is Qatar mobile (+974), not OTP verification. Vehicle plates allow letters, spaces and hyphens as well as digits.
-- The local handoff creates a persistent unpaid preview order. Identical concurrent/repeated requests from the same cookie session and idempotency key return the same order. A different payload under that key is rejected. This is request-retry protection; reloading and starting a new attempt is a new checkout.
-- Sadad is **not connected**. The public draft shows a clearly marked, client-only hosted-checkout simulation with a brief processing animation and demo confirmation. Its card details are static, non-interactive placeholders. It makes no external payment request, charges no money, creates no production order, and sends nothing to the kitchen. The basket and collection form share one checkout page; after review and the simulated payment, the original dark review receipt layout is reused without a gateway-style wrapper. Other payment states await a real provider implementation and end-to-end tests.
+- `/` is the dev branch picker; `/[branch]` retains the viewing menu and its basket.
+- `/order` has an independent basket, the original paper ticket, then collection details, then review on separate screens. The final preview keeps directions prominent.
+- The four branches, coordinates and hours now share `src/branches/branches.ts` and `src/branches/hours.ts`.
+- Phone entry uses +974 and eight national digits. Plates use Q/T/R plus 3–6 digits, preserving leading zeroes.
+- Menu/price validation and session-scoped idempotency remain server-side.
+- Orders use the existing CMS database. There is no separate order database or credential.
+- Before any order access or bootstrap, the live host is rejected. CMS behaviour on the live database is preserved, but order tables are excluded. Migrations also refuse that host.
+- Clients and connections are lazy: importing route modules during a preview build does not require ordering configuration.
+- The public menu source, when configured, is read-only and still runs `initDb` and its environment guard first. It cannot replace database environment validation.
+- `NEXT_PUBLIC_ORDERING_DEMO_MODE` only selects the existing visual simulation. It does not enable an order API or real payments. The root never redirects to `/order`.
+- Production mock payment configuration fails at runtime/startup even when the CMS guard is report-only.
 
-## Local setup
+## Local verification
 
-Use Node, `npm install`, and a local CMS database containing a published menu. This workspace has a private SQLite backup of the existing local CMS database, including the published wording previously synced from the live menu. No production database was written. No seed fixture is used as a frontend fallback.
+Use a fresh scratch database, never the production database:
 
-In `.env.local`:
-
-```dotenv
-CMS_DATABASE_URL=file:./data/menu.db
-ORDER_DATABASE_URL=file:./data/orders.db
-ORDERING_PREVIEW_ENABLED=true
+```sh
+export CMS_DATABASE_URL=file:/tmp/sn/menu.db
+export CMS_DATABASE_AUTH_TOKEN=
+export CMS_PUBLIC_MENU_SOURCE_URL=
+export CMS_ENV_GUARD=report
+export VERCEL_ENV=preview
+npm run cms:seed
+npm run build
+npm run test:e2e
 ```
 
-Run `next dev --webpack --hostname 0.0.0.0 --port 3008`, with `SUSHINAA_PREVIEW_HOST` set to the computer's exact LAN IP for phone testing. Open `/order`. The phone must be on the same network. Do not use real customer details for preview testing.
+`0002_orders.sql` is additive and matches the guarded bootstrap. Orders store a versioned snapshot, integer minor-unit totals, customer fields and a single lifecycle status. The payment attempts, provider events and outbox tables are preserved.
 
-A separate public Vercel draft can set `CMS_PUBLIC_MENU_SOURCE_URL=https://sushinaa-menu.vercel.app/api/menu` and `NEXT_PUBLIC_ORDERING_DEMO_MODE=true`. This fetches current published CMS content read-only (and proxies uploaded menu photos if any) without access to the production CMS database. The draft payment step is client-only and creates no order; after its simulated confirmation, the same review receipt layout appears on the restaurant's dark page. Its availability depends on the published menu API. `POST /api/orders` is disabled in production regardless of environment configuration. To release ordering later requires an explicit implementation change after payment and CMS integration testing. No migration touches the CMS database. The order database must be durable (remote libSQL, with its own token) before future hosting; Vercel cannot use local SQLite files.
+## Next checkpoint
 
-## Server contract and persistence
+Wait for the build-repair PR's `check` and Vercel preview to pass before implementing staff order management, server mock settlement, rate limits, privacy retention and their browser tests. Current public draft payment remains visual only. Real Sadad charging and webhooks are out of scope.
 
-`GET /api/orders` establishes an HttpOnly SameSite=Strict cookie for the preview session and returns payment availability. `POST /api/orders` requires same-origin JSON, an `Idempotency-Key`, and a body under 64 KiB:
-
-```ts
-{
-  branchId: 'down-town' | 'al-thumama' | 'west-bay' | 'al-khor',
-  customer: { name, phone, plate, colour, car, instructions },
-  lines: [{ dishId, selection, quantity, note, expectedUnitMinor }]
-}
-```
-
-Amounts are integer QAR minor units (100 = 1 QAR). `expectedUnitMinor` is only an optimistic check: the server calculates all prices from the current CMS record, validates selections against that dish, rejects removed/hidden/unavailable items, checks branch hours, and refuses changed prices. Client totals and extra properties are rejected. Limits are 20 servings per line, 100 per order and 10 new preview attempts per cookie session/hour; production also needs an infrastructure-backed abuse limiter, not just this cookie limit.
-
-Orders store a versioned immutable JSON snapshot with menu revision, stable branch ID/name, collection method `car`, customer/vehicle details, dish IDs and bilingual names, the option catalogue at purchase time, selections, per-line notes, quantities and integer unit/line/grand totals in QAR. An order has an opaque UUID reference, session hash, request hash, creation and expiry timestamps, `payment_status` and a **separate** `fulfilment_status`. Preview drafts expire after 30 minutes; this is an internal draft lifetime, not a promised Sadad session lifetime. Expiry is checked on reuse. No public endpoint exposes customer records.
-
-Tables prepared for the next phase:
-
-- `orders`: snapshot plus independent payment/fulfilment states, initially `awaiting_payment` / `not_submitted`.
-- `payment_attempts`: attempt/order IDs, provider, unique provider reference, status and creation/update timestamps. Empty until a real payment is initiated.
-- `order_events`: immutable-by-convention integration history and a unique provider event key. No provider events are accepted in this branch.
-- `order_outbox`: unique `(order_id,event)` and delivery timestamp. Empty until a verified payment is settled.
-
-Future payment settlement must atomically: match the verified merchant/order/amount/currency and environment; record the provider transaction exactly once; transition the order without allowing a late failure to undo a paid state; insert a unique `order.paid` outbox event. A worker then retries delivery to the future CMS queue. Commit payment before attempting CMS delivery, so a CMS outage cannot lose a paid order. The outbox worker, real verification adapter and staff screens are intentionally not implemented in this menu preview.
-
-## Sadad dependencies before integration
-
-Official documentation checked 22 October 2026:
-
-- [Hosted Web Checkout 2.1](https://developer.sadad.qa/web-checkout_2.1/)
-- [Required request fields](https://developer.sadad.qa/web-checkout_2.1/request-parameters/)
-- [Callback verification](https://developer.sadad.qa/web-checkout_2.1/callback-verification/)
-- [Webhook payload and replay handling](https://developer.sadad.qa/web-checkout_2.1/webhook/)
-
-Required from the merchant in server environment configuration (never paste secrets into source or NEXT_PUBLIC variables):
-
-1. Confirm Web Checkout 2.1 is enabled for this merchant; supply merchant ID, website identifier and **test** secret key.
-2. Confirm the account's hosted submission endpoint/field contract and obtain genuine signed sandbox callback/webhook fixtures. The public request page uses `signature`; callback/webhook pages use `checksumhash`. Callback text warns against URL-decoding while its PHP example consumes parsed POST values. Resolve encoding/canonicalisation against merchant sandbox fixtures instead of guessing a signing algorithm.
-3. Confirm whether customer email is mandatory for this account: the current required-fields page lists it. If required, add an explained email field; never generate a placeholder email.
-4. Provide the approved HTTPS return/callback and webhook URLs. Register them with Sadad when a separate test deployment is authorised. The local LAN preview cannot receive public Sadad callbacks.
-5. Confirm how the account's QAR currency and test environment are verified: the documented webhook example has no currency field. Bind currency from a trusted server-created attempt and verify through the account's supported transaction-status API if required; do not trust browser return parameters.
-6. Implement the hosted provider adapter, verified callback/status reconciliation, atomic replay handling, expiry/retry handling and tests for merchant/order/amount/currency/environment mismatches before enabling payments.
-7. Review the existing CSP `form-action 'self'` when adding an actual hosted POST. Allow only the confirmed Sadad checkout origin; no wildcard. Do not change this restriction just for the unconnected preview.
-
-Business details still to confirm before launch: approved Arabic branch names; branch-specific item availability/prices if different; any last-order cutoff or exceptional closures; car-arrival procedure and contact details; customer-data retention and an updated collection privacy notice. No addresses, maps, preparation times, delivery, fees, advance scheduling, refund promises or OTP service have been invented.
-
-## Checks
-
-Run `npm test`, `npx tsc --noEmit`, `npx eslint src/ordering/checkout src/components/checkout src/app/order src/app/api/orders`, and `npx next build --webpack`.
-
-New tests exercise every branch/day opening and closing boundary, overnight Friday/Sunday transitions, Arabic digits and leading plate zeroes, separate portions/notes, authoritative totals, unavailable options/items, price tampering, concurrent idempotency, payload conflicts and the unavailable payment adapter. Browser review covers branch selection, search, 4-/8-piece shrimp roll notes, details validation, review, retries, Arabic and editing. Real Sadad payments, OTP and CMS staff delivery remain untested because they are not connected.
+Parked: real Sadad adapter/webhooks; `TODO(owner)` confirmation of the 90-day retention period; `TODO(ar)` review of existing and new Arabic checkout/staff copy; per-branch stock and pricing.

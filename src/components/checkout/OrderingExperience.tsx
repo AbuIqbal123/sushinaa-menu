@@ -8,7 +8,8 @@ import { DishDetailSheet } from '@/components/menu/DishDetailSheet';
 import { CartProvider, useCart, type CartLine } from '@/ordering/cart';
 import { useMenu } from '@/cms/context';
 import { LangButton, useLocale, useSetSheetOpen } from '@/i18n/locale';
-import { branches, branchStatus, type BranchId } from '@/ordering/checkout/branches';
+import { BRANCHES as branches, type BranchId } from '@/branches/branches';
+import { branchStatus, qatarClock } from '@/branches/hours';
 import { customerSchema, digits, type Customer } from '@/ordering/checkout/validation';
 import { formatQar } from '@/lib/money';
 import type { PaymentStatus } from '@/ordering/checkout/payment';
@@ -49,8 +50,8 @@ function Experience({ initialNow }: { initialNow: string }) {
     setSheetOpen(true);
     return () => setSheetOpen(false);
   }, [editing, setSheetOpen]);
-  const branch = branches.find(b => b.id === branchId);
-  const status = branch ? branchStatus(branch, now) : null;
+  const branch = branches.find(b => b.slug === branchId);
+  const status = branch ? branchStatus(branch.hours, qatarClock(now)) : null;
   const money = (minor: number) => `${new Intl.NumberFormat(lang === 'ar' ? 'ar-QA' : 'en-QA', { maximumFractionDigits: 2 }).format(minor / 100)} ${text('QAR', 'ر.ق')}`;
   const ticketMoney = (qar: number) => formatQar(qar, lang, menu.settings);
   useEffect(() => {

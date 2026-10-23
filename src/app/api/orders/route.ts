@@ -5,10 +5,13 @@ import { readMenu } from '@/cms/repository';
 import { checkoutSchema, CheckoutError, quoteOrder } from '@/ordering/checkout/validation';
 import { hash, persistPendingOrder } from '@/ordering/checkout/repository';
 import { beginHostedPayment } from '@/ordering/checkout/payment';
+import { databaseUrl } from '@/cms/db';
+import { orderDatabaseAllowed } from '@/ordering/guard';
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 // This preview release cannot collect real orders in production, even if credentials are present.
-const enabled = () => process.env.NODE_ENV !== 'production' && process.env.ORDERING_PREVIEW_ENABLED === 'true';
+const enabled = () => orderDatabaseAllowed(databaseUrl) && process.env.NODE_ENV !== 'production' && process.env.ORDERING_PREVIEW_ENABLED === 'true';
 async function session() {
   const jar = await cookies();
   let token = jar.get('sushinaa-order-session')?.value;

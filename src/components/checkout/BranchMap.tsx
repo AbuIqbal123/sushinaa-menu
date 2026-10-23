@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { Map as MapLibreMap } from 'maplibre-gl';
-import { branches, branchStatus, timeLabel, type BranchId } from '@/ordering/checkout/branches';
+import { BRANCHES as branches, type BranchId } from '@/branches/branches';
+import { branchStatus, qatarClock } from '@/branches/hours';
 
 type Props = {
   lang: 'en' | 'ar';
@@ -18,7 +19,7 @@ export function BranchMap({ lang, now, onChoose }: Props) {
   const markers = useRef(new Map<BranchId, HTMLButtonElement>());
   const langRef = useRef(lang);
   const text = (en: string, ar: string) => lang === 'ar' ? ar : en;
-  const selected = branches.find(branch => branch.id === active);
+  const selected = branches.find(branch => branch.slug === active);
 
   useEffect(() => {
     let disposed = false;
@@ -67,8 +68,8 @@ export function BranchMap({ lang, now, onChoose }: Props) {
         const label = langRef.current === 'ar' ? branch.nameAr : branch.name;
         button.setAttribute('aria-label', `${index + 1}. ${label}`);
         button.innerHTML = `<span class="branch-map-pin-number">${index + 1}</span><span class="branch-map-pin-label">${label}</span>`;
-        button.addEventListener('click', () => setActive(branch.id));
-        markerNodes.set(branch.id, button);
+        button.addEventListener('click', () => setActive(branch.slug));
+        markerNodes.set(branch.slug, button);
         new Marker({ element: button, anchor: 'bottom' }).setLngLat(branch.coordinates).addTo(map);
       });
     }).catch(() => { if (!disposed) setMapFailed(true); });
@@ -79,7 +80,7 @@ export function BranchMap({ lang, now, onChoose }: Props) {
     markers.current.forEach((node, id) => node.classList.toggle('active', id === active));
     const map = mapRef.current;
     if (!map || !active) return;
-    const branch = branches.find(item => item.id === active);
+    const branch = branches.find(item => item.slug === active);
     if (!branch) return;
     map.flyTo({ center: branch.coordinates, zoom: 14.4, pitch: 58, bearing: -22, duration: 850, essential: true });
   }, [active]);
@@ -87,7 +88,7 @@ export function BranchMap({ lang, now, onChoose }: Props) {
   useEffect(() => {
     langRef.current = lang;
     branches.forEach((branch, index) => {
-      const button = markers.current.get(branch.id);
+      const button = markers.current.get(branch.slug);
       if (!button) return;
       button.setAttribute('aria-label', `${index + 1}. ${lang === 'ar' ? branch.nameAr : branch.name}`);
       const label = button.querySelector('.branch-map-pin-label');
@@ -116,14 +117,14 @@ export function BranchMap({ lang, now, onChoose }: Props) {
       <div className="branch-map-footnote">{text('Drag, tilt & zoom', 'حرّك وأدر وكبّر الخريطة')}</div>
     </div>
     <div className="branch-map-choices" role="group" aria-label={text('Branches', 'الفروع')}>
-      {branches.map((branch, index) => <button key={branch.id} type="button" className={`branch-map-choice${active === branch.id ? ' active' : ''}`} onClick={() => setActive(branch.id)} aria-pressed={active === branch.id}>
+      {branches.map((branch, index) => <button key={branch.slug} type="button" className={`branch-map-choice${active === branch.slug ? ' active' : ''}`} onClick={() => setActive(branch.slug)} aria-pressed={active === branch.slug}>
         <span>{String(index + 1).padStart(2, '0')}</span><strong>{text(branch.name, branch.nameAr)}</strong>
       </button>)}
     </div>
     {selected && <div className="branch-map-selection" aria-live="polite">
-      <div><strong>{text(selected.name, selected.nameAr)}</strong><span className={`branch-status${branchStatus(selected, now).open ? ' is-open' : ''}`}><i />{branchStatus(selected, now).open ? text('Open', 'مفتوح') : text('Closed', 'مغلق')}</span></div>
-      <p dir="ltr">{timeLabel(branchStatus(selected, now).hours[0], lang)} – {timeLabel(branchStatus(selected, now).hours[1], lang)}</p>
-      <button type="button" className="checkout-primary" onClick={() => onChoose(selected.id)}>{text('Continue with this branch', 'المتابعة مع هذا الفرع')}<span aria-hidden="true">→</span></button>
+      <div><strong>{text(selected.name, selected.nameAr)}</strong><span className={`branch-status${branchStatus(selected.hours, qatarClock(now)).open ? ' is-open' : ''}`}><i />{branchStatus(selected.hours, qatarClock(now)).open ? text('Open', 'مفتوح') : text('Closed', 'مغلق')}</span></div>
+      <p dir="ltr">{branchStatus(selected.hours, qatarClock(now)).hours}</p>
+      <button type="button" className="checkout-primary" onClick={() => onChoose(selected.slug)}>{text('Continue with this branch', 'المتابعة مع هذا الفرع')}<span aria-hidden="true">→</span></button>
     </div>}
   </div>;
 }

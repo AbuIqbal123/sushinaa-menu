@@ -3,7 +3,8 @@ import type { Dish, Selection } from '@/catalog/types';
 import type { MenuData } from '@/cms/schema';
 import { publicMenu } from '@/cms/schema';
 import { isSelectionComplete, unitPrice } from '@/ordering/price';
-import { branches, branchStatus } from './branches';
+import { BRANCHES as branches } from '@/branches/branches';
+import { branchStatus, qatarClock } from '@/branches/hours';
 
 export const digits = (value: string) => value.replace(/[٠-٩۰-۹]/g, c => String(c.charCodeAt(0) >= 1776 ? c.charCodeAt(0) - 1776 : c.charCodeAt(0) - 1632));
 export const normalizePhone = (value: string) => {
@@ -58,8 +59,8 @@ export function validCheckoutSelection(dish: Dish, sel: Selection) {
   return Object.keys(sel).every(key => sel[key as keyof Selection] === undefined || allowed.has(key)) && required.every(key => sel[key as keyof Selection] !== undefined);
 }
 export function quoteOrder(input: CheckoutInput, menu: MenuData, now = new Date()) {
-  const branch = branches.find(b => b.id === input.branchId)!;
-  if (!branchStatus(branch, now).open) throw new CheckoutError('CLOSED');
+  const branch = branches.find(b => b.slug === input.branchId)!;
+  if (!branchStatus(branch.hours, qatarClock(now)).open) throw new CheckoutError('CLOSED');
   if (input.lines.reduce((n, line) => n + line.quantity, 0) > 100) throw new CheckoutError('LIMIT');
   const available = publicMenu(menu).dishes;
   const lines = input.lines.map(line => {
@@ -71,7 +72,7 @@ export function quoteOrder(input: CheckoutInput, menu: MenuData, now = new Date(
     return { dishId: dish.id, name: dish.name, nameAr: dish.nameAr, kind: dish.kind, freeDips: dish.freeDips, extras: dish.extras,
       selection: line.selection, quantity: line.quantity, note: line.note, unitMinor, totalMinor: unitMinor * line.quantity };
   });
-  return { branchId: branch.id, branchName: branch.name, customer: input.customer, collection: 'car' as const, lines,
+  return { branchId: branch.slug, branchName: branch.name, customer: input.customer, collection: 'car' as const, lines,
     totalMinor: lines.reduce((n, line) => n + line.totalMinor, 0), currency: 'QAR' as const };
 }
 export type OrderSnapshot = ReturnType<typeof quoteOrder>;

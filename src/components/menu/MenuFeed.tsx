@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type CSSProperties } from "react";
 import { matchesDiet, type DietFilter, type Dish, type Section } from "@/catalog/menu";
 import { useMenu } from "@/cms/context";
@@ -20,9 +21,9 @@ function normalizeSearch(value: string) {
     .replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
 
-type OrderingFeedProps = { onReview?: () => void; branchBar?: ReactNode };
+type OrderingFeedProps = { branch?: string; onReview?: () => void; branchBar?: ReactNode };
 
-function FeedInner({ onReview, branchBar }: OrderingFeedProps) {
+function FeedInner({ branch, onReview, branchBar }: OrderingFeedProps) {
   const menu = useMenu();
   const { itemCount, totalQar } = useCart();
   const { lang, t } = useLocale();
@@ -257,7 +258,13 @@ function FeedInner({ onReview, branchBar }: OrderingFeedProps) {
     <div className={`shell${onReview ? " ordering-feed" : ""}${sheetOpen ? " is-sheet" : ""}${itemCount > 0 ? " has-order" : ""}`}>
       <header className={`chrome-header${searchOpen ? " search-open" : ""}`} inert={sheetOpen}>
         <div className="brand-navigation">
-          <img src={menu.settings.logo} alt={t.brand} className="wordmark-img" width={46} height={44} />
+          {/* The logo and the branch name are one link back to the branch picker. */}
+          {onReview ? <span className="brand-mark"><img src={menu.settings.logo} alt={t.brand} className="wordmark-img" width={46} height={44} /></span> : (
+          <Link href="/?pick=1" className="brand-mark" aria-label={`${t.brand}, ${branch}, change branch`} prefetch={false}>
+            <img src={menu.settings.logo} alt="" className="wordmark-img" width={46} height={44} />
+            <span className="branch-switch"><span className="branch-switch-name">{branch}</span><span aria-hidden="true">▾</span></span>
+          </Link>
+          )}
           <button ref={categoryButtonRef} type="button" className="cart-btn category-toggle"
             aria-label={`${t.category}: ${sectionName(category, lang)}`} title={sectionName(category, lang)}
             aria-haspopup="dialog" aria-expanded={categoriesOpen} aria-controls="category-overlay"
@@ -380,11 +387,11 @@ function TicketIcon() {
   );
 }
 
-export function MenuFeed(props: OrderingFeedProps = {}) {
+export function MenuFeed(props: OrderingFeedProps) {
   if (props.onReview) return <FeedInner {...props} />;
   return (
     <CartProvider>
-      <FeedInner />
+      <FeedInner {...props} />
     </CartProvider>
   );
 }

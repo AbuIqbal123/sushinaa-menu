@@ -5,6 +5,7 @@ export async function GET(
 ) {
   const { id } = await params;
   if (!/^[a-f0-9]{64}$/.test(id)) return new Response(null, { status: 404 });
+  await initDb();
   const source = process.env.CMS_PUBLIC_MENU_SOURCE_URL;
   if (source) {
     const origin = new URL(source).origin;
@@ -16,7 +17,6 @@ export async function GET(
     if (bytes.byteLength > 5_000_000) return new Response(null, { status: 502 });
     return new Response(bytes, { headers: { 'Content-Type': type, 'Cache-Control': 'public,max-age=3600', 'X-Content-Type-Options': 'nosniff' } });
   }
-  await initDb();
   const r = await db.execute({
     sql: "SELECT content,type FROM media WHERE id=?",
     args: [id],

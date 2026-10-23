@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import type { OrderSnapshot } from '../src/ordering/checkout/validation';
 test('concurrent retries create one pending order; changed body conflicts; another session cannot reuse it', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'sushinaa-orders-'));
-  process.env.ORDER_DATABASE_URL = `file:${join(dir, 'orders.db')}`;
+  process.env.CMS_DATABASE_URL = `file:${join(dir, 'orders.db')}`;
   const { persistPendingOrder } = await import('../src/ordering/checkout/repository');
   const snapshot: OrderSnapshot = { branchId: 'down-town', branchName: 'Down Town', collection: 'car', customer: { name: 'Test', phone: '97455551234', plate: 'Q001', colour: '', car: '', instructions: '' }, lines: [], totalMinor: 100, currency: 'QAR' };
   try {

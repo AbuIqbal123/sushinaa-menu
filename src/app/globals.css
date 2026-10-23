@@ -1646,3 +1646,19 @@ button {
   .category-discovery, .category-discovery svg { animation: none; }
   [dir="rtl"] .category-discovery svg { transform: scaleX(-1); }
 }
+
+/* Brand mark: the logo with the current branch under it. Opens the branch picker. */
+.brand-mark {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  flex: 0 0 auto; min-width: 44px; max-width: 76px; min-height: 44px; pointer-events: auto;
+  color: #f3e4c4; text-decoration: none; border-radius: 8px;
+}
+.brand-navigation .brand-mark .wordmark-img { height: 30px; width: auto; }
+.branch-switch {
+  display: flex; align-items: center; gap: 2px; max-width: 100%;
+  font-size: 10px; font-weight: 700; line-height: 1.1; text-shadow: 0 1px 4px rgba(0,0,0,.7);
+}
+.branch-switch-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.brand-mark:focus-visible { outline: 2px solid #f3e4c4; outline-offset: 2px; }
+.search-open .brand-mark { pointer-events: none; }
+.search-open .branch-switch { visibility: hidden; }
