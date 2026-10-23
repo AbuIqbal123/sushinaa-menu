@@ -14,10 +14,27 @@ export const db = new Proxy({} as Client, {
       if (process.env.VERCEL && databaseUrl.startsWith("file:"))
         throw new Error("Set CMS_DATABASE_URL to a remote libSQL database on Vercel.");
       if (databaseUrl.startsWith("file:")) mkdirSync(dirname(databaseUrl.slice(5)), { recursive: true });
-      client = createClient({ url: databaseUrl, authToken: process.env.CMS_DATABASE_AUTH_TOKEN });
+      client = createClient({ url: databaseUrl, authToken: process.env.CMS_DATABASE_AUTH_TOKEN,
+        // SQLite has one writer. Avoid pooling competing native write transactions locally.
+        ...(databaseUrl.startsWith("file:") ? { concurrency: 1 } : {}),
+      });
     }
     const value = Reflect.get(client, key);
-    return typeof value === "function" ? value.bind(client) : value;
+    if (typeof value !== "function") return value;
+    if (databaseUrl.startsWith("file:") && ["execute", "batch", "transaction"].includes(String(key))) {
+      return async (...args: unknown[]) => {
+        for (let attempt = 0; ; attempt++) {
+          try { return await value.apply(client, args); }
+          catch (error) {
+            // The driver reports pool exhaustion before executing SQL when a transaction
+            // owns its only connection. Let that transaction finish, then try to acquire.
+            if (attempt >= 100 || !(error instanceof Error) || !("code" in error) || error.code !== "TRANSACTION_ACTIVE") throw error;
+            await new Promise(resolve => setTimeout(resolve, 10));
+          }
+        }
+      };
+    }
+    return value.bind(client);
   },
 });
 let ready: Promise<unknown> | undefined;

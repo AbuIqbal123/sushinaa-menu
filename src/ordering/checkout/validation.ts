@@ -4,6 +4,7 @@ import type { MenuData } from '@/cms/schema';
 import { publicMenu } from '@/cms/schema';
 import { isSelectionComplete, unitPrice } from '@/ordering/price';
 import { BRANCHES as branches } from '@/branches/branches';
+import { branchId } from '@/ordering/contracts';
 import { branchStatus, qatarClock } from '@/branches/hours';
 
 export const digits = (value: string) => value.replace(/[٠-٩۰-۹]/g, c => String(c.charCodeAt(0) >= 1776 ? c.charCodeAt(0) - 1776 : c.charCodeAt(0) - 1632));
@@ -30,7 +31,8 @@ const selectionSchema = z.object({
   picks: z.array(option).max(20).optional(), topping: option.optional(), style: option.optional(), cut: option.optional(), dip: option.optional(),
 }).strict();
 export const checkoutSchema = z.object({
-  branchId: z.enum(['down-town', 'al-thumama', 'west-bay', 'al-khor']),
+  branchId,
+  paymentMethod: z.enum(['mock', 'pay_at_pickup']).optional(),
   customer: customerSchema,
   lines: z.array(z.object({ dishId: option, selection: selectionSchema, quantity: z.number().int().min(1).max(20), note: optionalText(400), expectedUnitMinor: z.number().int().min(0) }).strict()).min(1).max(100),
 }).strict();

@@ -9,11 +9,12 @@ const AREAS: Record<string, string[]> = {
   categories: ["category"],
   settings: ["settings", "copy", "fields", "filter"],
   media: ["media"],
+  orders: ["order"],
 };
 const PAGE_SIZE = 50;
 export async function GET(request: Request) {
   if (!(await authenticated()))
-    return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+    return NextResponse.json({ error: "Sign in required" }, { status: 401, headers: { "Cache-Control": "no-store" } });
   const params = new URL(request.url).searchParams;
   const types = AREAS[params.get("area") ?? ""];
   const page = Math.min(1000, Math.max(1, Number(params.get("page")) || 1));

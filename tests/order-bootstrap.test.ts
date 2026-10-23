@@ -47,6 +47,9 @@ test('mock gateway cannot be enabled in production', () => {
     const assert = (await import('node:assert/strict')).default;
     const guard = (await import('./src/cms/env-guard.ts')).default;
     assert.throws(() => guard.assertPaymentProviderAllowed(), /Production must not use a mock/);
+    const route = (await import('./src/app/api/orders/[id]/mock-pay/route.ts')).default;
+    const response = await route.POST(new Request('http://localhost/api/orders/x/mock-pay', {method:'POST'}), {params:Promise.resolve({id:'x'})});
+    assert.equal(response.status,404);
   })().catch(e => { console.error(e); process.exit(1); })`, {
     VERCEL_ENV: 'production', PAYMENT_PROVIDER: 'mock', CMS_DATABASE_URL: 'file:/tmp/unused-mock-guard.db',
   });

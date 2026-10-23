@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useLocale } from "@/i18n/locale";
 import { useNotify } from "./Notices";
 
 type Row = {
@@ -21,6 +22,7 @@ const AREAS = [
   ["categories", "Categories"],
   ["settings", "Settings"],
   ["media", "Photos"],
+  ["orders", "Orders"],
 ] as const;
 const FIELDS: Record<string, string> = {
   name: "name",
@@ -59,11 +61,13 @@ const SECTIONS: Record<string, string> = {
   fields: "Changed field names",
 };
 
-export function describe(row: Row) {
+export function describe(row: Row, lang: "en" | "ar" = "en") {
   const [, verb] = row.action.split(".");
   const name = `“${row.label ?? row.entityId}”`;
   const changed = row.diff ? Object.keys(row.diff).map(field).join(", ") : "";
   switch (row.action) {
+    case "order.status": return `${lang === "ar" ? "تم تغيير حالة الطلب" : "Order status changed"}: ${row.entityId}`;
+    case "order.contact_viewed": return `${lang === "ar" ? "تم عرض بيانات التواصل للطلب" : "Order contact viewed"}: ${row.entityId}`;
     case "session.sign_in":
       return "Signed in";
     case "session.sign_out":
@@ -111,6 +115,7 @@ function Detail({ term, children }: { term: string; children: React.ReactNode })
 }
 
 export function Activity() {
+  const { lang } = useLocale();
   const [area, setArea] = useState("");
   const [page, setPage] = useState(1);
   const [data, setData] = useState<{ rows: Row[]; more: boolean } | null>(null);
@@ -148,7 +153,7 @@ export function Activity() {
         >
           {AREAS.map(([value, text]) => (
             <option key={value} value={value}>
-              {text}
+              {value === "orders" && lang === "ar" ? "الطلبات" : text}
             </option>
           ))}
         </select>
@@ -160,7 +165,7 @@ export function Activity() {
         {data?.rows.map((row) => (
           <li key={row.id}>
             <div className="activity-line">
-              <strong>{describe(row)}</strong>
+              <strong>{describe(row, lang)}</strong>
               <time dateTime={row.at} title={`${row.at} UTC`}>
                 {new Date(row.at).toLocaleString("en-GB", {
                   day: "numeric",

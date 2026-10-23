@@ -287,3 +287,6 @@
 @media(min-width: 600px) { .ordering-page { border-inline: 1px solid #ffffff0c; } }
 @media(max-width: 360px) { .ordering-header { padding-inline: 16px; } .branch-page, .checkout-main { padding-inline: 18px; } .branch-card { gap: 9px; padding-inline: 12px; } .branch-card-heading > strong { font-size: 19px; } .collection-label { font-size: 10px; gap: 6px; } .checkout-lines li { gap: 8px; } .checkout-lines img { width: 46px; height: 62px; } .checkout-line-sum { font-size: 10px; } }
 @media(prefers-reduced-motion: reduce) { .ordering-page *, .ordering-page *::before, .ordering-page *::after, .sadad-demo *, .sadad-demo *::before, .sadad-demo *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } .sadad-success-ring path { stroke-dashoffset: 0; } }
+.collection-privacy {font-size:12px;line-height:1.6;color:#c4b9aa;margin-block:20px;}.collection-privacy a {text-decoration:underline;text-underline-offset:3px;}
+.checkout-payment-choice {display:flex;gap:8px;margin-block:22px;}.checkout-payment-choice button {flex:1;padding:12px;border:1px solid #ffffff30;border-radius:8px;background:transparent;color:inherit;}.checkout-payment-choice button[aria-checked="true"]{border-color:#d89071;background:#9d332330;}
+.order-confirmation-reference {overflow-wrap:anywhere;max-width:100%;font-size:11px;}
