@@ -1,7 +1,9 @@
 import { ZodError } from 'zod';
-import { authenticated, sameOrigin } from '@/cms/auth';
+import { auditContext, auditInsert } from '@/cms/audit';
+import { currentStaff, sameOrigin, type StaffPrincipal } from '@/cms/auth';
+import { allows, type Permission } from '@/cms/permissions';
 import { assertPaymentProviderAllowed } from '@/cms/env-guard';
-import { databaseUrl } from '@/cms/db';
+import { db, databaseUrl } from '@/cms/db';
 import { assertOrderDatabaseAllowed, OrderingUnavailable } from './guard';
 import { CheckoutError } from './checkout/validation';
 export class OrderError extends Error {
@@ -22,10 +24,20 @@ export function provider() {
   if (p !== 'mock' && p !== 'counter') throw new OrderingUnavailable();
   return p;
 }
-export async function adminAccess(request?: Request) {
-  if (!await authenticated()) throw new OrderError('UNAUTHENTICATED', 401);
+export async function requireStaff(request: Request | undefined, permission: Permission): Promise<StaffPrincipal> {
+  const user = await currentStaff();
+  if (!user) throw new OrderError('UNAUTHENTICATED', 401);
   if (request) writeAccess(request);
-  assertOrderDatabaseAllowed(databaseUrl);
+  if (!allows(user.role, permission)) {
+    if (permission === 'users' && request) {
+      await db.execute(auditInsert(auditContext(request, user.username), {
+        action: 'user.change_denied', entityType: 'user', entityId: user.userId,
+      }));
+    }
+    throw new OrderError('FORBIDDEN', 403);
+  }
+  if (permission === 'orders') assertOrderDatabaseAllowed(databaseUrl);
+  return user;
 }
 export function writeAccess(request: Request) {
   if (!sameOrigin(request)) throw new OrderError('FORBIDDEN', 403);

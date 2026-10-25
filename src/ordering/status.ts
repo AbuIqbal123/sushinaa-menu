@@ -23,6 +23,10 @@ export const staffLabels: Record<StaffStatus, { en: string; ar: string }> = {
   ready: { en: 'Ready', ar: 'جاهز' }, collected: { en: 'Collected', ar: 'تم التسليم' },
   cancelled: { en: 'Cancelled', ar: 'ملغي' },
 };
+export const printableStatuses = ['paid', 'accepted', 'preparing', 'ready', 'completed'] as const;
+export function isPrintable(status: string) {
+  return (printableStatuses as readonly string[]).includes(status);
+}
 export function staffStatus(status: OrderStatus): StaffStatus {
   return (Object.keys(staffGroups) as StaffStatus[]).find(k => (staffGroups[k] as readonly string[]).includes(status))!;
 }

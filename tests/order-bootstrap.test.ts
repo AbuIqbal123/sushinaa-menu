@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { ORDER_SCHEMA } from '../src/ordering/schema';
+import { ORDER_NUMBER_SQL, ORDER_SCHEMA, PRINT_SQL, STAFF_SCHEMA } from '../src/ordering/schema';
 import { LIVE_DATABASE_HOST } from '../src/lib/deploy-env';
 
 function run(code: string, env: Record<string, string>) {
@@ -39,8 +39,11 @@ test('ordering refuses to run or create tables on the live database host', () =>
   });
 });
 test('order bootstrap and additive migration have identical SQL', () => {
-  const sql = readFileSync('db/migrations/0002_orders.sql', 'utf8');
-  assert.deepEqual(sql.split(';').map(s => s.trim()).filter(Boolean), ORDER_SCHEMA);
+  const statements = (file: string) => readFileSync(file, 'utf8').split(';').map(s => s.trim()).filter(Boolean);
+  assert.deepEqual(statements('db/migrations/0002_orders.sql'), ORDER_SCHEMA);
+  assert.deepEqual(statements('db/migrations/0003_order_number.sql'), ORDER_NUMBER_SQL);
+  assert.deepEqual(statements('db/migrations/0004_staff_access.sql'), STAFF_SCHEMA);
+  assert.deepEqual(statements('db/migrations/0005_order_printing.sql'), PRINT_SQL);
 });
 test('mock gateway cannot be enabled in production', () => {
   run(`(async () => {

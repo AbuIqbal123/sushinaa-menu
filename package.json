@@ -11,10 +11,12 @@
     "db:copy-to-dev": "tsx scripts/copy-to-dev.ts",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:check-migrations": "tsx scripts/check-migrations.ts",
+    "dev:strip-dish-marker": "tsx scripts/dev-strip-dish-marker.ts",
+    "dev:check-dish-names": "tsx scripts/check-dev-dish-names.ts",
     "ci:secrets": "tsx scripts/secret-scan.ts",
     "cms:card-photos": "tsx scripts/card-photos.ts",
     "images:manifest": "tsx scripts/static-images.ts",
-    "test": "tsx --test tests/*.test.ts",
+    "test": "node --test-concurrency=1 --import tsx --test tests/*.test.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {

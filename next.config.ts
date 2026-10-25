@@ -88,6 +88,10 @@ const nextConfig: NextConfig = {
         source: "/brand/:path*",
         headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
       },
+      {
+        source: "/cms/orders/:id/ticket",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
     ];
   },
 };

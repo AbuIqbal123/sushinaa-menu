@@ -2,6 +2,7 @@ import { readMenu } from '@/cms/repository';
 import { auditContext } from '@/cms/audit';
 import { checkoutSchema, quoteOrder } from '@/ordering/checkout/validation';
 import { hash, existingOrder, persistPendingOrder } from '@/ordering/checkout/repository';
+import { orderingEnabled } from '@/ordering/config';
 import { reply, failure, provider, writeAccess, jsonBody, OrderError } from '@/ordering/http';
 import { orderSession } from '@/ordering/session';
 import { rateAllowed } from '@/ordering/rate-limit';
@@ -17,12 +18,13 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const paymentProvider = provider(); writeAccess(request);
-    const session = await orderSession();
-    if (!session) throw new OrderError('SESSION_REQUIRED', 401);
     const key = request.headers.get('idempotency-key');
     if (!key || !/^[a-zA-Z0-9-]{16,80}$/.test(key)) throw new OrderError('INVALID', 400);
-    if (!await rateAllowed('checkout', auditContext(request, null).ip)) throw new OrderError('RATE_LIMIT', 429);
     const parsed = checkoutSchema.parse(await jsonBody(request));
+    if (!orderingEnabled(parsed.branchId)) throw new OrderError('BRANCH_UNAVAILABLE', 409);
+    const session = await orderSession();
+    if (!session) throw new OrderError('SESSION_REQUIRED', 401);
+    if (!await rateAllowed('checkout', auditContext(request, null).ip)) throw new OrderError('RATE_LIMIT', 429);
     const method = parsed.paymentMethod || (paymentProvider === 'mock' ? 'mock' : 'pay_at_pickup');
     if (method === 'mock' && paymentProvider !== 'mock') throw new OrderError('INVALID_PAYMENT', 400);
     const requestHash = hash(JSON.stringify({ ...parsed, paymentMethod: method }));

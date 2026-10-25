@@ -71,7 +71,9 @@ export function quoteOrder(input: CheckoutInput, menu: MenuData, now = new Date(
     if (!validCheckoutSelection(dish, line.selection)) throw new CheckoutError('OPTIONS');
     const unitMinor = Math.round(unitPrice(dish, line.selection) * 100);
     if (unitMinor !== line.expectedUnitMinor) throw new CheckoutError('PRICE_CHANGED');
+    const category = menu.categories.find((item) => item.id === dish.section);
     return { dishId: dish.id, name: dish.name, nameAr: dish.nameAr, kind: dish.kind, freeDips: dish.freeDips, extras: dish.extras,
+      categoryId: dish.section, categoryName: category?.name ?? 'Items', categoryNameAr: category?.nameAr ?? '', categoryOrder: category?.order ?? 0,
       selection: line.selection, quantity: line.quantity, note: line.note, unitMinor, totalMinor: unitMinor * line.quantity };
   });
   return { branchId: branch.slug, branchName: branch.name, customer: input.customer, collection: 'car' as const, lines,

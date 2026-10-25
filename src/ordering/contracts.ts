@@ -19,8 +19,9 @@ export const statusBody = z.object({ to: z.enum(statuses), expected: z.enum(stat
   recordPayment: z.boolean().optional(), reason: z.enum(cancellationReasons).optional(),
 }).strict().refine(v => v.to !== 'cancelled' || Boolean(v.reason));
 export type StatusInput = z.infer<typeof statusBody>;
-export type OrderSummary = { id: string; branchId: BranchId; status: OrderStatus; paymentMethod: PaymentMethod;
-  paidAt: string | null; totalMinor: number; currency: 'QAR'; createdAt: string; phone: string; plate: string };
+export type OrderSummary = { id: string; orderNumber: number | null; branchId: BranchId; status: OrderStatus; paymentMethod: PaymentMethod;
+  paidAt: string | null; totalMinor: number; currency: 'QAR'; createdAt: string; phone: string; plate: string;
+  printCount: number; printedAt: string | null };
 export type OrderDetailData = OrderSummary & { customer: { name: string; phone: string; plate: string; colour: string; car: string; instructions: string };
   snapshot: Omit<OrderSnapshot, 'customer'> & { version: number; menuRevision: number };
   history: { at: string; from: OrderStatus; to: OrderStatus; reason: string | null }[]; contactRevealed: boolean };

@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { BRANCHES } from '@/branches/branches';
 import { useLocale } from '@/i18n/locale';
 import { selectionLabel } from '@/ordering/price';
-import { allowedTransitions, staffStatus, staffLabels, type OrderStatus } from '@/ordering/status';
+import { allowedTransitions, isPrintable, staffStatus, staffLabels, type OrderStatus } from '@/ordering/status';
+import { printTicket } from './print-ticket';
 import { cancellationReasons, type OrderDetailData } from '@/ordering/contracts';
 
 export function OrderDetail({ id, onBack, onChange }: { id: string; onBack: () => void; onChange: () => void }) {
@@ -26,6 +27,20 @@ export function OrderDetail({ id, onBack, onChange }: { id: string; onBack: () =
     return () => { live = false; };
   // Refresh contact masking when the language changes.
   }, [id, lang]);
+  async function printNow(mode: 'manual' | 'reprint') {
+    if (busy) return;
+    setBusy(true); setError('');
+    try {
+      const claim = await fetch(`/api/staff/orders/${id}/print`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode }) });
+      const body = await claim.json() as { claimId?: string };
+      if (!claim.ok || !body.claimId) throw new Error('PRINT_FAILED');
+      await printTicket(id);
+      const done = await fetch(`/api/staff/orders/${id}/print/done`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ claimId: body.claimId }) });
+      if (!done.ok) throw new Error('PRINT_FAILED');
+      await load(); onChange();
+    } catch { setError('PRINT_FAILED'); }
+    finally { setBusy(false); }
+  }
   async function change(to: OrderStatus) {
     if (!data || busy) return;
     setBusy(true); setError('');
@@ -42,9 +57,12 @@ export function OrderDetail({ id, onBack, onChange }: { id: string; onBack: () =
   const money = (n: number) => `${(n / 100).toFixed(2)} ${text('QAR', 'ر.ق')}`;
   return <section className="staff-order-detail" aria-busy={busy}>
     <button onClick={onBack}>← {text('Back to orders', 'العودة إلى الطلبات')}</button>
-    {error && <p role="alert" className="staff-error">{error === 'STALE_STATUS' ? text('Another team member updated this order. The latest status is shown.', 'حدّث موظف آخر هذا الطلب. تظهر الحالة الأحدث الآن.') : error === 'LOAD_FAILED' ? text('Unable to load order. Please retry.', 'تعذّر تحميل الطلب. يرجى المحاولة مجدداً.') : text('Unable to update this order. Please retry.', 'تعذّر تحديث الطلب. يرجى المحاولة مجدداً.')}</p>}
+    {error && <p role="alert" className="staff-error">{error === 'STALE_STATUS' ? text('Another team member updated this order. The latest status is shown.', 'حدّث موظف آخر هذا الطلب. تظهر الحالة الأحدث الآن.') : error === 'LOAD_FAILED' ? text('Unable to load order. Please retry.', 'تعذّر تحميل الطلب. يرجى المحاولة مجدداً.') : error === 'PRINT_FAILED' ? text('Unable to print this ticket. Please retry.', 'تعذّرت طباعة التذكرة. يرجى المحاولة مجدداً.') : text('Unable to update this order. Please retry.', 'تعذّر تحديث الطلب. يرجى المحاولة مجدداً.')}</p>}
     {data && <>
-      <header className="staff-detail-head"><h2 dir="ltr">{id}</h2><span className="staff-status">{staffLabels[staffStatus(data.status)][lang]}</span></header>
+      <header className="staff-detail-head"><h2 dir="ltr">{data.orderNumber ?? id}</h2><span className="staff-status">{staffLabels[staffStatus(data.status)][lang]}</span></header>
+      <p dir="ltr" className="staff-order-ref">{id}</p>
+      {isPrintable(data.status) && data.printCount === 0 && <button type="button" className="staff-print" onClick={() => void printNow('manual')}>{text('Print', 'طباعة')}</button>}
+      {data.printCount > 0 && <button type="button" className="staff-print" onClick={() => void printNow('reprint')}>{text('Reprint', 'إعادة الطباعة')}</button>}
       <p>{lang === 'ar' ? branch?.nameAr : branch?.name} · {data.paymentMethod === 'mock' ? text('Paid (mock)', 'مدفوع (تجريبي)') : data.paidAt ? text('Paid at pickup', 'تم الدفع عند الاستلام') : text('Pay at pickup', 'الدفع عند الاستلام')}</p>
       <section className="admin-card staff-contact"><strong>{data.customer.name || '—'}</strong>
         <p dir="ltr">{data.customer.phone}</p><p dir="ltr">{data.customer.plate}</p>

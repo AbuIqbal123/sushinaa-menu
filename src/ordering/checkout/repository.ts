@@ -19,13 +19,14 @@ export async function existingOrder(session: string, key: string, requestHash: s
 }
 export function customerResult(row: Record<string, unknown>, reused = false) {
   const paid = Boolean(row.paid_at);
-  return { id: String(row.id), paymentStatus: paid ? 'paid' : row.payment_method === 'pay_at_pickup' ? 'pending' : Date.parse(String(row.created_at)) + 30 * 60000 <= Date.now() ? 'expired' : 'awaiting_payment',
-    status: String(row.status), paymentMethod: row.payment_method as PaymentMethod, totalMinor: Number(row.total_minor), currency: 'QAR', reused };
+  return { id: String(row.id), orderNumber: row.order_number == null ? null : Number(row.order_number),
+    paymentStatus: paid ? 'paid' : row.payment_method === 'pay_at_pickup' ? 'pending' : Date.parse(String(row.created_at)) + 30 * 60000 <= Date.now() ? 'expired' : 'awaiting_payment',
+    status: String(row.status), paymentMethod: row.payment_method as PaymentMethod, totalMinor: Number(row.total_minor), currency: 'QAR' as const, reused };
 }
 export async function customerOrder(id: string, session: string | null) {
   await initOrders();
   if (!session) throw new OrderError('NOT_FOUND', 404);
-  const row = (await db.execute({ sql: 'SELECT id,status,payment_method,paid_at,total_minor,created_at FROM orders WHERE id=? AND session_hash=?', args: [id, hash(session)] })).rows[0];
+  const row = (await db.execute({ sql: 'SELECT id,status,payment_method,paid_at,total_minor,created_at,order_number FROM orders WHERE id=? AND session_hash=?', args: [id, hash(session)] })).rows[0];
   if (!row) throw new OrderError('NOT_FOUND', 404);
   return customerResult(row);
 }
@@ -53,13 +54,14 @@ export async function persistPendingOrder(session: string, key: string, requestH
     if (Number(count.count) >= 10) throw new CheckoutError('LIMIT');
     const id = `SU-${randomUUID()}`;
     const now = new Date().toISOString();
+    const orderNumber = Number((await tx.execute({ sql: 'SELECT COALESCE(MAX(order_number), 0) + 1 AS n FROM orders WHERE branch_id=?', args: [snapshot.branchId] })).rows[0].n);
     await tx.batch([
-      { sql: 'INSERT INTO orders (id,session_hash,idempotency_key,request_hash,snapshot,branch_id,total_minor,currency,customer_name,customer_phone,car_plate,car_colour,car_model,instructions,created_at,updated_at,payment_method) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-        args: [id, sessionHash, key, requestHash, JSON.stringify({ version: 1, menuRevision: revision, ...snapshot }), snapshot.branchId, snapshot.totalMinor, snapshot.currency, snapshot.customer.name, snapshot.customer.phone, snapshot.customer.plate, snapshot.customer.colour, snapshot.customer.car, snapshot.customer.instructions, now, now, method] },
+      { sql: 'INSERT INTO orders (id,session_hash,idempotency_key,request_hash,snapshot,branch_id,order_number,total_minor,currency,customer_name,customer_phone,car_plate,car_colour,car_model,instructions,created_at,updated_at,payment_method) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+        args: [id, sessionHash, key, requestHash, JSON.stringify({ version: 2, menuRevision: revision, ...snapshot }), snapshot.branchId, orderNumber, snapshot.totalMinor, snapshot.currency, snapshot.customer.name, snapshot.customer.phone, snapshot.customer.plate, snapshot.customer.colour, snapshot.customer.car, snapshot.customer.instructions, now, now, method] },
       ...(method === 'pay_at_pickup' ? [{ sql: "INSERT INTO order_outbox (id,order_id,event,created_at) VALUES (?,?,'order.placed',?)", args: [randomUUID(), id, now] }] :
         [{ sql: "INSERT INTO payment_attempts (id,order_id,provider,status,created_at,updated_at) VALUES (?,?,'mock','awaiting_payment',?,?)", args: [randomUUID(), id, now, now] }]),
     ]);
     await tx.commit();
-    return customerResult({ id, status: 'placed', payment_method: method, total_minor: snapshot.totalMinor, created_at: now });
+    return customerResult({ id, status: 'placed', payment_method: method, total_minor: snapshot.totalMinor, created_at: now, order_number: orderNumber });
   } finally { tx.close(); }
 }

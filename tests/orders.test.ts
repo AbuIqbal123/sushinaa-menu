@@ -17,6 +17,7 @@ let rate: typeof import('../src/ordering/rate-limit');
 let db: (typeof import('../src/cms/db'))['db'];
 let dir: string;
 const ctx = { actor: 'test-staff', ip: null, userAgent: null };
+const admin = { kind: 'all' as const };
 const snapshot: OrderSnapshot = { branchId:'down-town', branchName:'Down Town',collection:'car',customer:{name:'Test customer',phone:'97455551234',plate:'Q123456',colour:'silver',car:'test car',instructions:'test instructions'},lines:[],totalMinor:1234,currency:'QAR' };
 before(async () => {
   dir = mkdtempSync(join(tmpdir(),'sn-order-suite-'));
@@ -74,11 +75,11 @@ test('zero, negative, huge and malformed quantities are rejected', () => {
   for(const quantity of [0,-1,21,1.1,NaN,Infinity,'2',null,{},100000000]) assert.equal(checkoutSchema.safeParse({...input,lines:[{...input.lines[0],quantity}]}).success,false);
 });
 test('illegal status jump (placed -> ready) is rejected',async()=>{
-  const order=await create();await rejected(orders.transitionOrder(order.id,{expected:'placed',to:'ready'},ctx),'INVALID_TRANSITION');assert.equal((await row(order.id)).status,'placed');assert.equal(await countAudit(order.id),0);
+  const order=await create();await rejected(orders.transitionOrder(admin, order.id,{expected:'placed',to:'ready'},ctx),'INVALID_TRANSITION');assert.equal((await row(order.id)).status,'placed');assert.equal(await countAudit(order.id),0);
 });
 test('stale status update returns 409 and writes no audit row',async()=>{
-  const order=await create();await orders.transitionOrder(order.id,{expected:'placed',to:'accepted'},ctx);
-  try{await orders.transitionOrder(order.id,{expected:'placed',to:'cancelled',reason:'duplicate'},ctx);assert.fail('must refuse');}
+  const order=await create();await orders.transitionOrder(admin, order.id,{expected:'placed',to:'accepted'},ctx);
+  try{await orders.transitionOrder(admin, order.id,{expected:'placed',to:'cancelled',reason:'duplicate'},ctx);assert.fail('must refuse');}
   catch(e){assert.equal(http.failure(e).status,409);assert.equal((await http.failure(e).json()).code,'STALE_STATUS');}
   assert.equal(await countAudit(order.id),1);assert.equal((await row(order.id)).status,'accepted');
 });
@@ -92,43 +93,43 @@ test('error responses contain no stack trace or SQL',async()=>{
   assert.equal(response.status,503);assert.deepEqual(await response.json(),{code:'TEMPORARILY_UNAVAILABLE'});assert.equal(response.headers.get('cache-control'),'no-store');
 });
 test('order list never returns an unmasked phone',async()=>{
-  await create();const result=await orders.listOrders(orderQuery.parse({limit:100}));const raw=JSON.stringify(result);
+  await create();const result=await orders.listOrders(admin, orderQuery.parse({limit:100}));const raw=JSON.stringify(result);
   assert.ok(!raw.includes(snapshot.customer.phone));assert.ok(!raw.includes(snapshot.customer.plate));assert.ok(!raw.includes(snapshot.customer.name));
   assert.equal(orders.maskPhone(snapshot.customer.phone),'+974 •••• 12 34');assert.equal(orders.maskPlate(snapshot.customer.plate),'Q ••• 56');
 });
 test('contact reveal is audited and the snapshot cannot leak hidden contact',async()=>{
-  const order=await create();const hidden=await orders.detailOrder(order.id,false,ctx);
+  const order=await create();const hidden=await orders.detailOrder(admin, order.id,false,ctx);
   assert.ok(!JSON.stringify(hidden).includes(snapshot.customer.phone));assert.ok(!('customer' in hidden.snapshot));
-  const revealed=await orders.detailOrder(order.id,true,ctx);assert.equal(revealed.customer.phone,snapshot.customer.phone);
+  const revealed=await orders.detailOrder(admin, order.id,true,ctx);assert.equal(revealed.customer.phone,snapshot.customer.phone);
   const audit=(await db.execute({sql:'SELECT * FROM audit WHERE entity_id=?',args:[order.id]})).rows;
   assert.equal(audit[0].action,'order.contact_viewed');assert.equal(audit[0].diff,null);assert.ok(!JSON.stringify(audit).includes(snapshot.customer.phone));
 });
 test('db failure mid-transition leaves no partial state',async()=>{
   const order=await create();
   await db.execute(`CREATE TRIGGER reject_order_audit BEFORE INSERT ON audit WHEN NEW.entity_id='${order.id}' BEGIN SELECT RAISE(ABORT,'test failure'); END`);
-  try{await assert.rejects(orders.transitionOrder(order.id,{expected:'placed',to:'accepted'},ctx));assert.equal((await row(order.id)).status,'placed');assert.equal(await countAudit(order.id),0);}
+  try{await assert.rejects(orders.transitionOrder(admin, order.id,{expected:'placed',to:'accepted'},ctx));assert.equal((await row(order.id)).status,'placed');assert.equal(await countAudit(order.id),0);}
   finally{await db.execute('DROP TRIGGER reject_order_audit');}
 });
 
 test('pay at pickup completion records payment atomically and sets retention',async()=>{
   const order=await create();
-  for(const [expected,to] of [['placed','accepted'],['accepted','preparing'],['preparing','ready']] as [OrderStatus,OrderStatus][]) await orders.transitionOrder(order.id,{expected,to},ctx);
-  await rejected(orders.transitionOrder(order.id,{expected:'ready',to:'completed'},ctx),'STALE_STATUS');
+  for(const [expected,to] of [['placed','accepted'],['accepted','preparing'],['preparing','ready']] as [OrderStatus,OrderStatus][]) await orders.transitionOrder(admin, order.id,{expected,to},ctx);
+  await rejected(orders.transitionOrder(admin, order.id,{expected:'ready',to:'completed'},ctx),'STALE_STATUS');
   assert.equal((await row(order.id)).paid_at,null);
-  const at=new Date('2026-10-23T12:00:00Z');await orders.transitionOrder(order.id,{expected:'ready',to:'completed',recordPayment:true},ctx,at);
+  const at=new Date('2026-10-23T12:00:00Z');await orders.transitionOrder(admin, order.id,{expected:'ready',to:'completed',recordPayment:true},ctx,at);
   const done=await row(order.id);assert.equal(done.paid_at,at.toISOString());assert.equal(Date.parse(String(done.purge_after))-at.getTime(),90*86400000);
 });
 test('mock settlement is server-side, idempotent and publishes one event/outbox row',async()=>{
   const session=randomUUID();const order=await repository.persistPendingOrder(session,randomUUID(),'same',snapshot,1,'mock');
-  assert.ok(!(await orders.listOrders(orderQuery.parse({limit:100}))).rows.some(o=>o.id===order.id));
-  await rejected(orders.transitionOrder(order.id,{expected:'placed',to:'accepted'},ctx),'STALE_STATUS');
+  assert.ok(!(await orders.listOrders(admin, orderQuery.parse({limit:100}))).rows.some(o=>o.id===order.id));
+  await rejected(orders.transitionOrder(admin, order.id,{expected:'placed',to:'accepted'},ctx),'STALE_STATUS');
   const settled=await Promise.all(Array.from({length:5},()=>orders.payMock(order.id,session)));assert.ok(settled.every(r=>r.paymentStatus==='paid'));
   assert.equal(await countAudit(order.id),1);
   for(const table of ['order_outbox','order_events']) assert.equal(Number((await db.execute({sql:`SELECT COUNT(*) AS n FROM ${table} WHERE order_id=?`,args:[order.id]})).rows[0].n),1);
   assert.equal((await db.execute({sql:'SELECT status FROM payment_attempts WHERE order_id=?',args:[order.id]})).rows[0].status,'paid');
 });
 test('purge removes customer columns, snapshot contact and personal notes only after 90 days',async()=>{
-  const order=await create();const at=new Date('2026-01-01T12:00:00Z');await orders.transitionOrder(order.id,{expected:'placed',to:'cancelled',reason:'customer_request'},ctx,at);
+  const order=await create();const at=new Date('2026-01-01T12:00:00Z');await orders.transitionOrder(admin, order.id,{expected:'placed',to:'cancelled',reason:'customer_request'},ctx,at);
   await db.execute({sql:'UPDATE orders SET snapshot=? WHERE id=?',args:[JSON.stringify({...snapshot,lines:[{note:'Personal collection instruction',totalMinor:1234}]}),order.id]});
   await orders.purgeOrders(new Date(at.getTime()+89*86400000));assert.equal((await row(order.id)).customer_phone,snapshot.customer.phone);
   await orders.purgeOrders(new Date(at.getTime()+91*86400000));const purged=await row(order.id);

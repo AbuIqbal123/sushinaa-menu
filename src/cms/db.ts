@@ -3,7 +3,7 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { AUDIT_SCHEMA } from "./audit";
 import type { Client } from "@libsql/client";
-import { ORDER_SCHEMA } from "@/ordering/schema";
+import { ORDER_NUMBER_SQL, ORDER_SCHEMA, PRINT_SQL, STAFF_SCHEMA } from "@/ordering/schema";
 import { orderDatabaseAllowed } from "@/ordering/guard";
 // Capture configuration once, but create no connection or files during route imports.
 export const databaseUrl = process.env.CMS_DATABASE_URL || "file:./data/menu.db";
@@ -38,6 +38,19 @@ export const db = new Proxy({} as Client, {
   },
 });
 let ready: Promise<unknown> | undefined;
+
+async function ensureOrderColumns() {
+  const info = await db.execute("PRAGMA table_info(orders)");
+  const have = new Set(info.rows.map((row) => String(row.name)));
+  const pending = [...ORDER_NUMBER_SQL, ...PRINT_SQL].filter((sql) => {
+    const column = /ADD COLUMN (\w+)/.exec(sql)?.[1];
+    return column ? !have.has(column) : false;
+  });
+  if (pending.length) await db.batch(pending, "write");
+  const indexes = [...ORDER_NUMBER_SQL, ...PRINT_SQL].filter((sql) => sql.startsWith("CREATE"));
+  if (indexes.length) await db.batch(indexes, "write");
+}
+
 export function initDb() {
   return (ready ??= (async () => {
     const { assertDatabaseAllowed } = await import("./env-guard");
@@ -49,10 +62,14 @@ export function initDb() {
         `CREATE TABLE IF NOT EXISTS media (id TEXT PRIMARY KEY, content BLOB NOT NULL, type TEXT NOT NULL)`,
         `CREATE TABLE IF NOT EXISTS login_attempts (key TEXT PRIMARY KEY, failures INTEGER NOT NULL, started INTEGER NOT NULL)`,
         ...AUDIT_SCHEMA,
+        ...STAFF_SCHEMA,
         ...(orderDatabaseAllowed(databaseUrl) ? ORDER_SCHEMA : []),
       ],
       "write",
     );
+    // Staff sign-in replaces the old sessions table on every database.
+    // Order columns stay behind the live-database guard.
+    if (orderDatabaseAllowed(databaseUrl)) await ensureOrderColumns();
   })().catch((e) => {
     ready = undefined;
     throw e;

@@ -15,17 +15,22 @@ import { CategoryList } from "./CategoryList";
 import { MenuList } from "./MenuList";
 import { Dashboard } from "./Dashboard";
 import { Orders } from "./Orders";
+import { StaffPanel } from "./StaffPanel";
 import { Activity } from "./Activity";
+import type { Role } from "@/cms/permissions";
 import { confirmDiscard } from "./Fields";
 import { useNotify } from "./Notices";
-export function Admin({ initial }: { initial: MenuSnapshot }) {
+export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) {
   const { lang } = useLocale();
   const [unreadOrders, setUnreadOrders] = useState(0);
   const [snapshot, setSnapshot] = useState(initial);
   const params = useSearchParams();
   // A filtered menu link (?category=&show=&q=) opens straight on the Menu.
+  const sections = role === "admin"
+    ? ["Dashboard", "Orders", "Menu", "Categories", "Settings", "Activity"]
+    : ["Orders"];
   const [section, setSection] = useState(() =>
-    ["category", "show", "q"].some((k) => params.has(k)) ? "Menu" : "Dashboard",
+    role !== "admin" ? "Orders" : ["category", "show", "q"].some((k) => params.has(k)) ? "Menu" : "Dashboard",
   );
   const [item, setItem] = useState<CmsDish | null>(null);
   const [category, setCategory] = useState<Category | null>(null);
@@ -102,7 +107,7 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
     <>
       <aside className="admin-sidebar">
         <div className="admin-brand">{menu.settings.name}</div>
-        {["Dashboard", "Orders", "Menu", "Categories", "Settings", "Activity"].map((s) => (
+        {sections.map((s) => (
           <button
             key={s}
             className={section === s ? "active" : ""}
@@ -190,8 +195,11 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
           )}
           <Orders active={section === "Orders"} onUnread={setUnreadOrders} />
           {section === "Activity" && <Activity />}
-          {section === "Settings" && (
-            <SettingsEditor key={snapshot.revision} menu={menu} onSave={save} />
+          {section === "Settings" && role === "admin" && (
+            <>
+              <StaffPanel />
+              <SettingsEditor key={snapshot.revision} menu={menu} onSave={save} />
+            </>
           )}
         </main>
       </div>

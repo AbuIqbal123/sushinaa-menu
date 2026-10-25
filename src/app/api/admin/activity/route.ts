@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { authenticated } from "@/cms/auth";
+import { currentStaff } from "@/cms/auth";
 import { db, initDb } from "@/cms/db";
 export const dynamic = "force-dynamic";
 // Read-only: the activity log has no write path through the API.
@@ -13,8 +13,11 @@ const AREAS: Record<string, string[]> = {
 };
 const PAGE_SIZE = 50;
 export async function GET(request: Request) {
-  if (!(await authenticated()))
+  const user = await currentStaff();
+  if (!user)
     return NextResponse.json({ error: "Sign in required" }, { status: 401, headers: { "Cache-Control": "no-store" } });
+  if (user.role !== "admin")
+    return NextResponse.json({ error: "Forbidden" }, { status: 403, headers: { "Cache-Control": "no-store" } });
   const params = new URL(request.url).searchParams;
   const types = AREAS[params.get("area") ?? ""];
   const page = Math.min(1000, Math.max(1, Number(params.get("page")) || 1));
