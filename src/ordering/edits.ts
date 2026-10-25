@@ -184,6 +184,68 @@ export function applyEdits(snapshotLines: WorkingLine[], edits: ResolvedEdit[]):
   return { lines, totalMinor, discounts, activeCount: lines.filter((line) => !line.voided).length };
 }
 
+export type OrderTotals = { subtotalMinor: number; discountMinor: number; totalMinor: number };
+
+/**
+ * The one place order money is split for display. Subtotal is every live line at
+ * its full price (comps included), before any discount. Discounts & comps is the
+ * gap to the total, so the three rows always add up.
+ */
+export function orderTotals(order: {
+  lines: readonly { voided: boolean; unitMinor: number; quantity: number }[];
+  totalMinor: number;
+}): OrderTotals {
+  const subtotalMinor = order.lines.reduce((sum, line) => (line.voided ? sum : sum + line.unitMinor * line.quantity), 0);
+  if (!Number.isSafeInteger(subtotalMinor) || !Number.isSafeInteger(order.totalMinor)) throw new RangeError('Money must be integer minor units');
+  return { subtotalMinor, discountMinor: subtotalMinor - order.totalMinor, totalMinor: order.totalMinor };
+}
+
+export type EditPreview = {
+  subtotalMinor: number;
+  changeMinor: number;
+  totalMinor: number;
+  /** The current total, only when the edit changes it. */
+  wasMinor: number | null;
+  /** Owed back after this edit, only on a paid order. */
+  owedBackMinor: number | null;
+  /** A paid order can't go up. */
+  blocked: boolean;
+};
+
+/** What an edit sheet or confirm shows: the new order next to the current one. */
+export function editPreview(current: OrderTotals, next: OrderTotals, paid: { paid: boolean; owedBackMinor: number }): EditPreview {
+  const changeMinor = next.totalMinor - current.totalMinor;
+  return {
+    subtotalMinor: next.subtotalMinor,
+    changeMinor,
+    totalMinor: next.totalMinor,
+    wasMinor: changeMinor === 0 ? null : current.totalMinor,
+    owedBackMinor: paid.paid ? paid.owedBackMinor + Math.max(0, -changeMinor) : null,
+    blocked: paid.paid && changeMinor > 0,
+  };
+}
+
+/** Reason labels shared by the CMS and the printed receipt. */
+export const editReasonLabels: Record<EditReason, { en: string; ar: string }> = {
+  customer_request: { en: 'Customer request', ar: 'طلب العميل' },
+  wrong_item: { en: 'Wrong item', ar: 'صنف خاطئ' },
+  item_unavailable: { en: 'Item unavailable', ar: 'الصنف غير متوفر' },
+  quality_issue: { en: 'Quality issue', ar: 'مشكلة في الجودة' },
+  staff_error: { en: 'Staff error', ar: 'خطأ الموظف' },
+  goodwill: { en: 'Goodwill', ar: 'مجاملة' },
+  loyalty: { en: 'Loyalty', ar: 'ولاء' },
+  other: { en: 'Other', ar: 'أخرى' },
+};
+
+export function editReasonLabel(code: string, lang: 'en' | 'ar') {
+  return editReasonLabels[code as EditReason]?.[lang] ?? code.replaceAll('_', ' ');
+}
+
+/** The short order code staff read out ("SU-591e5873"), never the full id. */
+export function orderShortCode(id: string) {
+  return id.slice(0, 11);
+}
+
 const reasonCode = z.enum(editReasons);
 const note = z.string().trim().max(140).optional();
 const lineId = z.string().min(1).max(40);
