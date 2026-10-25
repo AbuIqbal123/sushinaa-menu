@@ -193,7 +193,7 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
               onChange={run}
             />
           )}
-          <Orders active={section === "Orders"} onUnread={setUnreadOrders} />
+          <Orders active={section === "Orders"} onUnread={setUnreadOrders} role={role} menu={menu} />
           {section === "Activity" && <Activity />}
           {section === "Settings" && role === "admin" && (
             <>

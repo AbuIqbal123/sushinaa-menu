@@ -4,6 +4,7 @@ import { formatQar } from '@/lib/money';
 import { selectionLabel } from '@/ordering/price';
 import { maskPhone } from '@/ordering/orders';
 import type { Selection } from '@/catalog/types';
+import { applyEdits, linesFromSnapshot, type ResolvedEdit } from '@/ordering/edits';
 
 const ticketCopy = { pcs: 'pcs', spicy: 'Spicy', regular: 'Regular', dip: 'Dip' } as Copy;
 const money = { currencyEn: 'QAR', currencyAr: 'ر.ق' };
@@ -14,6 +15,7 @@ export type TicketLine = {
   note: string;
   total: string;
   options: string;
+  voided: boolean;
 };
 export type TicketGroup = { name: string; lines: TicketLine[] };
 export type TicketModel = {
@@ -29,6 +31,7 @@ export type TicketModel = {
   total: string;
   payment: string;
   reprint: string | null;
+  amended: boolean;
 };
 
 type StoredLine = {
@@ -72,7 +75,7 @@ function options(line: StoredLine) {
   );
 }
 
-export function ticketModel(row: Row): TicketModel {
+export function ticketModel(row: Row, edits: ResolvedEdit[] = []): TicketModel {
   const snapshot = JSON.parse(String(row.snapshot)) as {
     version?: number;
     branchName?: string;
@@ -81,19 +84,38 @@ export function ticketModel(row: Row): TicketModel {
     totalMinor?: number;
   };
   const removed = row.customer_name == null && row.customer_phone == null;
-  const lines = snapshot.lines ?? [];
+  const projected = applyEdits(linesFromSnapshot(snapshot.lines ?? []), edits);
   const groups = new Map<string, { order: number; lines: TicketLine[] }>();
-  for (const line of lines) {
+  for (const line of projected.lines) {
     const name = snapshot.version === 1 || !line.categoryName ? 'Items' : line.categoryName;
     const group = groups.get(name) ?? { order: line.categoryOrder ?? groups.size, lines: [] };
+    const gross = line.voided ? 0 : line.unitMinor * line.quantity;
     group.lines.push({
-      name: line.name || 'Item',
-      quantity: line.quantity ?? 1,
+      name: line.voided ? `VOID ${line.name}` : line.name,
+      quantity: line.quantity,
       note: line.note || '',
-      total: price(line.totalMinor ?? 0),
-      options: options(line),
+      total: price(line.voided ? 0 : gross),
+      options: options(line as StoredLine),
+      voided: line.voided,
     });
+    const discount = projected.discounts.find((item) => item.scope === 'line' && item.lineId === line.id);
+    if (discount) {
+      group.lines.push({
+        name: line.compliment ? 'Compliment' : 'Discount',
+        quantity: 1,
+        note: '',
+        total: price(-discount.amountMinor),
+        options: '',
+        voided: false,
+      });
+    }
     groups.set(name, group);
+  }
+  const orderDiscount = projected.discounts.find((item) => item.scope === 'order');
+  if (orderDiscount) {
+    const group = groups.get('Items') ?? { order: 1000, lines: [] };
+    group.lines.push({ name: 'Discount', quantity: 1, note: '', total: price(-orderDiscount.amountMinor), options: '', voided: false });
+    groups.set('Items', group);
   }
   const car = [row.car_plate, row.car_colour, row.car_model].filter((part) => typeof part === 'string' && part).join(' · ');
   const printCount = Number(row.print_count ?? 0);
@@ -112,5 +134,6 @@ export function ticketModel(row: Row): TicketModel {
     total: price(Number(row.total_minor)),
     payment: `${row.paid_at ? 'Paid' : 'Unpaid'} · ${String(row.payment_method)}`,
     reprint: row.printed_at ? `Reprint ${printCount}` : null,
+    amended: row.amended_at != null && row.amended_at !== '',
   };
 }

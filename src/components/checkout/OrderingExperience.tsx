@@ -43,6 +43,7 @@ function Experience({ initialNow }: { initialNow: string }) {
   const busyRef = useRef(false);
   const attempt = useRef<{ body: string; key: string } | null>(null);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
+  const orderKey = 'sushinaa-order-id';
   const [editing, setEditing] = useState<CartLine | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const previousStep = useRef(step);
@@ -65,6 +66,30 @@ function Experience({ initialNow }: { initialNow: string }) {
     if (previousStep.current !== step) heading.current?.focus();
     previousStep.current = step;
   }, [step]);
+  useEffect(() => {
+    const stored = sessionStorage.getItem(orderKey);
+    if (!stored) return;
+    let cancel = false;
+    void fetch(`/api/orders/${stored}`, { cache: 'no-store' }).then(async (response) => {
+      if (!response.ok || cancel) return;
+      setReceipt(await response.json() as Receipt);
+      setStep('receipt');
+    }).catch(() => {});
+    return () => { cancel = true; };
+  }, []);
+  useEffect(() => {
+    if (step !== 'receipt' || !receipt?.id) return;
+    sessionStorage.setItem(orderKey, receipt.id);
+    const pull = () => {
+      if (document.visibilityState === 'hidden') return;
+      void fetch(`/api/orders/${receipt.id}`, { cache: 'no-store' }).then(async (response) => {
+        if (response.ok) setReceipt(await response.json() as Receipt);
+      }).catch(() => {});
+    };
+    document.addEventListener('visibilitychange', pull);
+    const timer = window.setInterval(pull, 30000);
+    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', pull); };
+  }, [step, receipt?.id]);
   function go(next: Step) { setError(''); setStep(next); window.scrollTo({ top: 0, behavior: 'instant' }); }
   function changeBranch() { setReturnStep(step === 'branches' ? 'menu' : step === 'payment' || step === 'receipt' ? 'review' : step); go('branches'); }
   function choose(id: BranchId) { setBranchId(id); setReceipt(null); go(returnStep); }
@@ -101,7 +126,7 @@ function Experience({ initialNow }: { initialNow: string }) {
       const res = await fetch('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': attempt.current.key }, body });
       const data = await res.json();
       if (!res.ok) { setError(errorMessage(data.code)); return; }
-      setReceipt(data); go(data.paymentMethod === 'pay_at_pickup' || data.paymentStatus === 'paid' ? 'receipt' : 'payment');
+      setReceipt(data); sessionStorage.setItem(orderKey, data.id); go(data.paymentMethod === 'pay_at_pickup' || data.paymentStatus === 'paid' ? 'receipt' : 'payment');
     } catch { setError(errorMessage('NETWORK')); }
     finally { setBusy(false); busyRef.current = false; }
   }
@@ -119,7 +144,7 @@ function Experience({ initialNow }: { initialNow: string }) {
     : step === 'receipt' ? text('Your order', 'طلبك') : text('Payment', 'الدفع');
   const count = cart.itemCount;
   const closedNotice = status && !status.open ? <div className="checkout-notice" role="status"><strong>{text('This branch is currently closed', 'هذا الفرع مغلق حالياً')}</strong><p>{text('Browse and save your favourites, or choose an open branch to continue.', 'تصفح واحفظ أصنافك المفضلة، أو اختر فرعاً مفتوحاً للمتابعة.')}</p><button type="button" className="text-action" onClick={changeBranch}>{text('Choose another branch', 'اختر فرعاً آخر')}</button></div> : null;
-  function ticket(editable: boolean, canEditBasket = false) { return <section className="ticket checkout-ticket" aria-label={t.yourTicket}>
+  function ticket(editable: boolean, canEditBasket = false, serverMinor?: number) { return <section className="ticket checkout-ticket" aria-label={t.yourTicket}>
     <div className="ticket-scallop" aria-hidden="true" />
     <header className="ticket-head"><div><p className="ticket-kicker">{t.brand}</p><h2 className="ticket-title">{t.yourTicket}</h2></div>{canEditBasket ? <button type="button" className="ticket-edit" onClick={() => go('basket')}>{text('Edit items', 'تعديل الأصناف')}</button> : <span className="ticket-count">{count} {text(count === 1 ? 'item' : 'items', 'صنف')}</span>}</header>
     <p className="ticket-rule" aria-hidden="true" />
@@ -128,11 +153,11 @@ function Experience({ initialNow }: { initialNow: string }) {
       {editable ? <div className="line-qty"><button type="button" className="qty-btn" onClick={() => cart.dec(line.key)} aria-label={t.fewerOf(line.displayName)}>−</button><span className="qty-num">{line.qty}</span><button type="button" className="qty-btn" onClick={() => cart.inc(line.key)} disabled={line.qty >= 20} aria-label={t.moreOf(line.displayName)}>+</button></div> : <span className="ticket-static-qty" aria-label={text(`Quantity ${line.qty}`, `الكمية ${line.qty}`)}>×{line.qty}</span>}
       <p className="line-total">{ticketMoney(line.lineTotal)}</p>
     </li>)}</ul>
-    <div className="ticket-sum"><span>{t.total}</span><strong>{ticketMoney(cart.totalQar)}</strong></div>
+    <div className="ticket-sum"><span>{t.total}</span><strong>{serverMinor != null ? money(serverMinor) : ticketMoney(cart.totalQar)}</strong></div>
   </section>; }
-  const receiptBody = (editable: boolean) => <>
+  const receiptBody = (editable: boolean, serverMinor?: number) => <>
     <section className="review-details"><div className="review-section-title"><h2>{text('At your car', 'عند سيارتك')}</h2>{editable && <button type="button" className="text-action" onClick={() => go('details')}>{text('Edit', 'تعديل')}</button>}</div><strong>{customer.name}</strong><p dir="ltr" className="review-phone">+{customer.phone}</p><QatarPlate plate={customer.plate} /><p>{[customer.colour, customer.car].filter(Boolean).join(' · ')}</p>{customer.instructions && <p className="checkout-note">{customer.instructions}</p>}</section>
-    {ticket(false, editable)}
+    {ticket(false, editable, serverMinor)}
   </>;
   if (step === 'payment' && receipt && receipt.paymentMethod === 'mock') return <MockSadadGateway amount={money(receipt.totalMinor)} lang={lang} onBack={() => go('review')} onComplete={() => go('receipt')} onPay={async () => {
     const response = await fetch(`/api/orders/${receipt.id}/mock-pay`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
@@ -185,7 +210,7 @@ function Experience({ initialNow }: { initialNow: string }) {
             {paymentProvider === 'mock' && <div className="checkout-payment-choice" role="radiogroup" aria-label={text('Payment method', 'طريقة الدفع')}>{(['mock', 'pay_at_pickup'] as const).map(method => <button key={method} type="button" role="radio" aria-checked={paymentMethod === method} onClick={() => setPaymentMethod(method)}>{method === 'mock' ? text('Mock payment', 'دفع تجريبي') : text('Pay at pickup', 'الدفع عند الاستلام')}</button>)}</div>}
             <div className="checkout-step-action"><button type="button" className="checkout-primary" disabled={busy || !status?.open || !count || cart.unavailableCount > 0} onClick={checkout}>{busy ? text('Checking…', 'جارٍ التحقق…') : paymentMethod === 'pay_at_pickup' ? text('Place order · pay at pickup', 'تأكيد الطلب · الدفع عند الاستلام') : text('Continue to payment', 'المتابعة إلى الدفع')}<Forward /></button></div>
           </>}
-          {step === 'receipt' && receipt && <><div className="demo-receipt-status" role="status"><span aria-hidden="true">✓</span><strong>{receipt.paymentMethod === 'mock' ? text('Payment confirmed', 'تم تأكيد الدفع') : text('Order received · pay at pickup', 'تم استلام الطلب · الدفع عند الاستلام')}</strong><small dir="ltr" className="order-confirmation-reference">{receipt.id}</small>{receipt.orderNumber != null && <small dir="ltr">{receipt.orderNumber}</small>}{receipt.paymentMethod === 'mock' && <small>{text('Demo only · no charge', 'تجريبي')}</small>}</div>{branch && <DirectionsLink branchName={branchName} href={branch.mapsUrl} text={text} />}{receiptBody(false)}<button type="button" className="checkout-primary" onClick={() => { cart.clear(); setCustomer(emptyCustomer); setReceipt(null); attempt.current = null; go('menu'); }}>{text('Back to menu', 'العودة للقائمة')}<Forward /></button></>}
+          {step === 'receipt' && receipt && <><div className="demo-receipt-status" role="status"><span aria-hidden="true">✓</span><strong>{receipt.paymentMethod === 'mock' ? text('Payment confirmed', 'تم تأكيد الدفع') : text('Order received · pay at pickup', 'تم استلام الطلب · الدفع عند الاستلام')}</strong><small dir="ltr" className="order-confirmation-reference">{receipt.id}</small>{receipt.orderNumber != null && <small dir="ltr">{receipt.orderNumber}</small>}{receipt.paymentMethod === 'mock' && <small>{text('Demo only · no charge', 'تجريبي')}</small>}</div>{branch && <DirectionsLink branchName={branchName} href={branch.mapsUrl} text={text} />}{receiptBody(false, receipt.totalMinor)}<button type="button" className="checkout-primary" onClick={() => { cart.clear(); setCustomer(emptyCustomer); setReceipt(null); sessionStorage.removeItem(orderKey); attempt.current = null; go('menu'); }}>{text('Back to menu', 'العودة للقائمة')}<Forward /></button></>}
           {error && <div className="checkout-error" role="alert"><p>{error}</p><button className="text-action" type="button" onClick={() => { go('basket'); router.refresh(); }}>{text('Refresh menu', 'تحديث القائمة')}</button></div>}
         </main>
       </>}

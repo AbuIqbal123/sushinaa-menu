@@ -754,3 +754,9 @@
 .staff-users ul { padding:0; list-style:none; }
 .staff-users li { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px; }
 .staff-order-ref { margin:0 0 12px; color:var(--muted); font-size:12px; overflow-wrap:anywhere; }
+.order-edit { display:grid; gap:12px; margin:20px 0; padding:16px; border:1px solid var(--line); border-radius:12px; background:#fff; }
+.order-edit h3 { margin:0; font-size:16px; font-weight:550; }
+.order-edit label { display:grid; gap:6px; }
+.order-edit-lines { list-style:none; padding:0; margin:0; display:grid; gap:12px; }
+.order-edit-lines li { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.order-edit input, .order-edit select, .order-edit textarea { font:inherit; }

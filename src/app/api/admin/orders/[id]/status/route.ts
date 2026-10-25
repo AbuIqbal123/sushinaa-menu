@@ -9,7 +9,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const staff = await requireStaff(request, 'orders');
     const ctx = auditContext(request, staff.username);
     if (!await rateAllowed('staff', ctx.ip)) throw new OrderError('RATE_LIMIT',429);
-    await transitionOrder(staff.branchScope, orderId.parse((await params).id), statusBody.parse(await jsonBody(request)), ctx);
+    await transitionOrder(staff.branchScope, orderId.parse((await params).id), statusBody.parse(await jsonBody(request)), ctx, new Date(), staff.role);
     return reply({ ok: true });
   } catch (error) { return failure(error); }
 }

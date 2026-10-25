@@ -25,6 +25,7 @@ export function Ticket({ model }: { model: TicketModel }) {
     <article className="ticket-sheet">
       <style>{css}</style>
       <script dangerouslySetInnerHTML={{ __html: fit }} />
+      {model.amended && <p className="ticket-banner">AMENDED</p>}
       {model.reprint && <p className="ticket-banner">{model.reprint}</p>}
       <h1>{model.branchName}</h1>
       {model.orderNumber && <p className="ticket-number">{model.orderNumber}</p>}

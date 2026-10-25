@@ -2,12 +2,14 @@
 import { useEffect, useState } from 'react';
 import { BRANCHES } from '@/branches/branches';
 import { useLocale } from '@/i18n/locale';
-import { selectionLabel } from '@/ordering/price';
 import { allowedTransitions, isPrintable, staffStatus, staffLabels, type OrderStatus } from '@/ordering/status';
 import { printTicket } from './print-ticket';
+import { OrderEditPanel } from './OrderEditPanel';
 import { cancellationReasons, type OrderDetailData } from '@/ordering/contracts';
+import type { Role } from '@/cms/permissions';
+import type { MenuData } from '@/cms/schema';
 
-export function OrderDetail({ id, onBack, onChange }: { id: string; onBack: () => void; onChange: () => void }) {
+export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; onBack: () => void; onChange: () => void; role: Role; menu: MenuData }) {
   const { lang, t } = useLocale();
   const text = (en: string, ar: string) => lang === 'ar' ? ar : en;
   const reasons = { customer_request: text('Customer request', 'طلب العميل'), unavailable: text('Item unavailable', 'الصنف غير متوفر'), duplicate: text('Duplicate order', 'طلب مكرر'), branch_closed: text('Branch closed', 'الفرع مغلق') };
@@ -27,6 +29,22 @@ export function OrderDetail({ id, onBack, onChange }: { id: string; onBack: () =
     return () => { live = false; };
   // Refresh contact masking when the language changes.
   }, [id, lang]);
+  async function printReceipt() {
+    if (busy) return;
+    setBusy(true); setError('');
+    try {
+      const audit = await fetch(`/api/admin/orders/${id}/receipt`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      if (!audit.ok) throw new Error('PRINT_FAILED');
+      const frame = document.createElement('iframe');
+      frame.style.cssText = 'position:fixed;width:0;height:0;border:0';
+      document.body.appendChild(frame);
+      const page = await fetch(`/cms/orders/${id}/receipt`, { cache: 'no-store' });
+      if (!page.ok) throw new Error('PRINT_FAILED');
+      frame.srcdoc = await page.text();
+      frame.onload = () => { frame.contentWindow?.print(); window.setTimeout(() => frame.remove(), 1000); };
+    } catch { setError('PRINT_FAILED'); }
+    finally { setBusy(false); }
+  }
   async function printNow(mode: 'manual' | 'reprint') {
     if (busy) return;
     setBusy(true); setError('');
@@ -62,7 +80,8 @@ export function OrderDetail({ id, onBack, onChange }: { id: string; onBack: () =
       <header className="staff-detail-head"><h2 dir="ltr">{data.orderNumber ?? id}</h2><span className="staff-status">{staffLabels[staffStatus(data.status)][lang]}</span></header>
       <p dir="ltr" className="staff-order-ref">{id}</p>
       {isPrintable(data.status) && data.printCount === 0 && <button type="button" className="staff-print" onClick={() => void printNow('manual')}>{text('Print', 'طباعة')}</button>}
-      {data.printCount > 0 && <button type="button" className="staff-print" onClick={() => void printNow('reprint')}>{text('Reprint', 'إعادة الطباعة')}</button>}
+      {isPrintable(data.status) && data.printCount > 0 && <button type="button" className="staff-print" onClick={() => void printNow('reprint')}>{text('Reprint', 'إعادة الطباعة')}</button>}
+      <button type="button" className="staff-print" onClick={() => void printReceipt()}>{text('Print receipt', 'طباعة الإيصال')}</button>
       <p>{lang === 'ar' ? branch?.nameAr : branch?.name} · {data.paymentMethod === 'mock' ? text('Paid (mock)', 'مدفوع (تجريبي)') : data.paidAt ? text('Paid at pickup', 'تم الدفع عند الاستلام') : text('Pay at pickup', 'الدفع عند الاستلام')}</p>
       <section className="admin-card staff-contact"><strong>{data.customer.name || '—'}</strong>
         <p dir="ltr">{data.customer.phone}</p><p dir="ltr">{data.customer.plate}</p>
@@ -71,11 +90,12 @@ export function OrderDetail({ id, onBack, onChange }: { id: string; onBack: () =
         {!data.contactRevealed && <button onClick={() => { void load(true).catch(() => setError('LOAD_FAILED')); }}>{text('Show contact', 'إظهار بيانات التواصل')}</button>}
       </section>
       <section className="ticket staff-ticket"><div className="ticket-scallop" aria-hidden="true" /><header className="ticket-head"><h2>{t.yourTicket}</h2></header>
-        <ul className="ticket-lines">{data.snapshot.lines.map((line, i) => <li key={i} className="ticket-line">
-          <div className="line-main"><p className="line-name">{lang === 'ar' ? line.nameAr || line.name : line.name}</p><p className="line-meta">{selectionLabel(line, line.selection, lang, t)}</p>{line.note && <p className="line-note" dir="auto">{line.note}</p>}</div><span>×{line.quantity}</span><strong>{money(line.totalMinor)}</strong>
-        </li>)}</ul><div className="ticket-sum"><span>{t.total}</span><strong>{money(data.totalMinor)}</strong></div>
+        <ul className="ticket-lines">{data.currentLines.map((line) => <li key={line.id} className="ticket-line">
+          <div className="line-main"><p className="line-name">{line.voided ? `Void ${lang === 'ar' ? line.nameAr || line.name : line.name}` : (lang === 'ar' ? line.nameAr || line.name : line.name)}</p>{line.note && <p className="line-note" dir="auto">{line.note}</p>}</div><span>×{line.quantity}</span><strong>{money(line.voided ? 0 : line.unitMinor * line.quantity)}</strong>
+        </li>)}{data.discounts.map((discount, index) => <li key={`discount-${index}`} className="ticket-line"><div className="line-main"><p className="line-name">{discount.scope === 'order' ? text('Order discount', 'خصم الطلب') : text('Discount', 'خصم')}</p></div><span /><strong>{money(-discount.amountMinor)}</strong></li>)}</ul><div className="ticket-sum"><span>{t.total}</span><strong>{money(data.totalMinor)}</strong></div>
       </section>
-      <div className="staff-status-actions">{allowedTransitions(data.status, data.paidAt).map(to => <button key={to} disabled={busy} className={to === 'cancelled' ? 'danger' : 'primary'} onClick={() => to === 'cancelled' ? setCancel(true) : void change(to)}>
+      <OrderEditPanel id={id} data={data} role={role} menu={menu} onSaved={async () => { await load(); onChange(); }} />
+      <div className="staff-status-actions">{allowedTransitions(data.status, data.paidAt).filter(to => to !== 'refunded' || role === 'admin').map(to => <button key={to} disabled={busy} className={to === 'cancelled' ? 'danger' : 'primary'} onClick={() => to === 'cancelled' ? setCancel(true) : void change(to)}>
         {to === 'completed' && data.paymentMethod === 'pay_at_pickup' ? text('Mark paid & collected', 'تأكيد الدفع والاستلام') : to === 'accepted' ? text('Accept order', 'قبول الطلب') : to === 'refunded' ? text('Refund (mock)', 'استرداد المبلغ (تجريبي)') : staffLabels[staffStatus(to)][lang]}
       </button>)}</div>
       {cancel && <form className="admin-confirm" onSubmit={e => { e.preventDefault(); void change('cancelled'); }}>
