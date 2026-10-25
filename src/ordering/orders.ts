@@ -17,6 +17,23 @@ export const maskPlate = (plate: unknown) => typeof plate === 'string' && plate.
 const text = (v: unknown) => typeof v === 'string' ? v : '';
 const nullable = (v: unknown) => typeof v === 'string' ? v : null;
 export const KITCHEN_VISIBLE = "(payment_method='pay_at_pickup' OR paid_at IS NOT NULL)";
+
+export async function orderEditMeta(orderId: string) {
+  const edits = (await db.execute({
+    sql: 'SELECT kind, line_id, reason_code, note FROM order_edits WHERE order_id=? ORDER BY created_at, id',
+    args: [orderId],
+  })).rows.map((row) => ({
+    kind: String(row.kind),
+    lineId: row.line_id == null ? null : String(row.line_id),
+    reasonCode: String(row.reason_code),
+    note: row.note == null ? null : String(row.note),
+  }));
+  const owed = (await db.execute({
+    sql: 'SELECT COALESCE(SUM(amount_minor), 0) AS n FROM order_adjustments WHERE order_id=? AND settled_at IS NULL',
+    args: [orderId],
+  })).rows[0];
+  return { edits, owedBackMinor: Number(owed?.n ?? 0) };
+}
 const printableSql = `status IN (${['paid', 'accepted', 'preparing', 'ready', 'completed'].map((status) => `'${status}'`).join(',')})`;
 
 export function summary(row: Row): OrderSummary {
@@ -95,7 +112,8 @@ export async function detailOrder(scope: BranchScope, id: string, reveal: boolea
   const { applyEdits, linesFromSnapshot } = await import('./edits');
   const { storedEdits } = await import('./order-edits');
   const projected = applyEdits(linesFromSnapshot(snapshot.lines ?? []), await storedEdits(id));
-  return { ...summary(row), contactRevealed: reveal, snapshot, amendedAt: nullable(row.amended_at), originalTotalMinor: Number(snapshot.totalMinor ?? row.total_minor), currentLines: projected.lines, discounts: projected.discounts,
+  const meta = await orderEditMeta(id);
+  return { ...summary(row), contactRevealed: reveal, snapshot, amendedAt: nullable(row.amended_at), originalTotalMinor: Number(snapshot.totalMinor ?? row.total_minor), currentLines: projected.lines, discounts: projected.discounts, edits: meta.edits, owedBackMinor: meta.owedBackMinor,
     customer: { name: text(row.customer_name), phone: reveal ? text(row.customer_phone) : maskPhone(row.customer_phone),
       plate: reveal ? text(row.car_plate) : maskPlate(row.car_plate), colour: text(row.car_colour), car: text(row.car_model), instructions: text(row.instructions) },
     history: history.map(h => ({ at: String(h.at), ...JSON.parse(String(h.diff)).status, reason: nullable(h.label) })),

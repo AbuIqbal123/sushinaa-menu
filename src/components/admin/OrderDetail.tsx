@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { BRANCHES } from '@/branches/branches';
 import { useLocale } from '@/i18n/locale';
-import { allowedTransitions, isPrintable, staffStatus, staffLabels, type OrderStatus } from '@/ordering/status';
+import { allowedTransitions, staffStatus, staffLabels, type OrderStatus } from '@/ordering/status';
 import { printTicket } from './print-ticket';
 import { OrderEditPanel } from './OrderEditPanel';
 import { cancellationReasons, type OrderDetailData } from '@/ordering/contracts';
@@ -72,16 +72,22 @@ export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; 
     finally { setBusy(false); }
   }
   const branch = BRANCHES.find(b => b.slug === data?.branchId);
-  const money = (n: number) => `${(n / 100).toFixed(2)} ${text('QAR', 'ر.ق')}`;
   return <section className="staff-order-detail" aria-busy={busy}>
     <button onClick={onBack}>← {text('Back to orders', 'العودة إلى الطلبات')}</button>
     {error && <p role="alert" className="staff-error">{error === 'STALE_STATUS' ? text('Another team member updated this order. The latest status is shown.', 'حدّث موظف آخر هذا الطلب. تظهر الحالة الأحدث الآن.') : error === 'LOAD_FAILED' ? text('Unable to load order. Please retry.', 'تعذّر تحميل الطلب. يرجى المحاولة مجدداً.') : error === 'PRINT_FAILED' ? text('Unable to print this ticket. Please retry.', 'تعذّرت طباعة التذكرة. يرجى المحاولة مجدداً.') : text('Unable to update this order. Please retry.', 'تعذّر تحديث الطلب. يرجى المحاولة مجدداً.')}</p>}
     {data && <>
-      <header className="staff-detail-head"><h2 dir="ltr">{data.orderNumber ?? id}</h2><span className="staff-status">{staffLabels[staffStatus(data.status)][lang]}</span></header>
+      <header className="staff-detail-head">
+        <h2 dir="ltr">{data.orderNumber ?? id}</h2>
+        <div className="staff-head-actions">
+          <span className="staff-status">{staffLabels[staffStatus(data.status)][lang]}</span>
+          {allowedTransitions(data.status, data.paidAt).filter((to) => to !== 'cancelled' && to !== 'refunded').slice(0, 1).map((to) => <button key={to} type="button" disabled={busy} className="primary" onClick={() => void change(to)}>
+            {to === 'completed' && data.paymentMethod === 'pay_at_pickup' ? text('Mark paid & collected', 'تأكيد الدفع والاستلام') : to === 'accepted' ? text('Accept order', 'قبول الطلب') : staffLabels[staffStatus(to)][lang]}
+          </button>)}
+          {role === 'admin' && allowedTransitions(data.status, data.paidAt).includes('refunded') && <button type="button" disabled={busy} onClick={() => void change('refunded')}>{text('Refund (mock)', 'استرداد المبلغ (تجريبي)')}</button>}
+          {allowedTransitions(data.status, data.paidAt).includes('cancelled') && <button type="button" className="danger" disabled={busy} onClick={() => setCancel(true)}>{text('Cancel order…', 'إلغاء الطلب…')}</button>}
+        </div>
+      </header>
       <p dir="ltr" className="staff-order-ref">{id}</p>
-      {isPrintable(data.status) && data.printCount === 0 && <button type="button" className="staff-print" onClick={() => void printNow('manual')}>{text('Print', 'طباعة')}</button>}
-      {isPrintable(data.status) && data.printCount > 0 && <button type="button" className="staff-print" onClick={() => void printNow('reprint')}>{text('Reprint', 'إعادة الطباعة')}</button>}
-      <button type="button" className="staff-print" onClick={() => void printReceipt()}>{text('Print receipt', 'طباعة الإيصال')}</button>
       <p>{lang === 'ar' ? branch?.nameAr : branch?.name} · {data.paymentMethod === 'mock' ? text('Paid (mock)', 'مدفوع (تجريبي)') : data.paidAt ? text('Paid at pickup', 'تم الدفع عند الاستلام') : text('Pay at pickup', 'الدفع عند الاستلام')}</p>
       <section className="admin-card staff-contact"><strong>{data.customer.name || '—'}</strong>
         <p dir="ltr">{data.customer.phone}</p><p dir="ltr">{data.customer.plate}</p>
@@ -89,15 +95,7 @@ export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; 
         {data.customer.instructions && <p dir="auto">{data.customer.instructions}</p>}
         {!data.contactRevealed && <button onClick={() => { void load(true).catch(() => setError('LOAD_FAILED')); }}>{text('Show contact', 'إظهار بيانات التواصل')}</button>}
       </section>
-      <section className="ticket staff-ticket"><div className="ticket-scallop" aria-hidden="true" /><header className="ticket-head"><h2>{t.yourTicket}</h2></header>
-        <ul className="ticket-lines">{data.currentLines.map((line) => <li key={line.id} className="ticket-line">
-          <div className="line-main"><p className="line-name">{line.voided ? `Void ${lang === 'ar' ? line.nameAr || line.name : line.name}` : (lang === 'ar' ? line.nameAr || line.name : line.name)}</p>{line.note && <p className="line-note" dir="auto">{line.note}</p>}</div><span>×{line.quantity}</span><strong>{money(line.voided ? 0 : line.unitMinor * line.quantity)}</strong>
-        </li>)}{data.discounts.map((discount, index) => <li key={`discount-${index}`} className="ticket-line"><div className="line-main"><p className="line-name">{discount.scope === 'order' ? text('Order discount', 'خصم الطلب') : text('Discount', 'خصم')}</p></div><span /><strong>{money(-discount.amountMinor)}</strong></li>)}</ul><div className="ticket-sum"><span>{t.total}</span><strong>{money(data.totalMinor)}</strong></div>
-      </section>
-      <OrderEditPanel id={id} data={data} role={role} menu={menu} onSaved={async () => { await load(); onChange(); }} />
-      <div className="staff-status-actions">{allowedTransitions(data.status, data.paidAt).filter(to => to !== 'refunded' || role === 'admin').map(to => <button key={to} disabled={busy} className={to === 'cancelled' ? 'danger' : 'primary'} onClick={() => to === 'cancelled' ? setCancel(true) : void change(to)}>
-        {to === 'completed' && data.paymentMethod === 'pay_at_pickup' ? text('Mark paid & collected', 'تأكيد الدفع والاستلام') : to === 'accepted' ? text('Accept order', 'قبول الطلب') : to === 'refunded' ? text('Refund (mock)', 'استرداد المبلغ (تجريبي)') : staffLabels[staffStatus(to)][lang]}
-      </button>)}</div>
+      <OrderEditPanel id={id} data={data} role={role} menu={menu} onSaved={async () => { await load(); onChange(); }} onReceipt={() => void printReceipt()} onReprint={() => void printNow(data.printCount > 0 ? 'reprint' : 'manual')} />
       {cancel && <form className="admin-confirm" onSubmit={e => { e.preventDefault(); void change('cancelled'); }}>
         <label>{text('Cancellation reason', 'سبب الإلغاء')}<select value={reason} onChange={e => setReason(e.target.value as typeof reason)}>{cancellationReasons.map(r => <option key={r} value={r}>{reasons[r]}</option>)}</select></label>
         <div className="admin-actions"><button className="danger" disabled={busy} type="submit">{text('Confirm cancellation', 'تأكيد الإلغاء')}</button><button type="button" onClick={() => setCancel(false)}>{t.close}</button></div>
