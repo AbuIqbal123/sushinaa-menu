@@ -5,7 +5,8 @@ import { publicMenu } from '@/cms/schema';
 import type { Role } from '@/cms/permissions';
 import type { Dish, Selection } from '@/catalog/types';
 import { useLocale } from '@/i18n/locale';
-import { applyEdits, editReasons, type EditReason, type ResolvedEdit, type WorkingLine } from '@/ordering/edits';
+import { applyEdits, editPreview, editReasonLabels, editReasons, orderTotals, type EditReason, type EditPreview, type OrderTotals, type ResolvedEdit, type WorkingLine } from '@/ordering/edits';
+import { formatMinor, signedMinorAmount } from '@/lib/money';
 import { defaultSelection, preferredPieces, unitPrice } from '@/ordering/price';
 import type { OrderDetailData } from '@/ordering/contracts';
 import { isPrintable } from '@/ordering/status';
@@ -27,7 +28,7 @@ export function OrderEditPanel({ id, data, role, menu, onSaved, onReceipt, onRep
 }) {
   const { lang } = useLocale();
   const text = (en: string, ar: string) => lang === 'ar' ? ar : en;
-  const reasons = reasonLabels(text);
+  const reasons = reasonLabels(lang);
   const dishes = publicMenu(menu).dishes;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sheet, setSheet] = useState<SheetKind | null>(null);
@@ -41,14 +42,14 @@ export function OrderEditPanel({ id, data, role, menu, onSaved, onReceipt, onRep
   const canEdit = editable.includes(data.status);
   const cancelled = data.status === 'cancelled';
   const lineOn = Boolean(line && canEdit && !cancelled && !line.voided);
-  const money = (minor: number) => `${(minor / 100).toFixed(2)} ${text('QAR', 'ر.ق')}`;
+  const money = (minor: number) => formatMinor(minor, lang);
   const latest = new Map<string, OrderDetailData['edits'][number]>();
   let orderEdit: OrderDetailData['edits'][number] | null = null;
   for (const edit of data.edits) {
     if (edit.lineId) latest.set(edit.lineId, edit);
     else orderEdit = edit;
   }
-  const gross = data.currentLines.reduce((sum, item) => sum + (item.voided || item.compliment ? 0 : item.unitMinor * item.quantity), 0);
+  const totals = orderTotals({ lines: data.currentLines, totalMinor: data.totalMinor });
   const adjusted = data.amendedAt != null || data.discounts.length > 0 || data.currentLines.some((item) => item.voided || item.compliment);
 
   async function send(body: Record<string, unknown>) {
@@ -83,7 +84,7 @@ export function OrderEditPanel({ id, data, role, menu, onSaved, onReceipt, onRep
 
   return <div className="order-edit">
     <section className="admin-card order-edit-card">
-      <h3>{text('Order', 'الطلب')}</h3>
+      <h3>{text('Items', 'الأصناف')}</h3>
       <ul className="order-edit-lines">
         {data.currentLines.map((item) => {
           const edit = latest.get(item.id);
@@ -100,7 +101,7 @@ export function OrderEditPanel({ id, data, role, menu, onSaved, onReceipt, onRep
                 {item.compliment && <span className="admin-pill">{text('Comp', 'هدية')}</span>}
                 {added && !item.voided && <span className="admin-pill">{text('Added', 'مضاف')}</span>}
                 <span>×{item.quantity}</span>
-                <span>{money(item.voided || item.compliment ? 0 : item.unitMinor * item.quantity)}</span>
+                <span dir="ltr">{money(item.voided ? 0 : item.unitMinor * item.quantity)}</span>
                 <span aria-hidden="true">{lang === 'ar' ? '‹' : '›'}</span>
               </span>
             </button>
@@ -110,10 +111,10 @@ export function OrderEditPanel({ id, data, role, menu, onSaved, onReceipt, onRep
       {orderEdit && <small className="order-edit-note">{reasons[orderEdit.reasonCode as EditReason] || orderEdit.reasonCode}{orderEdit.note ? ` · ${orderEdit.note}` : ''}</small>}
       <div className="order-edit-sum">
         {adjusted && <>
-          <p><span>{text('Subtotal', 'المجموع الفرعي')}</span><span>{money(gross)}</span></p>
-          <p><span>{text('Discounts & comps', 'الخصومات والهدايا')}</span><span>{money(gross - data.totalMinor)}</span></p>
+          <p><span>{text('Subtotal', 'المجموع الفرعي')}</span><span dir="ltr">{money(totals.subtotalMinor)}</span></p>
+          <p><span>{text('Discounts & comps', 'الخصومات والهدايا')}</span><span dir="ltr">{money(-totals.discountMinor)}</span></p>
         </>}
-        <p><span>{text('Total', 'الإجمالي')}</span><strong>{money(data.totalMinor)}</strong></p>
+        <p><span>{text('Total', 'الإجمالي')}</span><strong dir="ltr">{money(totals.totalMinor)}</strong></p>
       </div>
     </section>
     <div className="admin-savebar order-edit-bar">
@@ -135,30 +136,21 @@ export function OrderEditPanel({ id, data, role, menu, onSaved, onReceipt, onRep
       <small>{line ? text(`Selected: ${lang === 'ar' ? line.nameAr || line.name : line.name}`, `المحدد: ${line.nameAr || line.name}`) : text('Select a line to edit it.', 'اختر صنفاً لتعديله.')}</small>
     </div>
     {sheet && <EditSheet
-      kind={sheet} line={line} dish={dish} dishes={dishes} data={data} busy={busy} error={error}
+      kind={sheet} line={line} dish={dish} dishes={dishes} data={data} totals={totals} busy={busy} error={error}
       reasonCode={reasonCode} note={note} reasons={reasons} text={text} lang={lang} money={money}
       onReason={setReason} onNote={setNote} onClose={() => { setSheet(null); setError(''); }}
       onApply={(body) => void send(body)}
     />}
     {confirm && line && <ConfirmEdit
-      kind={confirm} line={line} data={data} busy={busy} error={error} text={text} money={money}
+      kind={confirm} line={line} data={data} totals={totals} busy={busy} error={error} text={text} lang={lang} money={money}
       onCancel={() => setConfirm(null)}
       onApply={() => void send({ kind: confirm, lineId: line.id })}
     />}
   </div>;
 }
 
-function reasonLabels(text: (en: string, ar: string) => string): Record<EditReason, string> {
-  return {
-    customer_request: text('Customer request', 'طلب العميل'),
-    wrong_item: text('Wrong item', 'صنف خاطئ'),
-    item_unavailable: text('Item unavailable', 'الصنف غير متوفر'),
-    quality_issue: text('Quality issue', 'مشكلة في الجودة'),
-    staff_error: text('Staff error', 'خطأ الموظف'),
-    goodwill: text('Goodwill', 'مجاملة'),
-    loyalty: text('Loyalty', 'ولاء'),
-    other: text('Other', 'أخرى'),
-  };
+function reasonLabels(lang: 'en' | 'ar'): Record<EditReason, string> {
+  return Object.fromEntries(editReasons.map((reason) => [reason, editReasonLabels[reason][lang]])) as Record<EditReason, string>;
 }
 
 function asWorking(lines: Line[]): WorkingLine[] {
@@ -231,12 +223,13 @@ function withChoice(dish: Dish, sel: Selection, key: string, value: string): Sel
   return next;
 }
 
-function EditSheet({ kind, line, dish, dishes, data, busy, error, reasonCode, note, reasons, text, lang, money, onReason, onNote, onClose, onApply }: {
+function EditSheet({ kind, line, dish, dishes, data, totals, busy, error, reasonCode, note, reasons, text, lang, money, onReason, onNote, onClose, onApply }: {
   kind: SheetKind;
   line: Line | null;
   dish: Dish | undefined;
   dishes: Dish[];
   data: OrderDetailData;
+  totals: OrderTotals;
   busy: boolean;
   error: string;
   reasonCode: EditReason;
@@ -289,17 +282,15 @@ function EditSheet({ kind, line, dish, dishes, data, busy, error, reasonCode, no
   if (kind === 'add' && addDish && addQty >= 1 && addQty <= 20) {
     edit = { kind: 'add_item', line: { id: 'preview', dishId: addDish.id, name: addDish.name, nameAr: addDish.nameAr, quantity: addQty, unitMinor: Math.round(unitPrice(addDish, selection) * 100), note: '', voided: false, compliment: false, discount: null, selection, categoryName: '', categoryNameAr: '', categoryOrder: 0 } };
   }
-  let preview: { subtotal: number; total: number } | null = null;
+  let next = totals;
   let previewError = '';
   if (edit) {
     try {
-      const projected = applyEdits(asWorking(data.currentLines), [edit]);
-      const orderOff = projected.discounts.filter((item) => item.scope === 'order').reduce((sum, item) => sum + item.amountMinor, 0);
-      preview = { subtotal: projected.totalMinor + orderOff, total: projected.totalMinor };
+      next = orderTotals(applyEdits(asWorking(data.currentLines), [edit]));
     } catch { previewError = text('That discount is larger than the amount due.', 'هذا الخصم أكبر من المبلغ المستحق.'); }
   }
-  const before = data.totalMinor;
-  const increase = Boolean(data.paidAt && preview && preview.total > before);
+  const preview = editPreview(totals, next, { paid: Boolean(data.paidAt), owedBackMinor: data.owedBackMinor });
+  const increase = preview.blocked;
   const blocked = increase || Boolean(previewError);
   const body = kind === 'add' && addDish
     ? { kind: 'add_item', dishId: addDish.id, selection, quantity: addQty }
@@ -351,11 +342,7 @@ function EditSheet({ kind, line, dish, dishes, data, busy, error, reasonCode, no
           <label>{text('Note', 'ملاحظة')}<textarea value={note} maxLength={140} onChange={(event) => onNote(event.target.value)} /></label>
         </div>
         <div className="order-edit-side">
-          <p><span>{text('Subtotal', 'المجموع الفرعي')}</span><span>{money(preview?.subtotal ?? before)}</span></p>
-          <p><span>{text('Change', 'التغيير')}</span><span>{money((preview?.total ?? before) - before)}</span></p>
-          <p><span>{text('New total', 'الإجمالي الجديد')}</span><strong>{money(preview?.total ?? before)}</strong></p>
-          {preview && preview.subtotal !== before && <p><span>{text('Was', 'كان')}</span><span>{money(before)}</span></p>}
-          {data.paidAt && <p><span>{text('Owed back', 'المبلغ المسترد')}</span><span>{money(data.owedBackMinor + Math.max(0, before - (preview?.total ?? before)))}</span></p>}
+          <TotalsRows preview={preview} text={text} money={money} lang={lang} />
         </div>
       </div>
     </div>
@@ -366,30 +353,52 @@ function EditSheet({ kind, line, dish, dishes, data, busy, error, reasonCode, no
   </dialog>;
 }
 
-function ConfirmEdit({ kind, line, data, busy, error, text, money, onCancel, onApply }: {
+/** Live totals for a sheet or confirm. Every row describes the order after the change; "was" sits under the new total only when it moves. */
+function TotalsRows({ preview, text, money, lang }: { preview: EditPreview; text: (en: string, ar: string) => string; money: (minor: number) => string; lang: 'en' | 'ar' }) {
+  return <>
+    <p><span>{text('Subtotal', 'المجموع الفرعي')}</span><span dir="ltr">{money(preview.subtotalMinor)}</span></p>
+    <p><span>{text('Change', 'التغيير')}</span><span dir="ltr">{signedMinorAmount(preview.changeMinor)} {text('QAR', 'ر.ق')}</span></p>
+    <p className="order-edit-new-total"><span>{text('New total', 'الإجمالي الجديد')}</span><span><strong dir="ltr">{money(preview.totalMinor)}</strong>{preview.wasMinor != null && <small>{lang === 'ar' ? 'كان ' : 'was '}<span dir="ltr">{money(preview.wasMinor)}</span></small>}</span></p>
+    {preview.owedBackMinor != null && <p><span>{text('Owed back', 'المبلغ المسترد')}</span><span dir="ltr">{money(preview.owedBackMinor)}</span></p>}
+  </>;
+}
+
+function ConfirmEdit({ kind, line, data, totals, busy, error, text, lang, money, onCancel, onApply }: {
   kind: 'void' | 'compliment';
   line: Line;
   data: OrderDetailData;
+  totals: OrderTotals;
   busy: boolean;
   error: string;
   text: (en: string, ar: string) => string;
+  lang: 'en' | 'ar';
   money: (minor: number) => string;
   onCancel: () => void;
   onApply: () => void;
 }) {
-  let total = data.totalMinor;
+  const ref = useRef<HTMLDialogElement>(null);
+  useModal(ref);
+  let next = totals;
+  let rejected = false;
   try {
-    total = applyEdits(asWorking(data.currentLines), [kind === 'void' ? { kind: 'void', lineId: line.id } : { kind: 'compliment', lineId: line.id }]).totalMinor;
-  } catch { /* keep the current total */ }
-  const amount = line.voided ? 0 : line.unitMinor * line.quantity;
-  return <form className="admin-confirm" onSubmit={(event) => { event.preventDefault(); onApply(); }}>
-    {error && <p role="alert" className="staff-error">{error}</p>}
-    <p>{kind === 'void' ? text('Void this line?', 'إلغاء هذا الصنف؟') : text('Comp this line?', 'إهداء هذا الصنف؟')}</p>
-    <p><span>{text('Amount', 'المبلغ')}</span> {money(amount)}</p>
-    <p><span>{text('New total', 'الإجمالي الجديد')}</span> {money(total)}</p>
-    <div className="admin-actions">
-      <button className="primary" disabled={busy} type="submit">{kind === 'void' ? text('Void line', 'إلغاء الصنف') : text('Comp line', 'إهداء الصنف')}</button>
-      <button type="button" onClick={onCancel}>{text('Cancel', 'إلغاء')}</button>
-    </div>
-  </form>;
+    next = orderTotals(applyEdits(asWorking(data.currentLines), [kind === 'void' ? { kind: 'void', lineId: line.id } : { kind: 'compliment', lineId: line.id }]));
+  } catch { rejected = true; }
+  const preview = editPreview(totals, next, { paid: Boolean(data.paidAt), owedBackMinor: data.owedBackMinor });
+  const name = lang === 'ar' ? line.nameAr || line.name : line.name;
+  return <dialog ref={ref} className="order-edit-dialog order-edit-confirm" onClose={onCancel} aria-labelledby="order-edit-confirm-title">
+    <form method="dialog" onSubmit={(event) => { event.preventDefault(); onApply(); }}>
+      <div className="admin-dialog-head"><h2 id="order-edit-confirm-title">{kind === 'void' ? text('Void this line?', 'إلغاء هذا الصنف؟') : text('Comp this line?', 'إهداء هذا الصنف؟')}</h2></div>
+      <div className="admin-dialog-body">
+        {error && <p role="alert" className="staff-error">{error}</p>}
+        <div className="admin-confirm">
+          <p><span>{name} ×{line.quantity}</span><span dir="ltr">{money(line.unitMinor * line.quantity)}</span></p>
+          {!rejected && <TotalsRows preview={preview} text={text} money={money} lang={lang} />}
+        </div>
+      </div>
+      <div className="admin-dialog-foot">
+        <button type="button" onClick={onCancel}>{text('Cancel', 'إلغاء')}</button>
+        <button className={kind === 'void' ? 'danger' : 'primary'} disabled={busy || rejected} type="submit">{kind === 'void' ? text('Void line', 'إلغاء الصنف') : text('Comp line', 'إهداء الصنف')}</button>
+      </div>
+    </form>
+  </dialog>;
 }

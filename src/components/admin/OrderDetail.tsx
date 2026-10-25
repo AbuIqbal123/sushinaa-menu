@@ -5,6 +5,7 @@ import { useLocale } from '@/i18n/locale';
 import { allowedTransitions, staffStatus, staffLabels, type OrderStatus } from '@/ordering/status';
 import { printTicket } from './print-ticket';
 import { OrderEditPanel } from './OrderEditPanel';
+import { orderShortCode } from '@/ordering/edits';
 import { cancellationReasons, type OrderDetailData } from '@/ordering/contracts';
 import type { Role } from '@/cms/permissions';
 import type { MenuData } from '@/cms/schema';
@@ -77,7 +78,7 @@ export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; 
     {error && <p role="alert" className="staff-error">{error === 'STALE_STATUS' ? text('Another team member updated this order. The latest status is shown.', 'حدّث موظف آخر هذا الطلب. تظهر الحالة الأحدث الآن.') : error === 'LOAD_FAILED' ? text('Unable to load order. Please retry.', 'تعذّر تحميل الطلب. يرجى المحاولة مجدداً.') : error === 'PRINT_FAILED' ? text('Unable to print this ticket. Please retry.', 'تعذّرت طباعة التذكرة. يرجى المحاولة مجدداً.') : text('Unable to update this order. Please retry.', 'تعذّر تحديث الطلب. يرجى المحاولة مجدداً.')}</p>}
     {data && <>
       <header className="staff-detail-head">
-        <h2 dir="ltr">{data.orderNumber ?? id}</h2>
+        <h2>{data.orderNumber != null ? text(`Order ${data.orderNumber}`, `الطلب ${data.orderNumber}`) : text('Order', 'الطلب')} <span dir="ltr" className="staff-order-ref">{orderShortCode(id)}</span></h2>
         <div className="staff-head-actions">
           <span className="staff-status">{staffLabels[staffStatus(data.status)][lang]}</span>
           {allowedTransitions(data.status, data.paidAt).filter((to) => to !== 'cancelled' && to !== 'refunded').slice(0, 1).map((to) => <button key={to} type="button" disabled={busy} className="primary" onClick={() => void change(to)}>
@@ -87,7 +88,6 @@ export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; 
           {allowedTransitions(data.status, data.paidAt).includes('cancelled') && <button type="button" className="danger" disabled={busy} onClick={() => setCancel(true)}>{text('Cancel order…', 'إلغاء الطلب…')}</button>}
         </div>
       </header>
-      <p dir="ltr" className="staff-order-ref">{id}</p>
       <p>{lang === 'ar' ? branch?.nameAr : branch?.name} · {data.paymentMethod === 'mock' ? text('Paid (mock)', 'مدفوع (تجريبي)') : data.paidAt ? text('Paid at pickup', 'تم الدفع عند الاستلام') : text('Pay at pickup', 'الدفع عند الاستلام')}</p>
       <section className="admin-card staff-contact"><strong>{data.customer.name || '—'}</strong>
         <p dir="ltr">{data.customer.phone}</p><p dir="ltr">{data.customer.plate}</p>
