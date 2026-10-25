@@ -1,4 +1,5 @@
 "use client";
+import { useLocale } from "@/i18n/locale";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -13,15 +14,23 @@ import { CategoryEditor } from "./CategoryEditor";
 import { CategoryList } from "./CategoryList";
 import { MenuList } from "./MenuList";
 import { Dashboard } from "./Dashboard";
+import { Orders } from "./Orders";
+import { StaffPanel } from "./StaffPanel";
 import { Activity } from "./Activity";
+import type { Role } from "@/cms/permissions";
 import { confirmDiscard } from "./Fields";
 import { useNotify } from "./Notices";
-export function Admin({ initial }: { initial: MenuSnapshot }) {
+export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) {
+  const { lang } = useLocale();
+  const [unreadOrders, setUnreadOrders] = useState(0);
   const [snapshot, setSnapshot] = useState(initial);
   const params = useSearchParams();
   // A filtered menu link (?category=&show=&q=) opens straight on the Menu.
+  const sections = role === "admin"
+    ? ["Dashboard", "Orders", "Menu", "Categories", "Settings", "Activity"]
+    : ["Orders"];
   const [section, setSection] = useState(() =>
-    ["category", "show", "q"].some((k) => params.has(k)) ? "Menu" : "Dashboard",
+    role !== "admin" ? "Orders" : ["category", "show", "q"].some((k) => params.has(k)) ? "Menu" : "Dashboard",
   );
   const [item, setItem] = useState<CmsDish | null>(null);
   const [category, setCategory] = useState<Category | null>(null);
@@ -98,7 +107,7 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
     <>
       <aside className="admin-sidebar">
         <div className="admin-brand">{menu.settings.name}</div>
-        {["Dashboard", "Menu", "Categories", "Settings", "Activity"].map((s) => (
+        {sections.map((s) => (
           <button
             key={s}
             className={section === s ? "active" : ""}
@@ -108,7 +117,7 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
               setSection(s);
             }}
           >
-            {s}
+            {s === "Orders" && lang === "ar" ? "الطلبات" : s}{s === "Orders" && unreadOrders > 0 && <span className="staff-unread">{unreadOrders}</span>}
           </button>
         ))}
         <a className="bottom" href="/" target="_blank" rel="noreferrer">
@@ -135,7 +144,7 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
       <div className="admin-main">
         <main className="admin-content">
           <div className="admin-heading">
-            <h1>{section === "Menu" ? "Your menu" : section}</h1>
+            <h1>{section === "Menu" ? "Your menu" : section === "Orders" && lang === "ar" ? "الطلبات" : section}</h1>
             {section === "Menu" && (
               <button className="primary" onClick={() => newItem()}>
                 Add item
@@ -184,9 +193,13 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
               onChange={run}
             />
           )}
+          <Orders active={section === "Orders"} onUnread={setUnreadOrders} />
           {section === "Activity" && <Activity />}
-          {section === "Settings" && (
-            <SettingsEditor key={snapshot.revision} menu={menu} onSave={save} />
+          {section === "Settings" && role === "admin" && (
+            <>
+              <StaffPanel />
+              <SettingsEditor key={snapshot.revision} menu={menu} onSave={save} />
+            </>
           )}
         </main>
       </div>

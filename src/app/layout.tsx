@@ -11,6 +11,10 @@ import { MenuProvider } from "@/cms/context";
 import { isProductionDeployment } from "@/lib/deploy-env";
 import "./globals.css";
 
+// Read the published menu at request time; preview builds need no database connection.
+// getMenu still shares the published snapshot via its existing tagged cache.
+export const dynamic = "force-dynamic";
+
 const display = localFont({
   src: [
     { path: "../fonts/KautivaProC-Regular.otf", weight: "400", style: "normal" },

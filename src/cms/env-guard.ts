@@ -57,7 +57,13 @@ let logged = false;
  * Report-only by default: log and continue. CMS_ENV_GUARD=enforce refuses to start.
  * Never includes tokens or full connection strings.
  */
+export function assertPaymentProviderAllowed() {
+  if (isProductionDeployment() && process.env.PAYMENT_PROVIDER?.toLowerCase() === "mock")
+    throw new Error("Production must not use a mock payment provider.");
+}
+
 export async function assertDatabaseAllowed(client: Client) {
+  assertPaymentProviderAllowed();
   const problems = guardProblems({
     production: isProductionDeployment(),
     databaseUrl: process.env.CMS_DATABASE_URL || "file:./data/menu.db",
