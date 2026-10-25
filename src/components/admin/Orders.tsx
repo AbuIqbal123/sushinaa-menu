@@ -6,12 +6,14 @@ import { LangButton, useLocale } from '@/i18n/locale';
 import { isPrintable, staffLabels, staffStatus, type StaffStatus } from '@/ordering/status';
 import type { OrderSummary } from '@/ordering/contracts';
 import { OrderDetail } from './OrderDetail';
+import type { Role } from '@/cms/permissions';
+import type { MenuData } from '@/cms/schema';
 import { printTicket } from './print-ticket';
 import { createOrderPoller } from './order-poller';
 
 type List = { rows: OrderSummary[]; more: boolean; newCount: number; unprintedCount?: number };
 const AUTO_PRINT = 'sushinaa-auto-print';
-export function Orders({ active, onUnread }: { active: boolean; onUnread: (n: number) => void }) {
+export function Orders({ active, onUnread, role, menu }: { active: boolean; onUnread: (n: number) => void; role: Role; menu: MenuData }) {
   const { lang } = useLocale();
   const router = useRouter();
   const text = (en: string, ar: string) => lang === 'ar' ? ar : en;
@@ -149,7 +151,7 @@ export function Orders({ active, onUnread }: { active: boolean; onUnread: (n: nu
     </div>
     {/* TODO(ar): confirm the paused-updates sentence with the restaurant. */}
     {paused && <p className="staff-poll-paused" role="status">{text('Updates paused, retrying', 'التحديثات متوقفة، جارٍ إعادة المحاولة')}{lastOk ? ` · ${new Date(lastOk).toLocaleTimeString(lang, { timeZone: 'Asia/Qatar', hour: '2-digit', minute: '2-digit' })}` : ''}</p>}
-    {detail ? <OrderDetail key={detail} id={detail} onBack={() => setDetail(null)} onChange={refresh} /> : <>
+    {detail ? <OrderDetail key={detail} id={detail} role={role} menu={menu} onBack={() => setDetail(null)} onChange={refresh} /> : <>
       <div className="admin-toolbar staff-filters">
         <label>{text('Branch', 'الفرع')}<select aria-label={text('Order branch', 'فرع الطلب')} value={branch} onChange={e => { setBranch(e.target.value); setPage(1); }}><option value="">{lang === 'ar' ? 'كل الفروع' : 'All branches'}</option>{BRANCHES.map(b => <option key={b.slug} value={b.slug}>{lang === 'ar' ? b.nameAr : b.name}</option>)}</select></label>
         <label>{text('Status', 'الحالة')}<select aria-label={text('Order status', 'حالة الطلب')} value={status} onChange={e => {setStatus(e.target.value);setPage(1);}}><option value="">{text('All statuses', 'كل الحالات')}</option>{(Object.keys(staffLabels) as StaffStatus[]).map(s => <option key={s} value={s}>{staffLabels[s][lang]}</option>)}</select></label>
@@ -164,7 +166,7 @@ export function Orders({ active, onUnread }: { active: boolean; onUnread: (n: nu
         <div>{lang === 'ar' ? b?.nameAr : b?.name}<time>{new Date(row.createdAt).toLocaleTimeString(lang, {timeZone:'Asia/Qatar',hour:'2-digit',minute:'2-digit'})}</time></div>
         <div className="staff-row-contact" dir="ltr"><span>{row.id.slice(0, 11)}</span><span>{row.phone}</span><span>{row.plate}</span></div>
         <div><small>{row.paymentMethod === 'mock' ? text('Paid (mock)', 'مدفوع (تجريبي)') : row.paidAt ? text('Paid at pickup', 'تم الدفع عند الاستلام') : text('Pay at pickup', 'الدفع عند الاستلام')}</small>{printable && row.printCount === 0 && <span className="staff-unprinted">{text('Not printed', 'لم تُطبع')}</span>}<strong>{(row.totalMinor / 100).toFixed(2)} {text('QAR', 'ر.ق')}</strong></div>
-      </button>{printable && row.printCount === 0 && <button type="button" className="staff-print" onClick={() => void sendPrint(row.id, 'manual')}>{text('Print', 'طباعة')}</button>}{row.printCount > 0 && <button type="button" className="staff-print" onClick={() => void sendPrint(row.id, 'reprint')}>{text('Reprint', 'إعادة الطباعة')}</button>}</li>;})}</ul>
+      </button>{printable && row.printCount === 0 && <button type="button" className="staff-print" onClick={() => void sendPrint(row.id, 'manual')}>{text('Print', 'طباعة')}</button>}{isPrintable(row.status) && row.printCount > 0 && <button type="button" className="staff-print" onClick={() => void sendPrint(row.id, 'reprint')}>{text('Reprint', 'إعادة الطباعة')}</button>}</li>;})}</ul>
       {data && (page > 1 || data.more) && <nav className="admin-pager"><button disabled={page === 1} onClick={() => setPage(page - 1)}>{text('Previous', 'السابق')}</button><span>{page}</span><button disabled={!data.more} onClick={() => setPage(page + 1)}>{text('Next', 'التالي')}</button></nav>}
     </>}
   </section>;

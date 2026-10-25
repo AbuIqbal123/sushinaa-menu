@@ -24,7 +24,7 @@ export async function claimPrint(scope: BranchScope, id: string, mode: 'auto' | 
     ? `UPDATE orders SET print_claim_id=?, print_claimed_at=? WHERE id=? AND ${branch.sql} AND print_count=0 AND print_claimed_at IS NULL AND ${printableSql} AND COALESCE(paid_at, created_at)>=?`
     : mode === 'manual'
       ? `UPDATE orders SET print_claim_id=?, print_claimed_at=? WHERE id=? AND ${branch.sql} AND print_count=0 AND ${printableSql} AND (print_claimed_at IS NULL OR print_claimed_at<=?)`
-      : `UPDATE orders SET print_claim_id=?, print_claimed_at=? WHERE id=? AND ${branch.sql} AND printed_at IS NOT NULL AND (print_claimed_at IS NULL OR print_claimed_at<=?)`;
+      : `UPDATE orders SET print_claim_id=?, print_claimed_at=? WHERE id=? AND ${branch.sql} AND printed_at IS NOT NULL AND ${printableSql} AND (print_claimed_at IS NULL OR print_claimed_at<=?)`;
   const args = mode === 'auto'
     ? [claimId, at, id, ...branch.args, recent]
     : [claimId, at, id, ...branch.args, stale];

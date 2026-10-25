@@ -24,4 +24,9 @@ export type OrderSummary = { id: string; orderNumber: number | null; branchId: B
   printCount: number; printedAt: string | null };
 export type OrderDetailData = OrderSummary & { customer: { name: string; phone: string; plate: string; colour: string; car: string; instructions: string };
   snapshot: Omit<OrderSnapshot, 'customer'> & { version: number; menuRevision: number };
-  history: { at: string; from: OrderStatus; to: OrderStatus; reason: string | null }[]; contactRevealed: boolean };
+  history: { at: string; from: OrderStatus; to: OrderStatus; reason: string | null }[]; contactRevealed: boolean;
+  amendedAt: string | null; originalTotalMinor: number;
+  currentLines: { id: string; name: string; nameAr: string; quantity: number; unitMinor: number; note: string; voided: boolean; compliment: boolean; selection: OrderSnapshot['lines'][number]['selection']; categoryName: string; dishId: string; discount: { mode: 'percent'; bp: number } | { mode: 'amount'; amountMinor: number } | null }[];
+  discounts: { scope: 'line' | 'order'; lineId: string | null; amountMinor: number }[];
+  edits: { kind: string; lineId: string | null; reasonCode: string; note: string | null }[];
+  owedBackMinor: number; };

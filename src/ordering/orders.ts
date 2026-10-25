@@ -3,6 +3,7 @@ import { db } from '@/cms/db';
 import { auditInsert, type AuditContext } from '@/cms/audit';
 import { initOrders, hash, customerOrder } from './checkout/repository';
 import { canTransition, isPrintable, staffGroups, type OrderStatus, type StaffStatus } from './status';
+import type { Role } from '@/cms/permissions';
 import type { OrderQuery, StatusInput, OrderSummary, OrderDetailData } from './contracts';
 import { OrderError } from './http';
 import type { BranchId } from '@/branches/branches';
@@ -16,6 +17,23 @@ export const maskPlate = (plate: unknown) => typeof plate === 'string' && plate.
 const text = (v: unknown) => typeof v === 'string' ? v : '';
 const nullable = (v: unknown) => typeof v === 'string' ? v : null;
 export const KITCHEN_VISIBLE = "(payment_method='pay_at_pickup' OR paid_at IS NOT NULL)";
+
+export async function orderEditMeta(orderId: string) {
+  const edits = (await db.execute({
+    sql: 'SELECT kind, line_id, reason_code, note FROM order_edits WHERE order_id=? ORDER BY created_at, id',
+    args: [orderId],
+  })).rows.map((row) => ({
+    kind: String(row.kind),
+    lineId: row.line_id == null ? null : String(row.line_id),
+    reasonCode: String(row.reason_code),
+    note: row.note == null ? null : String(row.note),
+  }));
+  const owed = (await db.execute({
+    sql: 'SELECT COALESCE(SUM(amount_minor), 0) AS n FROM order_adjustments WHERE order_id=? AND settled_at IS NULL',
+    args: [orderId],
+  })).rows[0];
+  return { edits, owedBackMinor: Number(owed?.n ?? 0) };
+}
 const printableSql = `status IN (${['paid', 'accepted', 'preparing', 'ready', 'completed'].map((status) => `'${status}'`).join(',')})`;
 
 export function summary(row: Row): OrderSummary {
@@ -91,19 +109,27 @@ export async function detailOrder(scope: BranchScope, id: string, reveal: boolea
   const history = (await db.execute({ sql: "SELECT at,diff,label FROM audit WHERE entity_type='order' AND entity_id=? AND action='order.status' ORDER BY id", args: [id] })).rows;
   const snapshot = JSON.parse(String(row.snapshot));
   delete snapshot.customer;
-  return { ...summary(row), contactRevealed: reveal, snapshot,
+  const { applyEdits, linesFromSnapshot } = await import('./edits');
+  const { storedEdits } = await import('./order-edits');
+  const projected = applyEdits(linesFromSnapshot(snapshot.lines ?? []), await storedEdits(id));
+  const meta = await orderEditMeta(id);
+  return { ...summary(row), contactRevealed: reveal, snapshot, amendedAt: nullable(row.amended_at), originalTotalMinor: Number(snapshot.totalMinor ?? row.total_minor), currentLines: projected.lines, discounts: projected.discounts, edits: meta.edits, owedBackMinor: meta.owedBackMinor,
     customer: { name: text(row.customer_name), phone: reveal ? text(row.customer_phone) : maskPhone(row.customer_phone),
       plate: reveal ? text(row.car_plate) : maskPlate(row.car_plate), colour: text(row.car_colour), car: text(row.car_model), instructions: text(row.instructions) },
     history: history.map(h => ({ at: String(h.at), ...JSON.parse(String(h.diff)).status, reason: nullable(h.label) })),
   };
 }
 
-export async function transitionOrder(scope: BranchScope, id: string, input: StatusInput, ctx: AuditContext, now = new Date()) {
+export async function transitionOrder(scope: BranchScope, id: string, input: StatusInput, ctx: AuditContext, now = new Date(), role: Role = 'branch_staff') {
   await initOrders();
   const branch = branchClause(scope);
+  if (input.to === 'refunded' && role !== 'admin') throw new OrderError('FORBIDDEN', 403);
   if (!canTransition(input.expected, input.to, 'sql-checks-paid-at')) throw new OrderError('INVALID_TRANSITION', 409);
   if (input.to === 'refunded' && process.env.VERCEL_ENV === 'production') throw new OrderError('INVALID_TRANSITION', 409);
   const at = now.toISOString();
+  const settled = input.to === 'completed' && input.recordPayment === true
+    ? (await db.execute({ sql: `SELECT total_minor FROM orders WHERE id=? AND ${branch.sql}`, args: [id, ...branch.args] })).rows[0]
+    : undefined;
   const purge = new Date(now.getTime() + 90 * 86400000).toISOString();
   const completed = input.to === 'completed';
   const recordPayment = completed && input.recordPayment === true;
@@ -114,7 +140,7 @@ export async function transitionOrder(scope: BranchScope, id: string, input: Sta
         AND (?!='refunded' OR paid_at IS NOT NULL)
         AND (?!='completed' OR paid_at IS NOT NULL OR (payment_method='pay_at_pickup' AND ?=1))`,
       args: [input.to, at, input.to, purge, id, ...branch.args, input.expected, input.to, input.to, Number(recordPayment)] },
-    afterChange(auditInsert(ctx, { action: 'order.status', entityType: 'order', entityId: id, label: input.to === 'cancelled' ? input.reason : undefined, diff: { status: { from: input.expected, to: input.to } } })),
+    afterChange(auditInsert(ctx, { action: 'order.status', entityType: 'order', entityId: id, label: input.to === 'cancelled' ? input.reason : undefined, diff: { status: { from: input.expected, to: input.to }, ...(settled ? { settledMinor: Number(settled.total_minor) } : {}) } })),
     ...(recordPayment ? counterSettlementStatements(id, at) : []),
   ], 'write');
   if (result[0].rowsAffected !== 1) {

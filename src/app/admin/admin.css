@@ -12,7 +12,9 @@
     sans-serif;
   direction: ltr;
   text-align: start;
-  overflow: auto;
+  /* clip, not auto: a scroll container here would stop every position: sticky
+     bar (.admin-savebar) from sticking to the viewport, since the page scrolls. */
+  overflow-x: clip;
 }
 .admin * {
   box-sizing: border-box;
@@ -740,7 +742,9 @@
 .staff-order-list time, .staff-row-contact { font-size:12px; color:var(--muted); }
 .staff-status { display:inline-block; border-radius:20px; padding:3px 9px; background:#eef1f5; font-size:12px; white-space:nowrap; }
 .status-received { background:#fff1d6; color:#805d10; }.status-preparing {background:#e6eefc;color:#245895;}.status-ready{background:#def4e6;color:#216c45;}
-.staff-detail-head {display:flex;align-items:center;gap:12px;justify-content:space-between;margin-block:20px 8px;}
+.staff-detail-head {display:flex;align-items:center;gap:8px;justify-content:space-between;margin-block:18px 8px;}
+.staff-head-actions {display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+.staff-head-actions button {min-height:44px;}
 .staff-detail-head h2 {overflow-wrap:anywhere;font-size:16px;}
 .staff-contact p {margin-block:8px;}.staff-ticket {max-width:700px;margin:22px auto;color:#302923;}
 .admin .staff-ticket p {margin:0;}.staff-ticket .ticket-line {grid-template-columns:minmax(0,1fr) auto auto;gap:12px;}.staff-ticket .line-note {margin-top:6px;}
@@ -753,4 +757,52 @@
 .staff-poll-paused { margin:0 0 12px; color:#805d10; }
 .staff-users ul { padding:0; list-style:none; }
 .staff-users li { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px; }
-.staff-order-ref { margin:0 0 12px; color:var(--muted); font-size:12px; overflow-wrap:anywhere; }
+.staff-order-ref { margin-inline-start:8px; color:var(--muted); font-size:12px; font-weight:400; white-space:nowrap; }
+.order-edit-card { margin-bottom: 0; }
+.order-edit-card h3 { margin: 0 0 8px; font-size: 16px; font-weight: 550; }
+.order-edit-lines { list-style: none; margin: 0; padding: 0; max-height: 50vh; overflow: auto; }
+.admin .order-edit-line { display: flex; width: 100%; align-items: center; gap: 8px; min-height: 44px; padding: 12px; border: 0; border-inline-start: 3px solid transparent; border-radius: 7px; background: transparent; text-align: start; }
+/* Selected: the 3px accent rule in every state (hover, focus, disabled), square on its edge so it reads as a bar. */
+.admin .order-edit-line[aria-pressed="true"],
+.admin .order-edit-line[aria-pressed="true"]:hover,
+.admin .order-edit-line[aria-pressed="true"]:focus-visible,
+.admin .order-edit-line[aria-pressed="true"]:disabled { border-inline-start-color: var(--accent); border-start-start-radius: 0; border-end-start-radius: 0; background: transparent; }
+.order-edit-name, .order-edit-note { display: block; overflow-wrap: anywhere; }
+.order-edit-line small, .order-edit-note { color: var(--muted); }
+.order-edit-void { text-decoration: line-through; }
+.order-edit-meta { display: flex; align-items: center; gap: 8px; margin-inline-start: auto; white-space: nowrap; }
+.order-edit-sum { display: grid; gap: 8px; margin-top: 8px; }
+.order-edit-sum p { display: flex; justify-content: space-between; gap: 8px; margin: 0; }
+.order-edit-bar { gap: 8px; z-index: 1; }
+.order-edit-group { display: flex; flex: 1; gap: 8px; min-width: 0; }
+.order-edit-group button { flex: 1 1 0; min-height: 44px; }
+.order-edit-divider { width: 1px; align-self: stretch; background: var(--line); }
+.order-edit-bar small { flex-basis: 100%; color: var(--muted); }
+.order-edit-dialog .admin-dialog-head,
+.order-edit-dialog .admin-dialog-body,
+.order-edit-dialog .admin-dialog-foot { padding: 24px; }
+.order-edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.order-edit-fields { display: grid; gap: 8px; }
+.order-edit-fields input,
+.order-edit-fields select,
+.order-edit-fields textarea,
+.order-edit-fields button,
+.order-edit-results button { min-height: 44px; border-radius: 7px; }
+.order-edit-stepper { display: flex; gap: 8px; }
+.order-edit-stepper input { text-align: center; }
+.order-edit-results { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.order-edit-results button { width: 100%; }
+.order-edit-side { display: grid; align-content: start; gap: 8px; border-inline-start: 1px solid var(--line); padding-inline-start: 24px; }
+.order-edit-side p { display: flex; justify-content: space-between; gap: 8px; margin: 0; }
+.order-edit-new-total > span:last-child { display: grid; justify-items: end; }
+.order-edit-new-total small { color: var(--muted); }
+.order-edit-confirm { width: min(480px, calc(100vw - 32px)); }
+.order-edit-confirm .admin-confirm { margin: 0; }
+.order-edit-confirm .admin-confirm p { display: flex; justify-content: space-between; gap: 8px; margin: 0; }
+.order-edit-confirm .admin-confirm p > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+
+@media (max-width: 1100px) {
+  .order-edit-bar { flex-direction: column; }
+  .order-edit-group { width: 100%; }
+  .order-edit-divider { width: 100%; height: 1px; }
+}

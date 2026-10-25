@@ -3,7 +3,7 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { AUDIT_SCHEMA } from "./audit";
 import type { Client } from "@libsql/client";
-import { ORDER_NUMBER_SQL, ORDER_SCHEMA, PRINT_SQL, STAFF_SCHEMA } from "@/ordering/schema";
+import { EDIT_SQL, ORDER_NUMBER_SQL, ORDER_SCHEMA, PRINT_SQL, STAFF_SCHEMA } from "@/ordering/schema";
 import { orderDatabaseAllowed } from "@/ordering/guard";
 // Capture configuration once, but create no connection or files during route imports.
 export const databaseUrl = process.env.CMS_DATABASE_URL || "file:./data/menu.db";
@@ -58,13 +58,13 @@ let ready: Promise<unknown> | undefined;
 async function ensureOrderColumns() {
   const info = await db.execute("PRAGMA table_info(orders)");
   const have = new Set(info.rows.map((row) => String(row.name)));
-  const pending = [...ORDER_NUMBER_SQL, ...PRINT_SQL].filter((sql) => {
+  const alters = [...ORDER_NUMBER_SQL, ...PRINT_SQL, ...EDIT_SQL].filter((sql) => {
     const column = /ADD COLUMN (\w+)/.exec(sql)?.[1];
     return column ? !have.has(column) : false;
   });
-  if (pending.length) await db.batch(pending, "write");
-  const indexes = [...ORDER_NUMBER_SQL, ...PRINT_SQL].filter((sql) => sql.startsWith("CREATE"));
-  if (indexes.length) await db.batch(indexes, "write");
+  if (alters.length) await db.batch(alters, "write");
+  const creates = [...ORDER_NUMBER_SQL, ...PRINT_SQL, ...EDIT_SQL].filter((sql) => sql.startsWith("CREATE"));
+  if (creates.length) await db.batch(creates, "write");
 }
 
 export function initDb() {

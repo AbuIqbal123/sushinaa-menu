@@ -23,7 +23,7 @@ export const customerSchema = z.object({
 }).strict();
 export type Customer = z.infer<typeof customerSchema>;
 const option = z.string().min(1).max(100);
-const selectionSchema = z.object({
+export const selectionSchema = z.object({
   protein: option.optional(), pieces: z.union([z.literal(4), z.literal(6), z.literal(8), z.literal(12), z.literal(24)]).optional(),
   sauce: option.optional(), spicy: z.boolean().optional(), size: option.optional(), flavor: option.optional(),
   starter: option.optional(), sushi: option.optional(), starters: z.array(option).max(20).optional(),
