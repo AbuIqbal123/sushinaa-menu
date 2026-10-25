@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { createClient } from '@libsql/client';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { test, expect, type APIRequestContext, type BrowserContext, type Page } from '@playwright/test';
 import { admin } from './admin';
@@ -246,6 +247,10 @@ test('admin can change a user\'s role and branch and reset a password from Setti
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   const row = page.locator('li').filter({ hasText: username });
   await row.getByRole('button', { name: 'Change role and branch' }).click();
+  await row.getByLabel('Change branch').selectOption('al-thumama');
+  await row.getByRole('button', { name: 'Save role and branch' }).click();
+  await expect(row).toContainText('Al-Thumama');
+  await row.getByRole('button', { name: 'Change role and branch' }).click();
   await row.getByLabel('Change role').selectOption('admin');
   await row.getByRole('button', { name: 'Save role and branch' }).click();
   await expect(row).toContainText('Admin');
@@ -275,7 +280,12 @@ test('reopening the orders screen does not auto-print orders paid more than 2 ho
   }]);
   const database = process.env.CMS_DATABASE_URL ?? '';
   if (!database.startsWith('file:')) throw new Error('e2e database must be a local file');
-  execFileSync('sqlite3', [database.slice(5), `UPDATE orders SET paid_at='2020-01-01T00:00:00.000Z', created_at='2020-01-01T00:00:00.000Z' WHERE id='${stale}';`]);
+  const client = createClient({ url: database });
+  await client.execute({
+    sql: 'UPDATE orders SET paid_at=?, created_at=? WHERE id=?',
+    args: ['2020-01-01T00:00:00.000Z', '2020-01-01T00:00:00.000Z', stale],
+  });
+  client.close();
   await signIn(page, baseURL!);
   await page.goto('/admin');
   await page.getByRole('button', { name: 'Orders', exact: true }).click();
@@ -288,6 +298,21 @@ test('reopening the orders screen does not auto-print orders paid more than 2 ho
     const root = window as Window & { __printed?: string[] };
     return (root.__printed ?? []).some((value) => value.includes(orderId));
   }, stale)).toBeFalsy();
+});
+
+test('orders screen shows the paused notice when the server returns 503', async ({ page, baseURL }) => {
+  await signIn(page, baseURL!);
+  let fail = false;
+  await page.route('**/api/admin/orders*', (route) => {
+    if (!fail) return route.continue();
+    return route.fulfill({ status: 503, contentType: 'application/json', body: '{"code":"ORDERING_UNAVAILABLE"}' });
+  });
+  await page.goto('/admin');
+  const ready = page.waitForResponse((response) => response.url().includes('/api/admin/orders') && response.ok());
+  await page.getByRole('button', { name: 'Orders', exact: true }).click();
+  await ready;
+  fail = true;
+  await expect(page.getByRole('status')).toContainText('Updates paused, retrying', { timeout: 20000 });
 });
 
 test('80mm tickets for a short order, a long order and a reprint', async ({ page, baseURL }) => {

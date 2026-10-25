@@ -51,24 +51,27 @@ export async function listOrders(scope: BranchScope, query: OrderQuery) {
   if (query.to) { where.push('created_at<?'); args.push(new Date(Date.parse(`${query.to}T00:00:00+03:00`) + 86400000).toISOString()); }
   if (query.q) { where.push(query.q.startsWith('SU-') ? 'id=?' : 'substr(customer_phone,-4)=?'); args.push(query.q); }
   const backlog = await unprintedCount(scope);
+  let page = query.page;
+  let followCursor = false;
   if (query.since) {
     const cursor = (await db.execute({
       sql: `SELECT COALESCE(paid_at, created_at) AS sort_at, id FROM orders WHERE id=? AND ${branch.sql}`,
       args: [query.since, ...branch.args],
     })).rows[0];
-    if (!cursor) {
-      if (scope.kind !== 'all') return { rows: [], more: false, page: query.page, newCount: 0, unprintedCount: backlog };
-      throw new OrderError('INVALID_CURSOR', 400);
+    if (cursor) {
+      followCursor = true;
+      where.push('(COALESCE(paid_at, created_at)>? OR (COALESCE(paid_at, created_at)=? AND id>?))');
+      args.push(String(cursor.sort_at), String(cursor.sort_at), query.since);
+    } else {
+      page = 1;
     }
-    where.push('(COALESCE(paid_at, created_at)>? OR (COALESCE(paid_at, created_at)=? AND id>?))');
-    args.push(String(cursor.sort_at), String(cursor.sort_at), query.since);
   }
   const predicate = where.join(' AND ');
   const rows = await db.execute({
     sql: `SELECT id,branch_id,status,payment_method,paid_at,total_minor,created_at,customer_phone,car_plate,order_number,print_count,printed_at FROM orders WHERE ${branch.sql} AND ${predicate} ORDER BY COALESCE(paid_at, created_at) DESC, id DESC LIMIT ? OFFSET ?`,
-    args: [...branch.args, ...args, query.limit + 1, (query.page - 1) * query.limit],
+    args: [...branch.args, ...args, query.limit + 1, (page - 1) * query.limit],
   });
-  const count = query.since ? Number((await db.execute({ sql: `SELECT COUNT(*) AS n FROM orders WHERE ${branch.sql} AND ${predicate}`, args: [...branch.args, ...args] })).rows[0].n) : 0;
+  const count = followCursor ? Number((await db.execute({ sql: `SELECT COUNT(*) AS n FROM orders WHERE ${branch.sql} AND ${predicate}`, args: [...branch.args, ...args] })).rows[0].n) : 0;
   const cutoff = new Date(Date.now() - AUTO_PRINT_WINDOW_MS).toISOString();
   const autoPrint = (await db.execute({
     sql: `SELECT id,branch_id,status,payment_method,paid_at,total_minor,created_at,customer_phone,car_plate,order_number,print_count,printed_at
@@ -76,7 +79,7 @@ export async function listOrders(scope: BranchScope, query: OrderQuery) {
       AND COALESCE(paid_at, created_at)>=? ORDER BY COALESCE(paid_at, created_at), id`,
     args: [...branch.args, cutoff],
   })).rows.map(summary);
-  return { rows: rows.rows.slice(0, query.limit).map(summary), more: rows.rows.length > query.limit, page: query.page, newCount: count, unprintedCount: backlog, autoPrint };
+  return { rows: rows.rows.slice(0, query.limit).map(summary), more: rows.rows.length > query.limit, page, newCount: count, unprintedCount: backlog, autoPrint };
 }
 
 export async function detailOrder(scope: BranchScope, id: string, reveal: boolean, ctx: AuditContext): Promise<OrderDetailData> {

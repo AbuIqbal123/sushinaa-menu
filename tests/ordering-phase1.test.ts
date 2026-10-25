@@ -276,9 +276,12 @@ test("branch user changing another branch's order status gets 404, no state chan
 });
 
 test("polling ?since= cursor from another branch's order reveals nothing", async () => {
+  const own = await place('down-town');
   const other = await place('west-bay');
   const listed = await orders.listOrders(downTown, orderQuery.parse({ since: other.id, limit: 100 }));
-  assert.deepEqual(listed.rows, []);
+  assert.equal(listed.rows.some((item) => item.id === own.id), true);
+  assert.equal(listed.page, 1);
+  assert.ok(Array.isArray(listed.autoPrint));
   assert.equal(JSON.stringify(listed).includes(other.id), false);
 });
 
@@ -496,13 +499,70 @@ test('staff tables are not created on the live database host', async () => {
   assert.doesNotMatch(startupStatements(`libsql://${LIVE_DATABASE_HOST}`).join('\n'), /staff_users|staff_sessions/);
 });
 
-test('CMS sign-in on a guarded database writes no staff rows', async () => {
-  const { guardedSessionSql } = await import('../src/cms/auth');
-  const { startupStatements } = await import('../src/cms/db');
-  const sql = guardedSessionSql().join('\n');
-  assert.match(sql, /INSERT INTO sessions/);
-  assert.doesNotMatch(sql, /staff_/);
-  assert.doesNotMatch(startupStatements(`libsql://${LIVE_DATABASE_HOST}`).join('\n'), /staff_users/);
+test('ticket prints CAR PICKUP with the car details', async () => {
+  const order = await place();
+  const model = ticketModel({
+    ...await row(order.id),
+    car_plate: 'Q123456', car_colour: 'silver', car_model: 'test car',
+  });
+  assert.equal(model.fulfilment, 'CAR PICKUP');
+  assert.equal(model.car, 'Q123456 · silver · test car');
+});
+
+test('polling with a cursor for a deleted order returns the first page and auto-print rows', async () => {
+  const order = await place();
+  await accept(order.id);
+  const gone = `SU-${randomUUID()}`;
+  for (const scope of [admin, downTown]) {
+    const listed = await orders.listOrders(scope, orderQuery.parse({ since: gone, page: 3, limit: 100 }));
+    assert.equal(listed.page, 1);
+    assert.equal(listed.rows.some((item) => item.id === order.id), true);
+    assert.equal(listed.autoPrint.some((item) => item.id === order.id), true);
+  }
+});
+
+test('CMS sign-in on a guarded database writes no staff rows', () => {
+  const result = spawnSync(process.execPath, ['--experimental-test-module-mocks', '--import', 'tsx', '--eval', `(async () => {
+    const assert = (await import('node:assert/strict')).default;
+    const { mock } = await import('node:test');
+    const Module = (await import('node:module')).default;
+    const sql = [];
+    const jar = [];
+    const textOf = (statement) => typeof statement === 'string' ? statement : statement.sql;
+    const client = {
+      execute(statement) { sql.push(textOf(statement)); return Promise.resolve({ rows: [] }); },
+      batch(statements) { for (const statement of statements) sql.push(textOf(statement)); return Promise.resolve(statements.map(() => ({ rowsAffected: 1 }))); },
+      close() { return Promise.resolve(); },
+    };
+    const original = Module.prototype.require;
+    Module.prototype.require = function (id) {
+      if (id === '@libsql/client') return { createClient: () => client };
+      return original.apply(this, arguments);
+    };
+    globalThis.fetch = () => { throw new Error('network must not be touched'); };
+    mock.module('@libsql/client', { namedExports: { createClient: () => client } });
+    mock.module('next/headers', { namedExports: { cookies: async () => ({ get: () => undefined, set: (...args) => { jar.push(args); } }) } });
+    const route = await import('./src/app/api/admin/session/route.ts');
+    const response = await route.POST(new Request('http://localhost/api/admin/session', {
+      method: 'POST',
+      headers: { origin: 'http://localhost', host: 'localhost', 'content-type': 'application/json' },
+      body: JSON.stringify({ username: process.env.CMS_ADMIN_USERNAME, password: process.env.CMS_ADMIN_PASSWORD }),
+    }));
+    assert.equal(response.status, 200);
+    assert.equal(jar.length, 1);
+    assert.equal(jar[0][0], 'sushinaa-admin');
+    const text = sql.join('\\n');
+    assert.match(text, /INSERT INTO sessions/);
+    assert.doesNotMatch(text, /staff_users|staff_sessions/);
+  })().catch((error) => { console.error(error); process.exit(1); })`], {
+    encoding: 'utf8', timeout: 20000,
+    env: {
+      ...process.env, VERCEL: '1', VERCEL_ENV: 'preview', CMS_DATABASE_AUTH_TOKEN: '', CMS_ENV_GUARD: 'report',
+      CMS_ADMIN_USERNAME: 'admin', CMS_ADMIN_PASSWORD: 'password',
+      CMS_DATABASE_URL: `libsql://${LIVE_DATABASE_HOST}`,
+    },
+  });
+  assert.equal(result.status, 0, result.stderr || String(result.error));
 });
 
 test('staff routes return 503 on the live database host', () => {

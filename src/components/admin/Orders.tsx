@@ -68,7 +68,10 @@ export function Orders({ active, onUnread }: { active: boolean; onUnread: (n: nu
           const response = await fetch(`/api/admin/orders?${latest.current ? `since=${latest.current}` : 'limit=100'}`, { cache: 'no-store' });
           if (response.status === 401) return 'unauthorized';
           const body: List & { code?: string; autoPrint?: OrderSummary[] } = await response.json();
-          if (!response.ok) return 'fail';
+          if (!response.ok) {
+            if (live) setPaused(true);
+            return 'fail';
+          }
           if (!live) return 'ok';
           setPaused(false);
           setLastOk(new Date().toISOString());

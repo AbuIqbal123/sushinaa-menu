@@ -102,7 +102,7 @@ export function ticketModel(row: Row): TicketModel {
     orderNumber: row.order_number == null ? '' : String(row.order_number),
     id: String(row.id),
     placed: qatarTime(String(row.created_at)),
-    fulfilment: 'Car pickup',
+    fulfilment: 'CAR PICKUP',
     car,
     customer: removed ? 'removed' : (typeof row.customer_name === 'string' && row.customer_name ? row.customer_name : 'removed'),
     phone: removed ? 'removed' : maskPhone(row.customer_phone),
