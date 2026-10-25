@@ -14,6 +14,11 @@ export function StaffPanel() {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'admin' | 'branch_staff'>('branch_staff');
   const [branchId, setBranchId] = useState<BranchId>('down-town');
+  const [editing, setEditing] = useState<string | null>(null);
+  const [editRole, setEditRole] = useState<'admin' | 'branch_staff'>('branch_staff');
+  const [editBranch, setEditBranch] = useState<BranchId>('down-town');
+  const [resetting, setResetting] = useState<string | null>(null);
+  const [nextPassword, setNextPassword] = useState('');
 
   async function load() {
     const response = await fetch('/api/admin/staff', { cache: 'no-store' });
@@ -53,8 +58,9 @@ export function StaffPanel() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    if (!response.ok) { setError('save'); return; }
+    if (!response.ok) { setError('save'); return false; }
     await load().catch(() => setError('load'));
+    return true;
   }
 
   return (
@@ -71,6 +77,36 @@ export function StaffPanel() {
             <button type="button" onClick={() => void change(row.id, { disabled: !row.disabled })}>
               {row.disabled ? text('Enable', 'تفعيل') : text('Disable', 'إيقاف')}
             </button>
+            <button type="button" onClick={() => { setEditing(row.id); setEditRole(row.role === 'admin' ? 'admin' : 'branch_staff'); setEditBranch((row.branchId as BranchId | null) ?? 'down-town'); }}>
+              {text('Change role and branch', 'تغيير الدور والفرع')}
+            </button>
+            <button type="button" onClick={() => { setResetting(row.id); setNextPassword(''); }}>
+              {text('Reset password', 'إعادة تعيين كلمة المرور')}
+            </button>
+            {editing === row.id && (
+              <form onSubmit={(event) => { event.preventDefault(); void change(row.id, { role: editRole, branchId: editRole === 'admin' ? null : editBranch }).then((ok) => { if (ok) setEditing(null); }); }}>
+                <label>{text('Role', 'الدور')}
+                  <select aria-label={text('Change role', 'تغيير الدور')} value={editRole} onChange={(event) => setEditRole(event.target.value as typeof editRole)}>
+                    <option value="branch_staff">{text('Branch staff', 'موظف الفرع')}</option>
+                    <option value="admin">{text('Admin', 'مدير')}</option>
+                  </select>
+                </label>
+                {editRole === 'branch_staff' && (
+                  <label>{text('Branch', 'الفرع')}
+                    <select aria-label={text('Change branch', 'تغيير الفرع')} value={editBranch} onChange={(event) => setEditBranch(event.target.value as BranchId)}>
+                      {BRANCHES.map((branch) => <option key={branch.slug} value={branch.slug}>{lang === 'ar' ? branch.nameAr : branch.name}</option>)}
+                    </select>
+                  </label>
+                )}
+                <button type="submit">{text('Save role and branch', 'حفظ الدور والفرع')}</button>
+              </form>
+            )}
+            {resetting === row.id && (
+              <form onSubmit={(event) => { event.preventDefault(); void change(row.id, { password: nextPassword }).then((ok) => { if (!ok) return; setResetting(null); setNextPassword(''); }); }}>
+                <label>{text('New password', 'كلمة المرور الجديدة')}<input type="password" minLength={8} value={nextPassword} onChange={(event) => setNextPassword(event.target.value)} required /></label>
+                <button type="submit">{text('Save password', 'حفظ كلمة المرور')}</button>
+              </form>
+            )}
           </li>
         ))}
       </ul>

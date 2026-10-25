@@ -6,6 +6,7 @@ import { initOrders } from './checkout/repository';
 import { KITCHEN_VISIBLE } from './orders';
 import { OrderError } from './http';
 import { branchClause, type BranchScope } from './scope';
+import { AUTO_PRINT_WINDOW_MS } from './config';
 import { printableStatuses } from './status';
 import { afterChange } from './write';
 
@@ -18,13 +19,14 @@ export async function claimPrint(scope: BranchScope, id: string, mode: 'auto' | 
   const claimId = randomUUID();
   const at = now.toISOString();
   const stale = new Date(now.getTime() - CLAIM_MS).toISOString();
+  const recent = new Date(now.getTime() - AUTO_PRINT_WINDOW_MS).toISOString();
   const sql = mode === 'auto'
-    ? `UPDATE orders SET print_claim_id=?, print_claimed_at=? WHERE id=? AND ${branch.sql} AND print_count=0 AND print_claimed_at IS NULL AND ${printableSql}`
+    ? `UPDATE orders SET print_claim_id=?, print_claimed_at=? WHERE id=? AND ${branch.sql} AND print_count=0 AND print_claimed_at IS NULL AND ${printableSql} AND COALESCE(paid_at, created_at)>=?`
     : mode === 'manual'
       ? `UPDATE orders SET print_claim_id=?, print_claimed_at=? WHERE id=? AND ${branch.sql} AND print_count=0 AND ${printableSql} AND (print_claimed_at IS NULL OR print_claimed_at<=?)`
       : `UPDATE orders SET print_claim_id=?, print_claimed_at=? WHERE id=? AND ${branch.sql} AND printed_at IS NOT NULL AND (print_claimed_at IS NULL OR print_claimed_at<=?)`;
   const args = mode === 'auto'
-    ? [claimId, at, id, ...branch.args]
+    ? [claimId, at, id, ...branch.args, recent]
     : [claimId, at, id, ...branch.args, stale];
   const result = await db.execute({ sql, args });
   if (result.rowsAffected === 1) return { claimId };

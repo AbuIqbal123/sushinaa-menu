@@ -18,10 +18,13 @@ const css = `
 }
 `;
 
+const fit = `function fitTicket(){var sheet=document.querySelector('.ticket-sheet');if(!sheet)return;var mm=(sheet.offsetHeight*25.4/96)+6;var style=document.getElementById('ticket-page-size')||document.createElement('style');style.id='ticket-page-size';style.textContent='@page{size:80mm '+mm.toFixed(2)+'mm;margin:0}';document.head.appendChild(style);}if(document.readyState==='complete')fitTicket();else window.addEventListener('load',fitTicket);window.addEventListener('beforeprint',fitTicket);`;
+
 export function Ticket({ model }: { model: TicketModel }) {
   return (
     <article className="ticket-sheet">
       <style>{css}</style>
+      <script dangerouslySetInnerHTML={{ __html: fit }} />
       {model.reprint && <p className="ticket-banner">{model.reprint}</p>}
       <h1>{model.branchName}</h1>
       {model.orderNumber && <p className="ticket-number">{model.orderNumber}</p>}

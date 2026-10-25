@@ -37,6 +37,22 @@ export const db = new Proxy({} as Client, {
     return value.bind(client);
   },
 });
+const CORE_SCHEMA = [
+  `CREATE TABLE IF NOT EXISTS menu (id INTEGER PRIMARY KEY CHECK(id=1), revision INTEGER NOT NULL, content TEXT NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, expires INTEGER NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS media (id TEXT PRIMARY KEY, content BLOB NOT NULL, type TEXT NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS login_attempts (key TEXT PRIMARY KEY, failures INTEGER NOT NULL, started INTEGER NOT NULL)`,
+  ...AUDIT_SCHEMA,
+];
+
+/** Staff and order tables exist only where ordering is allowed. Production keeps the sessions table. */
+export function startupStatements(url: string) {
+  return [
+    ...CORE_SCHEMA,
+    ...(orderDatabaseAllowed(url) ? [...STAFF_SCHEMA, ...ORDER_SCHEMA] : []),
+  ];
+}
+
 let ready: Promise<unknown> | undefined;
 
 async function ensureOrderColumns() {
@@ -55,20 +71,9 @@ export function initDb() {
   return (ready ??= (async () => {
     const { assertDatabaseAllowed } = await import("./env-guard");
     await assertDatabaseAllowed(db);
-    await db.batch(
-      [
-        `CREATE TABLE IF NOT EXISTS menu (id INTEGER PRIMARY KEY CHECK(id=1), revision INTEGER NOT NULL, content TEXT NOT NULL)`,
-        `CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, expires INTEGER NOT NULL)`,
-        `CREATE TABLE IF NOT EXISTS media (id TEXT PRIMARY KEY, content BLOB NOT NULL, type TEXT NOT NULL)`,
-        `CREATE TABLE IF NOT EXISTS login_attempts (key TEXT PRIMARY KEY, failures INTEGER NOT NULL, started INTEGER NOT NULL)`,
-        ...AUDIT_SCHEMA,
-        ...STAFF_SCHEMA,
-        ...(orderDatabaseAllowed(databaseUrl) ? ORDER_SCHEMA : []),
-      ],
-      "write",
-    );
-    // Staff sign-in replaces the old sessions table on every database.
-    // Order columns stay behind the live-database guard.
+    await db.batch(startupStatements(databaseUrl), "write");
+    // Abubaker, 2026-10-25: staff tables stay off the production database.
+    // Order columns stay behind the same guard.
     if (orderDatabaseAllowed(databaseUrl)) await ensureOrderColumns();
   })().catch((e) => {
     ready = undefined;

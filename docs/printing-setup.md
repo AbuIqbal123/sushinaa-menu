@@ -17,10 +17,18 @@ macOS: System Settings › Printers & Scanners › Default printer. Choose the E
 Make a desktop shortcut whose target is:
 
 ```
-"C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk-printing --user-data-dir="C:\SushinaaPrint" https://test-dev-abu-iqbal-projects.vercel.app/cms/orders
+"C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk-printing --user-data-dir="C:\SushinaaPrint" https://test-dev-abu-iqbal-projects.vercel.app/admin
 ```
 
-Use the site the branch actually signs in to. The separate profile makes the flag apply even when Chrome is already open.
+macOS:
+
+```
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --kiosk-printing --user-data-dir="$HOME/SushinaaPrint" https://test-dev-abu-iqbal-projects.vercel.app/admin
+```
+
+That address is the Sushinaa dev website. After an approved release, use the live site's /admin instead.
+
+The separate profile makes the flag apply even when Chrome is already open.
 
 Open that profile once without `--kiosk-printing`. Print one ticket. Set margins to None, and turn headers and footers off. Then use the shortcut.
 

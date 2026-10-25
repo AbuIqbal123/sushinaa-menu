@@ -750,6 +750,7 @@
 .admin .staff-order-card > .staff-print { width:auto; justify-self:start; padding:8px 14px; background:white; border:1px solid var(--line); }
 .staff-unprinted { display:inline-block; border-radius:20px; padding:3px 9px; background:#fff1d6; color:#805d10; font-size:12px; }
 .staff-unprinted-count { align-self:center; font-size:13px; color:var(--muted); white-space:nowrap; }
+.staff-poll-paused { margin:0 0 12px; color:#805d10; }
 .staff-users ul { padding:0; list-style:none; }
 .staff-users li { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px; }
 .staff-order-ref { margin:0 0 12px; color:var(--muted); font-size:12px; overflow-wrap:anywhere; }

@@ -1,4 +1,6 @@
-export function printTicket(id: string) {
+const PRINT_TIMEOUT_MS = 60_000;
+
+export function printTicket(id: string, timeoutMs = PRINT_TIMEOUT_MS) {
   return new Promise<void>((resolve, reject) => {
     const frame = document.createElement('iframe');
     frame.setAttribute('aria-hidden', 'true');
@@ -17,9 +19,16 @@ export function printTicket(id: string) {
             return;
           }
           let finished = false;
+          const timer = win.setTimeout(() => {
+            if (finished) return;
+            finished = true;
+            frame.remove();
+            reject(new Error('timeout'));
+          }, timeoutMs);
           const finish = () => {
             if (finished) return;
             finished = true;
+            win.clearTimeout(timer);
             frame.remove();
             resolve();
           };

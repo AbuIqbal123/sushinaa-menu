@@ -28,6 +28,9 @@ export default defineConfig({
         env: {
           CMS_ADMIN_USERNAME: process.env.CMS_ADMIN_USERNAME,
           CMS_ADMIN_PASSWORD: process.env.CMS_ADMIN_PASSWORD,
+          ...(process.env.CMS_DATABASE_URL
+            ? { CMS_DATABASE_URL: process.env.CMS_DATABASE_URL, CMS_DATABASE_AUTH_TOKEN: process.env.CMS_DATABASE_AUTH_TOKEN ?? "" }
+            : {}),
         },
       },
 });

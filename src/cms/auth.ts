@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
-import { db, initDb } from "./db";
+import { databaseUrl, db, initDb } from "./db";
+import { orderDatabaseAllowed } from "@/ordering/guard";
 import type { InStatement } from "@libsql/client";
 import { auditInsert, type AuditContext } from "./audit";
 import { hashPassword, verifyPassword } from "./passwords";
@@ -55,7 +56,16 @@ async function upsertEnvAdmin() {
   });
 }
 
+export function guardedSessionSql() {
+  return [
+    "DELETE FROM sessions WHERE expires<=?",
+    "DELETE FROM sessions WHERE token=?",
+    "INSERT INTO sessions(token,expires) VALUES (?,?)",
+  ];
+}
+
 export async function staffPasswordMatches(username: string, password: string) {
+  if (!orderDatabaseAllowed(databaseUrl)) return false;
   await initDb();
   const row = (
     await db.execute({
@@ -94,6 +104,21 @@ export async function staffFromToken(token: string | undefined): Promise<StaffPr
 
 export async function currentStaff() {
   const token = (await cookies()).get(COOKIE)?.value;
+  if (!token) return null;
+  if (!orderDatabaseAllowed(databaseUrl)) {
+    await initDb();
+    const row = await db.execute({
+      sql: "SELECT token FROM sessions WHERE token=? AND expires>?",
+      args: [digest(token), Date.now()],
+    });
+    if (!row.rows.length) return null;
+    return {
+      userId: "env-admin",
+      username: adminName() ?? "admin",
+      role: "admin" as const,
+      branchScope: { kind: "all" as const },
+    };
+  }
   return staffFromToken(token);
 }
 
@@ -103,6 +128,32 @@ export async function authenticated() {
 /** Starts a fresh session; any session this browser already had is ended. */
 export async function login(audit: AuditContext, also: InStatement[] = [], username?: string) {
   await initDb();
+  if (!orderDatabaseAllowed(databaseUrl)) {
+    const jar = await cookies();
+    const previous = jar.get(COOKIE)?.value;
+    const token = randomBytes(32).toString("hex");
+    const maxAge = 60 * 60 * 8;
+    const now = Date.now();
+    const [clearExpired, clearPrevious, insertSession] = guardedSessionSql();
+    await db.batch(
+      [
+        ...also,
+        { sql: clearExpired, args: [now] },
+        ...(previous ? [{ sql: clearPrevious, args: [digest(previous)] }] : []),
+        { sql: insertSession, args: [digest(token), now + maxAge * 1000] },
+        auditInsert(audit, { action: "session.sign_in", entityType: "session" }),
+      ],
+      "write",
+    );
+    jar.set(COOKIE, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge,
+    });
+    return;
+  }
   const name = username ?? adminName();
   if (!name) throw new Error("Sign-in is not configured");
   if (name === adminName()) await upsertEnvAdmin();
@@ -147,9 +198,12 @@ export async function logout(audit: AuditContext | null) {
   const token = jar.get(COOKIE)?.value;
   if (token) {
     await initDb();
+    const sql = orderDatabaseAllowed(databaseUrl)
+      ? "DELETE FROM staff_sessions WHERE token_hash=?"
+      : "DELETE FROM sessions WHERE token=?";
     await db.batch(
       [
-        { sql: "DELETE FROM staff_sessions WHERE token_hash=?", args: [digest(token)] },
+        { sql, args: [digest(token)] },
         ...(audit
           ? [auditInsert(audit, { action: "session.sign_out", entityType: "session" })]
           : []),

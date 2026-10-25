@@ -7,8 +7,8 @@ import type { OrderQuery, StatusInput, OrderSummary, OrderDetailData } from './c
 import { OrderError } from './http';
 import type { BranchId } from '@/branches/branches';
 import { branchClause, type BranchScope } from './scope';
-import { mockProvider, settlePayment } from './payments';
-import { randomUUID } from 'node:crypto';
+import { counterSettlementStatements, mockProvider, settlePayment } from './payments';
+import { AUTO_PRINT_WINDOW_MS } from './config';
 import { afterChange } from './write';
 
 export const maskPhone = (phone: unknown) => typeof phone === 'string' && phone.length >= 4 ? `+974 •••• ${phone.slice(-4, -2)} ${phone.slice(-2)}` : '—';
@@ -65,11 +65,18 @@ export async function listOrders(scope: BranchScope, query: OrderQuery) {
   }
   const predicate = where.join(' AND ');
   const rows = await db.execute({
-    sql: `SELECT id,branch_id,status,payment_method,paid_at,total_minor,created_at,customer_phone,car_plate,order_number,print_count,printed_at FROM orders WHERE ${predicate} ORDER BY COALESCE(paid_at, created_at) DESC, id DESC LIMIT ? OFFSET ?`,
-    args: [...args, query.limit + 1, (query.page - 1) * query.limit],
+    sql: `SELECT id,branch_id,status,payment_method,paid_at,total_minor,created_at,customer_phone,car_plate,order_number,print_count,printed_at FROM orders WHERE ${branch.sql} AND ${predicate} ORDER BY COALESCE(paid_at, created_at) DESC, id DESC LIMIT ? OFFSET ?`,
+    args: [...branch.args, ...args, query.limit + 1, (query.page - 1) * query.limit],
   });
-  const count = query.since ? Number((await db.execute({ sql: `SELECT COUNT(*) AS n FROM orders WHERE ${predicate}`, args })).rows[0].n) : 0;
-  return { rows: rows.rows.slice(0, query.limit).map(summary), more: rows.rows.length > query.limit, page: query.page, newCount: count, unprintedCount: backlog };
+  const count = query.since ? Number((await db.execute({ sql: `SELECT COUNT(*) AS n FROM orders WHERE ${branch.sql} AND ${predicate}`, args: [...branch.args, ...args] })).rows[0].n) : 0;
+  const cutoff = new Date(Date.now() - AUTO_PRINT_WINDOW_MS).toISOString();
+  const autoPrint = (await db.execute({
+    sql: `SELECT id,branch_id,status,payment_method,paid_at,total_minor,created_at,customer_phone,car_plate,order_number,print_count,printed_at
+      FROM orders WHERE ${KITCHEN_VISIBLE} AND ${branch.sql} AND print_count=0 AND print_claimed_at IS NULL AND ${printableSql}
+      AND COALESCE(paid_at, created_at)>=? ORDER BY COALESCE(paid_at, created_at), id`,
+    args: [...branch.args, cutoff],
+  })).rows.map(summary);
+  return { rows: rows.rows.slice(0, query.limit).map(summary), more: rows.rows.length > query.limit, page: query.page, newCount: count, unprintedCount: backlog, autoPrint };
 }
 
 export async function detailOrder(scope: BranchScope, id: string, reveal: boolean, ctx: AuditContext): Promise<OrderDetailData> {
@@ -96,16 +103,16 @@ export async function transitionOrder(scope: BranchScope, id: string, input: Sta
   const at = now.toISOString();
   const purge = new Date(now.getTime() + 90 * 86400000).toISOString();
   const completed = input.to === 'completed';
+  const recordPayment = completed && input.recordPayment === true;
   const result = await db.batch([
     { sql: `UPDATE orders SET status=?, updated_at=?,
-        paid_at=CASE WHEN ?=1 AND payment_method='pay_at_pickup' THEN COALESCE(paid_at,?) ELSE paid_at END,
         purge_after=CASE WHEN ? IN ('completed','cancelled') THEN ? ELSE purge_after END
         WHERE id=? AND ${branch.sql} AND status=? AND ${KITCHEN_VISIBLE}
         AND (?!='refunded' OR paid_at IS NOT NULL)
         AND (?!='completed' OR paid_at IS NOT NULL OR (payment_method='pay_at_pickup' AND ?=1))`,
-      args: [input.to, at, Number(completed && input.recordPayment === true), at, input.to, purge, id, ...branch.args, input.expected, input.to, input.to, Number(input.recordPayment === true)] },
+      args: [input.to, at, input.to, purge, id, ...branch.args, input.expected, input.to, input.to, Number(recordPayment)] },
     afterChange(auditInsert(ctx, { action: 'order.status', entityType: 'order', entityId: id, label: input.to === 'cancelled' ? input.reason : undefined, diff: { status: { from: input.expected, to: input.to } } })),
-    ...(completed ? [{ sql: "INSERT OR IGNORE INTO order_outbox (id,order_id,event,created_at) SELECT ?,?,'order.paid',? WHERE changes()=1", args: [randomUUID(), id, at] }] : []),
+    ...(recordPayment ? counterSettlementStatements(id, at) : []),
   ], 'write');
   if (result[0].rowsAffected !== 1) {
     const visible = (await db.execute({ sql: `SELECT id FROM orders WHERE id=? AND ${branch.sql}`, args: [id, ...branch.args] })).rows[0];

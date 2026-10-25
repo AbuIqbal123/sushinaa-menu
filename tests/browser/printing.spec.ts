@@ -60,7 +60,12 @@ test('auto-print is off by default and calls window.print once per order', async
   await page.getByRole('button', { name: 'Orders', exact: true }).click();
   const card = page.locator(`[data-order-id="${id}"]`);
   await expect(card).toBeVisible();
+  await page.getByLabel('Order branch').selectOption('down-town');
+  await expect(card).toBeVisible();
+  await page.route('**/api/admin/orders?*since=*', (route) => route.abort());
+  await expect(page.getByRole('status')).toContainText('Updates paused', { timeout: 20000 });
   await page.screenshot({ path: `${shots}/orders-not-printed-en.png`, fullPage: true });
+  await page.unroute('**/api/admin/orders?*since=*');
   await page.locator('summary', { hasText: 'Date & search' }).click();
   await page.getByLabel('Order reference or last 4 phone digits').fill(id);
   await page.getByRole('button', { name: 'Search', exact: true }).click();
@@ -92,6 +97,8 @@ test('staff screen and branch orders in Arabic', async ({ page, baseURL }) => {
   await page.getByRole('button', { name: /الطلبات/ }).click();
   await page.getByLabel('فرع الطلب').selectOption('down-town');
   await expect(page.locator(`[data-order-id="${id}"]`)).toContainText('لم تُطبع');
+  await page.route('**/api/admin/orders?*since=*', (route) => route.abort());
+  await expect(page.getByRole('status')).toContainText('التحديثات متوقفة', { timeout: 20000 });
   await page.screenshot({ path: `${shots}/orders-not-printed-ar.png`, fullPage: true });
 });
 
@@ -109,6 +116,179 @@ async function openTicket(context: BrowserContext, baseURL: string, id: string) 
   await expect(page.locator('.ticket-sheet')).toBeVisible();
   return page;
 }
+
+test('auto-print works with a status filter, a search or page 2 open', async ({ page, baseURL }) => {
+  await page.context().addInitScript(() => {
+    window.print = () => {
+      const root = window.top as Window & { __printed?: string[] };
+      root.__printed = root.__printed ?? [];
+      root.__printed.push(document.documentElement?.innerHTML ?? '');
+      window.dispatchEvent(new Event('afterprint'));
+    };
+  });
+  const id = await checkout(page.request, baseURL!, [{
+    dishId: 'shrimp-kunafa', selection: {}, quantity: 1, note: '', expectedUnitMinor: 3500,
+  }]);
+  await signIn(page, baseURL!);
+  await page.goto('/admin');
+  await page.getByRole('button', { name: 'Orders', exact: true }).click();
+  await page.getByLabel('Order status').selectOption('collected');
+  await page.locator('summary', { hasText: 'Date & search' }).click();
+  await page.getByLabel('Order reference or last 4 phone digits').fill('0000');
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await page.getByRole('button', { name: 'Next' }).click({ timeout: 2000 }).catch(() => undefined);
+  await page.getByRole('button', { name: 'Auto-print on this device' }).click();
+  await expect.poll(() => page.evaluate((orderId) => {
+    const root = window as Window & { __printed?: string[] };
+    return (root.__printed ?? []).filter((value) => value.includes(orderId)).length;
+  }, id), { timeout: 20000 }).toBe(1);
+});
+
+test('auto-print retries an order whose claim request failed on the network', async ({ page, baseURL }) => {
+  let failed = false;
+  await page.context().addInitScript(() => {
+    window.print = () => {
+      const root = window.top as Window & { __printed?: string[] };
+      root.__printed = root.__printed ?? [];
+      root.__printed.push(document.documentElement?.innerHTML ?? '');
+      window.dispatchEvent(new Event('afterprint'));
+    };
+  });
+  const id = await checkout(page.request, baseURL!, [{
+    dishId: 'shrimp-kunafa', selection: {}, quantity: 1, note: '', expectedUnitMinor: 3500,
+  }]);
+  await page.route(`**/api/staff/orders/${id}/print`, async (route) => {
+    if (!failed && route.request().method() === 'POST') {
+      failed = true;
+      await route.abort();
+      return;
+    }
+    await route.continue();
+  });
+  await signIn(page, baseURL!);
+  await page.goto('/admin');
+  await page.getByRole('button', { name: 'Orders', exact: true }).click();
+  await page.getByRole('button', { name: 'Auto-print on this device' }).click();
+  await expect.poll(() => page.evaluate((orderId) => {
+    const root = window as Window & { __printed?: string[] };
+    return (root.__printed ?? []).filter((value) => value.includes(orderId)).length;
+  }, id), { timeout: 20000 }).toBe(1);
+});
+
+test('auto-print queue continues when afterprint never fires', async ({ page, baseURL }) => {
+  await page.context().addInitScript(() => {
+    window.print = () => {
+      const root = window.top as Window & { __printed?: string[] };
+      root.__printed = root.__printed ?? [];
+      root.__printed.push('printed');
+    };
+  });
+  await page.addInitScript(() => {
+    const original = window.setTimeout.bind(window);
+    window.setTimeout = ((fn: TimerHandler, ms?: number, ...args: unknown[]) => original(fn, ms === 60000 ? 200 : ms, ...args)) as typeof setTimeout;
+  });
+  const first = await checkout(page.request, baseURL!, [{
+    dishId: 'shrimp-kunafa', selection: {}, quantity: 1, note: '', expectedUnitMinor: 3500,
+  }]);
+  const second = await checkout(page.request, baseURL!, [{
+    dishId: 'redbull', selection: {}, quantity: 1, note: '', expectedUnitMinor: 1500,
+  }]);
+  await signIn(page, baseURL!);
+  await page.goto('/admin');
+  await page.getByRole('button', { name: 'Orders', exact: true }).click();
+  await page.getByRole('button', { name: 'Auto-print on this device' }).click();
+  await expect.poll(() => page.evaluate(() => ((window as Window & { __printed?: string[] }).__printed ?? []).length), { timeout: 20000 }).toBeGreaterThan(1);
+  const done = await page.request.get(`/api/admin/orders?limit=100`);
+  const body = await done.json();
+  const rows = (body.rows as { id: string; printCount: number }[]).filter((row) => row.id === first || row.id === second);
+  expect(rows.every((row) => row.printCount === 0)).toBeTruthy();
+});
+
+test('80mm ticket PDF height follows the ticket content', async ({ page, baseURL }) => {
+  await signIn(page, baseURL!);
+  const shortId = await checkout(page.request, baseURL!, [{
+    dishId: 'shrimp-kunafa', selection: {}, quantity: 1, note: '', expectedUnitMinor: 3500,
+  }]);
+  const longId = await checkout(page.request, baseURL!, [
+    { dishId: 'sushinaa-burger', selection: { extras: ['spicy-mayo'] }, quantity: 1, note: 'No sesame on the bun, and please keep the sauce on the side of a very long note', expectedUnitMinor: 5800 },
+    { dishId: 'shrimp-kunafa', selection: {}, quantity: 2, note: 'Extra chili', expectedUnitMinor: 3500 },
+    { dishId: 'redbull', selection: {}, quantity: 1, note: 'Cold', expectedUnitMinor: 1500 },
+  ]);
+  const height = async (id: string) => {
+    const ticket = await openTicket(page.context(), baseURL!, id);
+    await savePdf(ticket, `height-${id}`);
+    const info = execFileSync('pdfinfo', [`${shots}/height-${id}.pdf`], { encoding: 'utf8' });
+    return Number(/Page size:\s+[\d.]+ x ([\d.]+) pts/.exec(info)?.[1]);
+  };
+  const short = await height(shortId);
+  const long = await height(longId);
+  expect(short).toBeLessThan(long);
+  expect(short).not.toBeCloseTo(792, 0);
+  expect(long).not.toBeCloseTo(792, 0);
+});
+
+test('admin can change a user\'s role and branch and reset a password from Settings → Staff', async ({ page, browser, baseURL }) => {
+  await signIn(page, baseURL!);
+  const username = `branch-${Date.now().toString(36)}`;
+  const created = await page.request.post('/api/admin/staff', {
+    headers: { Origin: baseURL!, 'content-type': 'application/json' },
+    data: { username, password: 'password12', role: 'branch_staff', branchId: 'down-town' },
+  });
+  expect(created.status(), await created.text()).toBe(201);
+  const id = (await created.json()).id as string;
+  const other = await browser.newContext();
+  const signed = await other.request.post('/api/admin/session', {
+    headers: { Origin: baseURL! },
+    data: { username, password: 'password12' },
+  });
+  expect(signed.status()).toBe(200);
+  await page.goto('/admin');
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  const row = page.locator('li').filter({ hasText: username });
+  await row.getByRole('button', { name: 'Change role and branch' }).click();
+  await row.getByLabel('Change role').selectOption('admin');
+  await row.getByRole('button', { name: 'Save role and branch' }).click();
+  await expect(row).toContainText('Admin');
+  await row.getByRole('button', { name: 'Reset password' }).click();
+  await row.getByLabel('New password').fill('password13');
+  await row.getByRole('button', { name: 'Save password' }).click();
+  expect((await other.request.get('/api/admin/session')).status()).toBe(401);
+  await other.close();
+  void id;
+});
+
+test('reopening the orders screen does not auto-print orders paid more than 2 hours ago', async ({ page, baseURL }) => {
+  await page.context().addInitScript(() => {
+    localStorage.setItem('sushinaa-auto-print', 'true');
+    window.print = () => {
+      const root = window.top as Window & { __printed?: string[] };
+      root.__printed = root.__printed ?? [];
+      root.__printed.push(document.documentElement?.innerHTML ?? '');
+      window.dispatchEvent(new Event('afterprint'));
+    };
+  });
+  const stale = await checkout(page.request, baseURL!, [{
+    dishId: 'shrimp-kunafa', selection: {}, quantity: 1, note: '', expectedUnitMinor: 3500,
+  }]);
+  const fresh = await checkout(page.request, baseURL!, [{
+    dishId: 'redbull', selection: {}, quantity: 1, note: '', expectedUnitMinor: 1500,
+  }]);
+  const database = process.env.CMS_DATABASE_URL ?? '';
+  if (!database.startsWith('file:')) throw new Error('e2e database must be a local file');
+  execFileSync('sqlite3', [database.slice(5), `UPDATE orders SET paid_at='2020-01-01T00:00:00.000Z', created_at='2020-01-01T00:00:00.000Z' WHERE id='${stale}';`]);
+  await signIn(page, baseURL!);
+  await page.goto('/admin');
+  await page.getByRole('button', { name: 'Orders', exact: true }).click();
+  await expect.poll(() => page.evaluate((orderId) => {
+    const root = window as Window & { __printed?: string[] };
+    return (root.__printed ?? []).some((value) => value.includes(orderId));
+  }, fresh), { timeout: 20000 }).toBeTruthy();
+  await page.waitForTimeout(1000);
+  expect(await page.evaluate((orderId) => {
+    const root = window as Window & { __printed?: string[] };
+    return (root.__printed ?? []).some((value) => value.includes(orderId));
+  }, stale)).toBeFalsy();
+});
 
 test('80mm tickets for a short order, a long order and a reprint', async ({ page, baseURL }) => {
   await signIn(page, baseURL!);

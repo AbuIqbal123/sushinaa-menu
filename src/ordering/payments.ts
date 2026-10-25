@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { InStatement } from '@libsql/client';
 import { db } from '@/cms/db';
 import { auditInsert } from '@/cms/audit';
 import { initOrders } from './checkout/repository';
@@ -46,4 +47,17 @@ export async function settlePayment(
     { sql: "UPDATE payment_attempts SET status='paid', updated_at=?, reference=COALESCE(reference, ?) WHERE order_id=? AND provider=? AND changes()=1", args: [at, event.reference, orderId, event.provider] },
   ], 'write');
   return result[0].rowsAffected === 1;
+}
+
+/** Statements for a pay-at-pickup collection. The caller runs them in the status batch, after changes()=1. */
+export function counterSettlementStatements(orderId: string, at: string): InStatement[] {
+  return [
+    {
+      sql: `UPDATE orders SET paid_at=COALESCE(paid_at, ?) WHERE id=? AND payment_method='pay_at_pickup' AND changes()=1`,
+      args: [at, orderId],
+    },
+    { sql: "INSERT OR IGNORE INTO order_outbox (id,order_id,event,created_at) SELECT ?,?,'order.paid',? WHERE changes()=1", args: [randomUUID(), orderId, at] },
+    { sql: "INSERT OR IGNORE INTO order_events (id,order_id,provider_event,type,created_at) SELECT ?,?,?,?,? WHERE changes()=1", args: [randomUUID(), orderId, `counter:${orderId}`, 'counter.paid', at] },
+    { sql: "UPDATE payment_attempts SET status='paid', updated_at=? WHERE order_id=? AND changes()=1", args: [at, orderId] },
+  ];
 }

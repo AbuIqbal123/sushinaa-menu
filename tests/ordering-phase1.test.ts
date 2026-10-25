@@ -56,7 +56,7 @@ before(async () => {
   process.env.VERCEL_ENV = 'preview';
   process.env.PAYMENT_PROVIDER = 'mock';
   process.env.CMS_ENV_GUARD = 'report';
-  process.env.CRON_SECRET = 'phase1-cron';
+  process.env.CRON_SECRET = randomUUID();
   repository = await import('../src/ordering/checkout/repository');
   orders = await import('../src/ordering/orders');
   printing = await import('../src/ordering/printing');
@@ -205,7 +205,7 @@ test('cron purge is idempotent', async () => {
   const at = new Date('2026-02-01T12:00:00Z');
   await orders.transitionOrder(admin, order.id, { expected: 'placed', to: 'cancelled', reason: 'duplicate' }, ctx, at);
   const route = await import('../src/app/api/cron/purge-orders/route');
-  const headers = { authorization: 'Bearer phase1-cron' };
+  const headers = { authorization: `Bearer ${process.env.CRON_SECRET}` };
   const first = await route.GET(new Request('http://localhost/api/cron/purge-orders', { headers }));
   const second = await route.GET(new Request('http://localhost/api/cron/purge-orders', { headers }));
   assert.equal((await first.json()).purged > 0, true);
@@ -219,7 +219,7 @@ test('cron purge removes only data past retention', async () => {
   await orders.transitionOrder(admin, kept.id, { expected: 'placed', to: 'cancelled', reason: 'duplicate' }, ctx, new Date());
   const phone = (await row(kept.id)).customer_phone;
   const route = await import('../src/app/api/cron/purge-orders/route');
-  await route.GET(new Request('http://localhost/api/cron/purge-orders', { headers: { authorization: 'Bearer phase1-cron' } }));
+  await route.GET(new Request('http://localhost/api/cron/purge-orders', { headers: { authorization: `Bearer ${process.env.CRON_SECRET}` } }));
   assert.equal((await row(kept.id)).customer_phone, phone);
 });
 
@@ -342,15 +342,31 @@ test('admin branch filter returns the right orders', async () => {
 
 test('every order query has a branch predicate', () => {
   const exempt = new Set(['payMock', 'purgeOrders', 'summary', 'maskPhone', 'maskPlate']);
-  const sql = /FROM orders|UPDATE orders|INTO orders/;
   for (const file of ['src/ordering/orders.ts', 'src/ordering/printing.ts']) {
     const source = readFileSync(file, 'utf8');
     for (const chunk of source.split(/\n(?=(?:export )?(?:async )?function )/)) {
       const name = /^(?:export )?(?:async )?function (\w+)/.exec(chunk)?.[1];
-      if (!name || exempt.has(name) || !sql.test(chunk)) continue;
-      assert.match(chunk, /branch\.sql|branch_id/, `${file} ${name}`);
+      if (!name || exempt.has(name)) continue;
+      for (const query of chunk.match(/`[^`]*\b(?:FROM|UPDATE) orders\b[^`]*`/g) ?? []) {
+        assert.match(query, /WHERE[\s\S]*\$\{branch\.sql\}/, `${file} ${name}`);
+      }
     }
   }
+  function requireScope() {
+    // @ts-expect-error scope is required
+    orders.listOrders();
+    // @ts-expect-error scope is required
+    orders.detailOrder();
+    // @ts-expect-error scope is required
+    orders.transitionOrder();
+    // @ts-expect-error scope is required
+    printing.claimPrint();
+    // @ts-expect-error scope is required
+    printing.confirmPrint();
+    // @ts-expect-error scope is required
+    printing.loadTicket();
+  }
+  void requireScope;
 });
 
 async function accept(id: string) {
@@ -439,6 +455,78 @@ test('ticket lines and total match the order snapshot after the menu price chang
   assert.equal(model.total, formatQar(snap.totalMinor / 100, 'en', money));
   assert.notEqual(model.total, formatQar(newMinor / 100, 'en', money));
   assert.equal(model.groups.flatMap((group) => group.lines).map((line) => line.name).join(','), snap.lines.map((line: { name: string }) => line.name).join(','));
+});
+
+test('reopening the orders screen does not auto-print orders paid more than 2 hours ago', async () => {
+  const order = await place();
+  await accept(order.id);
+  const old = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+  await db.execute({ sql: 'UPDATE orders SET paid_at=?, created_at=? WHERE id=?', args: [old, old, order.id] });
+  await rejected(printing.claimPrint(admin, order.id, 'auto'), 'ALREADY_PRINTED');
+  assert.equal((await row(order.id)).print_claim_id, null);
+  assert.ok((await printing.claimPrint(admin, order.id, 'manual')).claimId);
+});
+
+test('counter payment at collection settles through the payments module and changes no non-payment field', async () => {
+  const order = await place();
+  for (const [expected, to] of [['placed', 'accepted'], ['accepted', 'preparing'], ['preparing', 'ready']] as const) {
+    await orders.transitionOrder(admin, order.id, { expected, to }, ctx);
+  }
+  const at = new Date('2026-10-23T16:00:00Z');
+  await db.execute({
+    sql: 'INSERT INTO payment_attempts (id,order_id,provider,reference,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?)',
+    args: [`PA-${order.id}`, order.id, 'counter', null, 'pending', at.toISOString(), at.toISOString()],
+  });
+  const before = await row(order.id);
+  await orders.transitionOrder(admin, order.id, { expected: 'ready', to: 'completed', recordPayment: true }, ctx, at);
+  const after = await row(order.id);
+  for (const key of ['created_at', 'snapshot', 'total_minor', 'customer_name', 'customer_phone', 'order_number', 'branch_id']) {
+    assert.equal(after[key], before[key], key);
+  }
+  assert.equal(after.status, 'completed');
+  assert.equal(after.paid_at, at.toISOString());
+  assert.equal((await db.execute({ sql: 'SELECT provider_event FROM order_events WHERE order_id=?', args: [order.id] })).rows[0].provider_event, `counter:${order.id}`);
+  assert.equal((await db.execute({ sql: 'SELECT status FROM payment_attempts WHERE order_id=?', args: [order.id] })).rows[0].status, 'paid');
+  assert.match(readFileSync('src/ordering/orders.ts', 'utf8'), /counterSettlementStatements/);
+  assert.doesNotMatch(readFileSync('src/ordering/orders.ts', 'utf8'), /paid_at=CASE/);
+});
+
+test('staff tables are not created on the live database host', async () => {
+  const { startupStatements } = await import('../src/cms/db');
+  assert.doesNotMatch(startupStatements(`libsql://${LIVE_DATABASE_HOST}`).join('\n'), /staff_users|staff_sessions/);
+});
+
+test('CMS sign-in on a guarded database writes no staff rows', async () => {
+  const { guardedSessionSql } = await import('../src/cms/auth');
+  const { startupStatements } = await import('../src/cms/db');
+  const sql = guardedSessionSql().join('\n');
+  assert.match(sql, /INSERT INTO sessions/);
+  assert.doesNotMatch(sql, /staff_/);
+  assert.doesNotMatch(startupStatements(`libsql://${LIVE_DATABASE_HOST}`).join('\n'), /staff_users/);
+});
+
+test('staff routes return 503 on the live database host', () => {
+  const result = spawnSync(process.execPath, ['--import', 'tsx', '--eval', `(async () => {
+    const assert = (await import('node:assert/strict')).default;
+    globalThis.fetch = () => { throw new Error('network must not be touched'); };
+    const list = await import('./src/app/api/admin/staff/route.ts');
+    const one = await import('./src/app/api/admin/staff/[id]/route.ts');
+    const listed = await list.GET();
+    const changed = await one.POST(new Request('http://localhost/api/admin/staff/US-1', { method: 'POST', headers: { origin: 'http://localhost', host: 'localhost', 'content-type': 'application/json' }, body: '{}' }), { params: Promise.resolve({ id: 'US-1' }) });
+    for (const response of [listed, changed]) {
+      assert.equal(response.status, 503);
+      assert.deepEqual(await response.json(), { code: 'ORDERING_UNAVAILABLE' });
+    }
+  })().catch((error) => { console.error(error); process.exit(1); })`], {
+    encoding: 'utf8', timeout: 20000,
+    env: { ...process.env, VERCEL: '1', VERCEL_ENV: 'preview', CMS_DATABASE_AUTH_TOKEN: '', CMS_ENV_GUARD: 'report', CMS_DATABASE_URL: `libsql://${LIVE_DATABASE_HOST}` },
+  });
+  assert.equal(result.status, 0, result.stderr || String(result.error));
+});
+
+test('ci secret scan passes on the test suite', () => {
+  const result = spawnSync(process.execPath, ['--import', 'tsx', 'scripts/secret-scan.ts'], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
 });
 
 test('ticket shows the order time in Asia/Qatar', async () => {

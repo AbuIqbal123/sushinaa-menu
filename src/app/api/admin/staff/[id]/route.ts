@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { auditContext } from '@/cms/audit';
 import { changeStaff } from '@/cms/staff';
 import { branchId } from '@/ordering/contracts';
+import { databaseUrl } from '@/cms/db';
+import { assertOrderDatabaseAllowed } from '@/ordering/guard';
 import { requireStaff, reply, failure, jsonBody } from '@/ordering/http';
 
 export const dynamic = 'force-dynamic';
@@ -15,6 +17,7 @@ const changeBody = z.object({
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    assertOrderDatabaseAllowed(databaseUrl);
     const staff = await requireStaff(request, 'users');
     await changeStaff(staff, (await params).id, changeBody.parse(await jsonBody(request)), auditContext(request, staff.username));
     return reply({ ok: true });
