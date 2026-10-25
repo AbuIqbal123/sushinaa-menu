@@ -56,7 +56,7 @@ before(async () => {
   process.env.VERCEL_ENV = 'preview';
   process.env.PAYMENT_PROVIDER = 'mock';
   process.env.CMS_ENV_GUARD = 'report';
-  process.env.CRON_SECRET = 'phase1-test-secret';
+  process.env.CRON_SECRET = 'phase1-cron';
   repository = await import('../src/ordering/checkout/repository');
   orders = await import('../src/ordering/orders');
   printing = await import('../src/ordering/printing');
@@ -205,7 +205,7 @@ test('cron purge is idempotent', async () => {
   const at = new Date('2026-02-01T12:00:00Z');
   await orders.transitionOrder(admin, order.id, { expected: 'placed', to: 'cancelled', reason: 'duplicate' }, ctx, at);
   const route = await import('../src/app/api/cron/purge-orders/route');
-  const headers = { authorization: 'Bearer phase1-test-secret' };
+  const headers = { authorization: 'Bearer phase1-cron' };
   const first = await route.GET(new Request('http://localhost/api/cron/purge-orders', { headers }));
   const second = await route.GET(new Request('http://localhost/api/cron/purge-orders', { headers }));
   assert.equal((await first.json()).purged > 0, true);
@@ -219,7 +219,7 @@ test('cron purge removes only data past retention', async () => {
   await orders.transitionOrder(admin, kept.id, { expected: 'placed', to: 'cancelled', reason: 'duplicate' }, ctx, new Date());
   const phone = (await row(kept.id)).customer_phone;
   const route = await import('../src/app/api/cron/purge-orders/route');
-  await route.GET(new Request('http://localhost/api/cron/purge-orders', { headers: { authorization: 'Bearer phase1-test-secret' } }));
+  await route.GET(new Request('http://localhost/api/cron/purge-orders', { headers: { authorization: 'Bearer phase1-cron' } }));
   assert.equal((await row(kept.id)).customer_phone, phone);
 });
 
