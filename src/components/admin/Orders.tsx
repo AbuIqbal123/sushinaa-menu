@@ -14,6 +14,7 @@ type List = { rows: OrderSummary[]; more: boolean; newCount: number; unprintedCo
 export function Orders({ active, onUnread, role, menu }: { active: boolean; onUnread: (n: number) => void; role: Role; menu: MenuData }) {
   const router = useRouter();
   const text = (en: string, _ar?: string) => en;
+  const singleBranch = role === 'branch_staff';
   const [branch, setBranch] = useState(''); const [status, setStatus] = useState('');
   const [from, setFrom] = useState(''); const [to, setTo] = useState('');
   const [q, setQ] = useState(''); const [search, setSearch] = useState('');
@@ -92,7 +93,7 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
     {paused && <p className="staff-poll-paused" role="status">{text('Updates paused, retrying', 'التحديثات متوقفة، جارٍ إعادة المحاولة')}{lastOk ? ` · ${new Date(lastOk).toLocaleTimeString('en', { timeZone: 'Asia/Qatar', hour: '2-digit', minute: '2-digit' })}` : ''}</p>}
     {detail ? <OrderDetail key={detail} id={detail} role={role} menu={menu} onBack={() => setDetail(null)} onChange={refresh} /> : <>
       <form className="staff-filters" onSubmit={e => { e.preventDefault(); setSearch(q.trim()); setPage(1); }}>
-        <label>{text('Branch', 'الفرع')}<select aria-label={text('Order branch', 'فرع الطلب')} value={branch} onChange={e => { setBranch(e.target.value); setPage(1); }}><option value="">All branches</option>{BRANCHES.map(b => <option key={b.slug} value={b.slug}>{b.name}</option>)}</select></label>
+        {!singleBranch && <label>{text('Branch', 'الفرع')}<select aria-label={text('Order branch', 'فرع الطلب')} value={branch} onChange={e => { setBranch(e.target.value); setPage(1); }}><option value="">All branches</option>{BRANCHES.map(b => <option key={b.slug} value={b.slug}>{b.name}</option>)}</select></label>}
         <label>{text('Status', 'الحالة')}<select aria-label={text('Order status', 'حالة الطلب')} value={status} onChange={e => {setStatus(e.target.value);setPage(1);}}><option value="">{text('All statuses', 'كل الحالات')}</option>{(Object.keys(staffLabels) as StaffStatus[]).map(s => <option key={s} value={s}>{staffLabels[s].en}</option>)}</select></label>
         <label>{text('From', 'من')}<input type="date" aria-label={text('From', 'من')} value={from} onChange={e => {setFrom(e.target.value);setPage(1);}} /></label>
         <label>{text('To', 'إلى')}<input type="date" aria-label={text('To', 'إلى')} value={to} onChange={e => {setTo(e.target.value);setPage(1);}} /></label>
@@ -104,7 +105,7 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
       {data && data.rows.length > 0 && <div className="staff-order-list" aria-live="polite"><table>
         <thead><tr>
           <th>{text('Order', 'الطلب')}</th>
-          <th>{text('Branch', 'الفرع')}</th>
+          {!singleBranch && <th>{text('Branch', 'الفرع')}</th>}
           <th>{text('Phone', 'الجوال')}</th>
           <th>{text('Plate', 'اللوحة')}</th>
           <th>{text('Status', 'الحالة')}</th>
@@ -114,7 +115,7 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
         </tr></thead>
         <tbody>{data.rows.map(row => { const b = BRANCHES.find(item => item.slug === row.branchId); return <tr key={row.id} data-order-id={row.id} onClick={() => setDetail(row.id)}>
           <td dir="ltr">{row.orderNumber ?? '—'}</td>
-          <td>{b?.name}</td>
+          {!singleBranch && <td>{b?.name}</td>}
           <td dir="ltr">{nationalPhone(row.phone) || '—'}</td>
           <td dir="ltr">{row.plate}</td>
           <td><span className={`staff-status status-${staffStatus(row.status)}`}>{staffLabels[staffStatus(row.status)].en}</span></td>
