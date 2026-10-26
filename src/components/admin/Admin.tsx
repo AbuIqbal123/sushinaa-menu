@@ -117,7 +117,7 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
               setSection(s);
             }}
           >
-            {s === "Orders" && lang === "ar" ? "الطلبات" : s === "Users" && lang === "ar" ? "المستخدمون" : s}{s === "Orders" && unreadOrders > 0 && <span className="staff-unread">{unreadOrders}</span>}
+            {s === "Users" && lang === "ar" ? "المستخدمون" : s}{s === "Orders" && unreadOrders > 0 && <span className="staff-unread">{unreadOrders}</span>}
           </button>
         ))}
         <a className="bottom" href="/" target="_blank" rel="noreferrer">
@@ -144,7 +144,7 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
       <div className="admin-main">
         <main className="admin-content">
           <div className="admin-heading">
-            <h1>{section === "Menu" ? "Your menu" : section === "Orders" && lang === "ar" ? "الطلبات" : section === "Users" && lang === "ar" ? "المستخدمون" : section}</h1>
+            <h1>{section === "Menu" ? "Your menu" : section === "Orders" ? "Orders" : section === "Users" && lang === "ar" ? "المستخدمون" : section}</h1>
             {section === "Menu" && (
               <button className="primary" onClick={() => newItem()}>
                 Add item

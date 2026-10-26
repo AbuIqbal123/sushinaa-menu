@@ -64,13 +64,8 @@ for (const lang of ['en','ar']) {
     }
     const final = await (await staff.request.get(`/api/admin/orders/${order.id}`)).json();expect(final.status).toBe('completed');
     expect(final.snapshot.lines[0].note).toBe('Sauce on the side');
-    if(lang==='ar') {
-      await staff.locator('.staff-tools .lang-btn').click();
-      await expect(staff.locator('.staff-orders')).toHaveAttribute('dir','rtl');
-      await expect(staff.locator('.staff-detail-head')).toContainText('تم التسليم');
-      expect(await staff.locator('.staff-orders').evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);
-      await staff.screenshot({path:info.outputPath('staff-rtl.png'),fullPage:true});
-    }
+    await expect(staff.locator('.staff-tools .lang-btn')).toHaveCount(0);
+    await expect(staff.locator('.staff-orders')).toHaveAttribute('dir','ltr');
     await staffContext.close();
   });
 }
