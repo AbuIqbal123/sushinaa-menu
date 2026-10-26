@@ -71,18 +71,28 @@ export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; 
     catch { setError('PRINT_FAILED'); }
     finally { setBusy(false); }
   }
+  async function postStatus(to: OrderStatus, expected: string, extra: Record<string, unknown> = {}) {
+    const response = await fetch(`/api/admin/orders/${id}/status`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to, expected, ...extra }) });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(body.code === 'STALE_STATUS' ? 'STALE_STATUS' : 'UPDATE_FAILED');
+  }
   async function change(to: OrderStatus) {
     if (!data || busy) return;
     setBusy(true); setError('');
     try {
-      const response = await fetch(`/api/admin/orders/${id}/status`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to, expected: data.status, ...(to === 'completed' && data.paymentMethod === 'pay_at_pickup' ? { recordPayment: true } : {}), ...(to === 'cancelled' ? { reason } : {}) }) });
-      const body = await response.json();
-      if (!response.ok) { await load(); throw new Error(body.code === 'STALE_STATUS' ? 'STALE_STATUS' : 'UPDATE_FAILED'); }
-      notify({ tone: 'ok', text: text('Order updated', 'تم تحديث الطلب') + ` · ${staffLabels[staffStatus(to)][lang]}` });
+      await postStatus(to, data.status, {
+        ...(to === 'completed' && data.paymentMethod === 'pay_at_pickup' ? { recordPayment: true } : {}),
+        ...(to === 'cancelled' ? { reason } : {}),
+      });
+      let shown: OrderStatus = to;
+      if (to === 'accepted') {
+        await postStatus('preparing', 'accepted');
+        shown = 'preparing';
+        await sendKitchenPrint('manual');
+      }
+      notify({ tone: 'ok', text: text('Order updated', 'تم تحديث الطلب') + ` · ${staffLabels[staffStatus(shown)][lang]}` });
       setCancel(false); await load(); onChange();
-      if (to === 'accepted') await sendKitchenPrint('manual');
-    } catch (e) { setError(e instanceof Error && e.message === 'STALE_STATUS' ? 'STALE_STATUS' : e instanceof Error && e.message === 'PRINT_FAILED' ? 'PRINT_FAILED' : 'UPDATE_FAILED'); }
+    } catch (e) { setError(e instanceof Error && e.message === 'STALE_STATUS' ? 'STALE_STATUS' : e instanceof Error && e.message === 'PRINT_FAILED' ? 'PRINT_FAILED' : 'UPDATE_FAILED'); await load(); }
     finally { setBusy(false); }
   }
   const branch = BRANCHES.find(b => b.slug === data?.branchId);

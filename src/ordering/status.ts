@@ -13,7 +13,7 @@ export function canTransition(from: OrderStatus, to: OrderStatus, paidAt: string
   return allowedTransitions(from, paidAt).includes(to);
 }
 export const staffGroups = {
-  received: ['placed', 'paid', 'accepted'], preparing: ['preparing'], ready: ['ready'],
+  received: ['placed', 'paid'], preparing: ['accepted', 'preparing'], ready: ['ready'],
   collected: ['completed'], cancelled: ['cancelled', 'refunded'],
 } as const;
 export type StaffStatus = keyof typeof staffGroups;
