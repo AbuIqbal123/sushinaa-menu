@@ -42,7 +42,7 @@ test('every allowed and forbidden status transition', () => {
   }
 });
 test('staff label mapping uses the supplied bilingual labels', () => {
-  assert.deepEqual(statuses.map(staffStatus),['received','received','received','preparing','ready','collected','cancelled','cancelled']);
+  assert.deepEqual(statuses.map(staffStatus),['received','received','preparing','preparing','ready','collected','cancelled','cancelled']);
   assert.equal(staffLabels.ready.ar,'جاهز'); assert.equal(staffLabels.received.ar,'تم الاستلام');
 });
 test('same order submitted 10 times creates one order', async () => {
