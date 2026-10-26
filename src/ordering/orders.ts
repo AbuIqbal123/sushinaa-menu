@@ -41,7 +41,8 @@ export function summary(row: Row): OrderSummary {
     branchId: row.branch_id as BranchId, status: row.status as OrderStatus,
     paymentMethod: row.payment_method as OrderSummary['paymentMethod'], paidAt: nullable(row.paid_at),
     totalMinor: Number(row.total_minor), currency: 'QAR', createdAt: String(row.created_at),
-    phone: maskPhone(row.customer_phone), plate: maskPlate(row.car_plate),
+    phone: typeof row.customer_phone === 'string' && row.customer_phone ? String(row.customer_phone) : '—',
+    plate: typeof row.car_plate === 'string' && row.car_plate ? String(row.car_plate) : '—',
     printCount: Number(row.print_count ?? 0), printedAt: nullable(row.printed_at) };
 }
 
