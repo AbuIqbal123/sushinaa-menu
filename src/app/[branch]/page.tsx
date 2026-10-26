@@ -28,7 +28,7 @@ export default async function BranchMenu({ params }: Props) {
   return (
     <div className="app-lock">
       <MenuProvider menu={publicMenu(menu)}>
-        <MenuFeed branch={branch.name} />
+        <MenuFeed branch={branch.name} testOrderHref={process.env.VERCEL_ENV === "production" ? undefined : "/order"} />
       </MenuProvider>
     </div>
   );
