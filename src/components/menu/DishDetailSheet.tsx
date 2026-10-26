@@ -234,7 +234,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose, ordering = false,
           <textarea value={notes[activeUnit] ?? ""} maxLength={400} rows={3} placeholder={t.commentPlaceholder}
             onChange={(e) => setNotes((prev) => prev.map((note, index) => index === activeUnit ? e.target.value : note))} />
         </label>
-        <p className="choice-note">{ordering ? (lang === "ar" ? "يمكنك تخصيص كل حصة وإضافة ملاحظة مختلفة لها." : "Each serving can have its own choices and note.") : t.viewOnlyNotice}</p>
+        {ordering ? null : <p className="choice-note">{t.viewOnlyNotice}</p>}
         <div className="detail-foot">
           <div className="line-qty">
             <button
@@ -264,7 +264,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose, ordering = false,
             onClick={onAdd}
             disabled={!ready}
           >
-            {justAdded ? (onSave ? (lang === "ar" ? "تم الحفظ" : "Saved") : t.added) : `${ordering ? (lang === "ar" ? (onSave ? "حفظ التغييرات" : "أضف إلى السلة") : (onSave ? "Save changes" : "Add to basket")) : t.addToOrder} · ${formatQar(total, lang)}`}
+            {justAdded ? (onSave ? (lang === "ar" ? "تم الحفظ" : "Saved") : t.added) : `${onSave ? (lang === "ar" ? "حفظ التغييرات" : "Save changes") : t.addToOrder} · ${formatQar(total, lang)}`}
           </button>
         </div>
       </div>

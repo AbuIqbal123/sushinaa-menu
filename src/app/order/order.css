@@ -154,11 +154,6 @@
 .payment-reference > span { font-size: 10px; text-transform: uppercase; color: var(--order-muted); letter-spacing: .1em; }
 .payment-reference > strong { font-size: 10px; overflow-wrap: anywhere; margin-bottom: 12px; }
 .payment-reference b { font-family: var(--font-display); font-size: 26px; font-weight: 400; }
-.ordering-feed .order-branch-bar { position: absolute; top: calc(60px + env(safe-area-inset-top, 0px)); inset-inline: 12px; z-index: 21; }
-.ordering-feed .collection-switch { background: #181513e8; backdrop-filter: blur(12px); min-height: 42px; padding: 7px 11px; }
-.ordering-feed .collection-switch > span:nth-child(2) { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.ordering-feed .filter-bar { top: calc(111px + env(safe-area-inset-top, 0px)); }
-.ordering-feed .search-results { padding-top: calc(160px + env(safe-area-inset-top, 0px)); }
 .branch-page { padding-top: 36px; }
 .branch-intro > p { margin-bottom: 24px; }
 .branch-card { min-height: 104px; padding: 21px 18px; }

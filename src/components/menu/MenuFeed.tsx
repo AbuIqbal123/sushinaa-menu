@@ -346,7 +346,7 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
             const spot = ((parked % n) + n) % n;
             const atSeam = spot <= 3 || spot >= n - 2;
             const close = (d: number) => d >= -1 && d <= 3;
-            return <DishSlide ordering={Boolean(onPickup)} key={item.key} dish={item.dish} diet={diet} marked={item.copy === 1}
+            return <DishSlide key={item.key} dish={item.dish} diet={diet} marked={item.copy === 1}
               active={item.copy === 1 && item.real === activeIndex}
               eager={close(delta) || (atSeam && (close(delta - n) || close(delta + n)))}
               inert={item.copy !== 1}
