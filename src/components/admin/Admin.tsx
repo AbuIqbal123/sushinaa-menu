@@ -35,6 +35,7 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
   const [item, setItem] = useState<CmsDish | null>(null);
   const [category, setCategory] = useState<Category | null>(null);
   const [busy, setBusy] = useState(false);
+  const [creatingUser, setCreatingUser] = useState(false);
   const notify = useNotify();
   const { menu } = snapshot;
   const categories = [...menu.categories].sort((a, b) => a.order - b.order);
@@ -115,6 +116,7 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
             onClick={() => {
               if (s === section || !confirmDiscard()) return;
               setSection(s);
+              setCreatingUser(false);
             }}
           >
             {s === "Users" && lang === "ar" ? "المستخدمون" : s}{s === "Orders" && unreadOrders > 0 && <span className="staff-unread">{unreadOrders}</span>}
@@ -167,6 +169,11 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
                 Add category
               </button>
             )}
+            {section === "Users" && role === "admin" && (
+              <button className="primary" type="button" onClick={() => setCreatingUser(true)}>
+                {lang === "ar" ? "إنشاء مستخدم جديد" : "Create new user"}
+              </button>
+            )}
           </div>
           {section === "Dashboard" && (
             <Dashboard
@@ -194,7 +201,7 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
             />
           )}
           <Orders active={section === "Orders"} onUnread={setUnreadOrders} role={role} menu={menu} />
-          {section === "Users" && role === "admin" && <StaffPanel />}
+          {section === "Users" && role === "admin" && <StaffPanel creating={creatingUser} onCreating={setCreatingUser} />}
           {section === "Activity" && <Activity />}
           {section === "Settings" && role === "admin" && (
             <SettingsEditor key={snapshot.revision} menu={menu} onSave={save} />
