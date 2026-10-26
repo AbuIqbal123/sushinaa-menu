@@ -15,7 +15,7 @@ import type { PaymentStatus } from '@/ordering/checkout/payment';
 import { MockSadadGateway } from './MockSadadGateway';
 
 const emptyCustomer: Customer = { name: '', phone: '', plate: 'Q', colour: '', car: '', instructions: '' };
-type Step = 'menu' | 'basket' | 'details' | 'review' | 'payment' | 'receipt';
+type Step = 'menu' | 'details' | 'review' | 'payment' | 'receipt';
 type Receipt = { id: string; orderNumber?: number | null; paymentStatus: PaymentStatus; totalMinor: number; paymentMethod: 'mock' | 'pay_at_pickup'; status: string };
 export function OrderingExperience({ initialNow, branchId }: { initialNow: string; branchId: BranchId }) {
   return <CartProvider storageKey="sushinaa-curbside-basket-v1"><Experience initialNow={initialNow} branchId={branchId} /></CartProvider>;
@@ -125,14 +125,8 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
     finally { setBusy(false); busyRef.current = false; }
   }
   const branchName = branch ? text(branch.name, branch.nameAr) : '';
-  const branchControl = <button type="button" onClick={changeBranch} className="collection-switch">
-    <CarIcon /><span>{text('Car collection', 'استلام عند السيارة')} <strong>{branchName}</strong></span>
-    <span className={status?.open ? 'status-dot open' : 'status-dot'} />
-    <span className="collection-change">{text('Change', 'تغيير')}</span>
-  </button>;
-  if (step === 'menu' && branch) return <div className="app-lock"><MenuFeed onReview={() => go('basket')} branchBar={branchControl} /></div>;
-  const title = step === 'basket' ? text('Your basket', 'سلتك')
-    : step === 'details' ? text('Collection details', 'بيانات الاستلام')
+  if (step === 'menu' && branch) return <div className="app-lock"><MenuFeed branch={branchName} onPickup={() => go('details')} /></div>;
+  const title = step === 'details' ? text('Collection details', 'بيانات الاستلام')
     : step === 'review' ? text('Review your order', 'راجع طلبك')
     : step === 'receipt' ? text('Your order', 'طلبك') : text('Payment', 'الدفع');
   const count = cart.itemCount;
@@ -141,7 +135,7 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
   const closedNotice = status && !status.open ? <div className="checkout-notice" role="status"><strong>{text('This branch is currently closed', 'هذا الفرع مغلق حالياً')}</strong><p>{demoOpen ? text('You can still place this order.', 'يمكنك إتمام هذا الطلب.') : text('Browse and save your favourites, or choose an open branch to continue.', 'تصفح واحفظ أصنافك المفضلة، أو اختر فرعاً مفتوحاً للمتابعة.')}</p>{demoOpen ? null : <button type="button" className="text-action" onClick={changeBranch}>{text('Choose another branch', 'اختر فرعاً آخر')}</button>}</div> : null;
   function ticket(editable: boolean, canEditBasket = false, serverMinor?: number) { return <section className="ticket checkout-ticket" aria-label={t.yourTicket}>
     <div className="ticket-scallop" aria-hidden="true" />
-    <header className="ticket-head"><div><p className="ticket-kicker">{t.brand}</p><h2 className="ticket-title">{t.yourTicket}</h2></div>{canEditBasket ? <button type="button" className="ticket-edit" onClick={() => go('basket')}>{text('Edit items', 'تعديل الأصناف')}</button> : <span className="ticket-count">{count} {text(count === 1 ? 'item' : 'items', 'صنف')}</span>}</header>
+    <header className="ticket-head"><div><p className="ticket-kicker">{t.brand}</p><h2 className="ticket-title">{t.yourTicket}</h2></div>{canEditBasket ? <button type="button" className="ticket-edit" onClick={() => go('menu')}>{text('Edit items', 'تعديل الأصناف')}</button> : <span className="ticket-count">{count} {text(count === 1 ? 'item' : 'items', 'صنف')}</span>}</header>
     <p className="ticket-rule" aria-hidden="true" />
     <ul className="ticket-lines">{cart.lines.map(line => <li key={line.key} className="ticket-line">
       <div className="line-main"><p className="line-name">{line.displayName}</p>{line.meta && <p className="line-meta">{line.meta}</p>}{line.qty > 1 && <p className="line-meta line-unit">{line.qty} × {ticketMoney(line.unitQar)}</p>}{line.note && <p className="line-note">{t.commentWord}: {line.note}</p>}{editable && <button type="button" className="ticket-edit" onClick={() => setEditing(line)}>{text('Edit choices & notes', 'تعديل الخيارات والملاحظات')}</button>}</div>
@@ -164,15 +158,12 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
     <div className="ordering-content" inert={Boolean(editing)}>
       <header className="ordering-header"><button type="button" className="ordering-logo" onClick={() => go('menu')} aria-label={text('Back to the menu', 'العودة إلى القائمة')}><Image src={menu.settings.logo} width={59} height={55} alt={t.brand} unoptimized /></button><LangButton /></header>
       <>
-        {step !== 'receipt' && <div className="checkout-navigation"><button type="button" className="text-action" disabled={busy} onClick={() => go(step === 'basket' ? 'menu' : step === 'details' ? 'basket' : step === 'review' ? 'details' : 'review')}><span className="back-arrow" aria-hidden="true">←</span> {text('Back', 'رجوع')}</button>{(['basket', 'details', 'review'] as Step[]).includes(step) && <span aria-label={text(`Step ${['basket', 'details', 'review'].indexOf(step) + 1} of 3`, `الخطوة ${['basket', 'details', 'review'].indexOf(step) + 1} من ٣`)}>{['basket', 'details', 'review'].indexOf(step) + 1} / 3</span>}</div>}
+        {step !== 'receipt' && <div className="checkout-navigation"><button type="button" className="text-action" disabled={busy} onClick={() => go(step === 'details' ? 'menu' : step === 'review' ? 'details' : 'review')}><span className="back-arrow" aria-hidden="true">←</span> {text('Back', 'رجوع')}</button>{(['details', 'review'] as Step[]).includes(step) && <span aria-label={text(`Step ${['details', 'review'].indexOf(step) + 1} of 2`, `الخطوة ${['details', 'review'].indexOf(step) + 1} من ٢`)}>{['details', 'review'].indexOf(step) + 1} / 2</span>}</div>}
         <main id="main" className="checkout-main">
           <h1 ref={heading} tabIndex={-1}>{title}</h1>
-          {step !== 'receipt' && branchControl}
+          {step === 'details' && <p className="checkout-branch">{text('Pickup', 'استلام')} · <strong>{branchName}</strong> <button type="button" className="text-action" onClick={changeBranch}>{text('Change branch', 'تغيير الفرع')}</button></p>}
           {step !== 'payment' && step !== 'receipt' && closedNotice}
           {step !== 'receipt' && cart.unavailableCount > 0 && <div className="checkout-notice" role="alert"><strong>{text('Your basket needs an update', 'تحتاج سلتك إلى تحديث')}</strong><p>{text(`${cart.unavailableCount} serving(s) or their choices are no longer available. Remove them before continuing.`, `${cart.unavailableCount} حصة أو خياراتها لم تعد متوفرة. احذفها قبل المتابعة.`)}</p><button type="button" className="text-action" onClick={cart.discardUnavailable}>{text('Remove unavailable selections', 'حذف الخيارات غير المتوفرة')}</button></div>}
-          {step === 'basket' && <>
-            {count ? <>{ticket(true)}<button type="button" className="text-action add-more" onClick={() => go('menu')}>+ {text('Add item', 'أضف صنفاً')}</button><div className="checkout-step-action"><button type="button" className="checkout-primary" disabled={cart.unavailableCount > 0} onClick={() => go('details')}>{text('Continue to collection details', 'المتابعة لبيانات الاستلام')}<Forward /></button></div></> : <div className="empty-basket"><CarIcon /><h2>{text('Your basket is empty', 'سلتك فارغة')}</h2><button type="button" className="checkout-primary" onClick={() => go('menu')}>{text('Browse menu', 'تصفح القائمة')}<Forward /></button></div>}
-          </>}
           {step === 'details' && <>
             <form onSubmit={validateDetails} noValidate>
             <div className="checkout-fields">{(['name', 'phone', 'plate'] as const).map(key => {
@@ -198,7 +189,7 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
             <div className="checkout-step-action"><button type="button" className="checkout-primary" disabled={busy || !canPlace || !count || cart.unavailableCount > 0} onClick={checkout}>{busy ? text('Checking…', 'جارٍ التحقق…') : paymentMethod === 'pay_at_pickup' ? text('Place order · pay at pickup', 'تأكيد الطلب · الدفع عند الاستلام') : text('Continue to payment', 'المتابعة إلى الدفع')}<Forward /></button></div>
           </>}
           {step === 'receipt' && receipt && <><div className="demo-receipt-status" role="status"><span aria-hidden="true">✓</span><strong>{receipt.paymentMethod === 'mock' ? text('Payment confirmed', 'تم تأكيد الدفع') : text('Order received · pay at pickup', 'تم استلام الطلب · الدفع عند الاستلام')}</strong><small dir="ltr" className="order-confirmation-reference">{receipt.id}</small>{receipt.orderNumber != null && <small dir="ltr">{receipt.orderNumber}</small>}</div>{branch && <DirectionsLink branchName={branchName} href={branch.mapsUrl} text={text} />}{receiptBody(false, receipt.totalMinor)}<button type="button" className="checkout-primary" onClick={() => { cart.clear(); setCustomer(emptyCustomer); setReceipt(null); sessionStorage.removeItem(orderKey); attempt.current = null; go('menu'); }}>{text('Back to menu', 'العودة للقائمة')}<Forward /></button></>}
-          {error && <div className="checkout-error" role="alert"><p>{error}</p><button className="text-action" type="button" onClick={() => { go('basket'); router.refresh(); }}>{text('Refresh menu', 'تحديث القائمة')}</button></div>}
+          {error && <div className="checkout-error" role="alert"><p>{error}</p><button className="text-action" type="button" onClick={() => { go('menu'); router.refresh(); }}>{text('Refresh menu', 'تحديث القائمة')}</button></div>}
         </main>
       </>
       <footer className="ordering-footer"><span>Sushinaa</span></footer>
@@ -209,4 +200,3 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
 function QatarPlate({ plate }: { plate: string }) { return <div className="plate-card" dir="ltr" aria-label={`Qatar plate ${plate[0]} ${plate.slice(1)}`}><span className="plate-country"><span className="plate-flag" aria-hidden="true">🇶🇦</span><span>QATAR<br /><span lang="ar">قطر</span></span></span><strong className="plate-digits">{plate.slice(1)}</strong><strong className="plate-letter">{plate[0]}</strong></div>; }
 function DirectionsLink({ branchName, href, text }: { branchName: string; href: string; text: (en: string, ar: string) => string }) { return <a className="directions-link" href={href} target="_blank" rel="noopener noreferrer" aria-label={text(`Open Google Maps directions to ${branchName}`, `افتح خرائط Google للوصول إلى ${branchName}`)}><span className="directions-pin" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z" stroke="currentColor" strokeWidth="1.6"/><circle cx="12" cy="10" r="2.3" stroke="currentColor" strokeWidth="1.6"/></svg></span><span className="directions-copy"><strong>{text('Get directions', 'اتجاهات الوصول')}</strong><small>{branchName} · Google Maps</small></span><span className="directions-arrow" aria-hidden="true">↗</span></a>; }
 function Forward() { return <span className="forward-arrow" aria-hidden="true">→</span>; }
-function CarIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 9 2-5h10l2 5M4 9h16a1 1 0 0 1 1 1v7H3v-7a1 1 0 0 1 1-1ZM5 17v3m14-3v3M6 13h2m8 0h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
