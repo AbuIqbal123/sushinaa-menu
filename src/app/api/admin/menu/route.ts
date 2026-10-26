@@ -1,6 +1,6 @@
 import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
-import { adminName, authenticated, sameOrigin } from "@/cms/auth";
+import { currentStaff, sameOrigin } from "@/cms/auth";
 import { auditContext } from "@/cms/audit";
 import {
   readMenu,
@@ -11,16 +11,22 @@ import {
 } from "@/cms/repository";
 import { ZodError } from "zod";
 export const dynamic = "force-dynamic";
+async function editor() {
+  const user = await currentStaff();
+  if (!user) return { user: null, response: NextResponse.json({ error: "Sign in required" }, { status: 401 }) };
+  if (user.role !== "admin") return { user: null, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+  return { user, response: null };
+}
 export async function GET() {
-  if (!(await authenticated()))
-    return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  const gate = await editor();
+  if (gate.response) return gate.response;
   return NextResponse.json(await readMenu(), {
     headers: { "Cache-Control": "no-store" },
   });
 }
 export async function PUT(request: Request) {
-  if (!(await authenticated()))
-    return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  const gate = await editor();
+  if (gate.response) return gate.response;
   if (!sameOrigin(request))
     return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
   try {
@@ -33,7 +39,7 @@ export async function PUT(request: Request) {
     const saved = await saveMenu(
       menu,
       revision,
-      auditContext(request, adminName()),
+      auditContext(request, gate.user.username),
     );
     // Publish immediately: the next public request reads the new revision.
     revalidateTag(MENU_CACHE_TAG, { expire: 0 });

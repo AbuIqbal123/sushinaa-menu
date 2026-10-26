@@ -3,6 +3,8 @@ import type { MetadataRoute } from "next";
 import { strings } from "@/i18n/copy";
 import { requestLang } from "@/i18n/request-lang";
 
+export const dynamic = "force-dynamic";
+
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const { menu } = await getMenu();
   const lang = await requestLang();

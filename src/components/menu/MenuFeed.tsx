@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type CSSProperties } from "react";
 import { matchesDiet, type DietFilter, type Dish, type Section } from "@/catalog/menu";
 import { useMenu } from "@/cms/context";
 import { CartProvider, useCart } from "@/ordering/cart";
@@ -20,7 +21,9 @@ function normalizeSearch(value: string) {
     .replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
 
-function FeedInner() {
+type OrderingFeedProps = { branch?: string; onPickup?: () => void; branchBar?: ReactNode };
+
+function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
   const menu = useMenu();
   const { itemCount, totalQar } = useCart();
   const { lang, t } = useLocale();
@@ -255,7 +258,11 @@ function FeedInner() {
     <div className={`shell${sheetOpen ? " is-sheet" : ""}${itemCount > 0 ? " has-order" : ""}`}>
       <header className={`chrome-header${searchOpen ? " search-open" : ""}`} inert={sheetOpen}>
         <div className="brand-navigation">
-          <img src={menu.settings.logo} alt={t.brand} className="wordmark-img" width={46} height={44} />
+          {/* The logo and the branch name are one link back to the branch picker. */}
+          <Link href="/?pick=1" className="brand-mark" aria-label={`${t.brand}, ${branch}, change branch`} prefetch={false}>
+            <img src={menu.settings.logo} alt="" className="wordmark-img" width={46} height={44} />
+            <span className="branch-switch"><span className="branch-switch-name">{branch}</span><span aria-hidden="true">▾</span></span>
+          </Link>
           <button ref={categoryButtonRef} type="button" className="cart-btn category-toggle"
             aria-label={`${t.category}: ${sectionName(category, lang)}`} title={sectionName(category, lang)}
             aria-haspopup="dialog" aria-expanded={categoriesOpen} aria-controls="category-overlay"
@@ -305,6 +312,7 @@ function FeedInner() {
           </button>
         </div>
       </header>
+      {branchBar ? <div className="order-branch-bar" inert={sheetOpen}>{branchBar}</div> : null}
       <div className="filter-bar" aria-label={t.filters} inert={sheetOpen ? true : undefined}>
         <div className="chip-row chip-row-diet" aria-label={t.dietary}>
           {dietChips.map((chip) => <button key={chip.id} type="button"
@@ -353,8 +361,8 @@ function FeedInner() {
         onClose={closeCategories} onChange={(section) => { jumpTo(section); setPickedCategory(sectionName(section, lang)); closeCategories(); }} />
       <div className="sr-only" aria-live="polite">{pickedCategory}</div>
       <div className="sr-only" aria-live="polite">{search ? t.searchResults(dishes.length) : ""}</div>
-      {detail ? <DishDetailSheet key={`${detail.id}-${diet}`} dish={detail} diet={diet} onClose={() => setDetail(null)} /> : null}
-      <CartSheet open={open} onClose={() => setOpen(false)} />
+      {detail ? <DishDetailSheet key={`${detail.id}-${diet}`} dish={detail} diet={diet} ordering={Boolean(onPickup)} onClose={() => setDetail(null)} /> : null}
+      <CartSheet open={open} onClose={() => setOpen(false)} onPickup={onPickup} />
     </div>
   );
 }
@@ -377,10 +385,11 @@ function TicketIcon() {
   );
 }
 
-export function MenuFeed() {
+export function MenuFeed(props: OrderingFeedProps) {
+  if (props.onPickup) return <FeedInner {...props} />;
   return (
     <CartProvider>
-      <FeedInner />
+      <FeedInner {...props} />
     </CartProvider>
   );
 }

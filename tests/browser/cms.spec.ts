@@ -150,7 +150,7 @@ test("authenticated CMS CRUD, persistence, uploads and public integration", asyn
     await publish();
     pub = await (await request.get("/api/menu")).json();
     expect(pub.menu.categories[0].id).toBe(cat.id);
-    await page.goto("/");
+    await page.goto("/down-town");
     const categoryMenu = page.getByRole("button", { name: /^Category:/ });
     await categoryMenu.click();
     const categories = page.getByRole("dialog", { name: "Menu" });
@@ -223,7 +223,7 @@ test("public menu works at mobile and desktop widths in both languages", async (
   await page.addInitScript(() => localStorage.clear());
   for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 844 });
-    await page.goto("/");
+    await page.goto("/down-town");
     await expect(page.locator(".chrome-header")).toBeVisible();
     await expect(page.locator("#dish-sushinaa-burger")).toBeVisible();
     await page.locator("#dish-sushinaa-burger .slide-hit").click();
@@ -372,7 +372,7 @@ test("admin controls edit, reorder and delete content and options", async ({
     await expect
       .poll(async () => (await saved()).menu.copy.en.addToOrder)
       .toBe("Add this dish");
-    await page.goto("/");
+    await page.goto("/down-town");
     await expect(page.locator("#dish-sushinaa-burger .slide-cta")).toHaveText(
       "Add this dish",
     );
@@ -396,7 +396,7 @@ test("admin controls edit, reorder and delete content and options", async ({
         await page.request.put("/api/admin/menu", { headers, data: empty })
       ).status(),
     ).toBe(200);
-    await page.goto("/");
+    await page.goto("/down-town");
     await expect(
       page.getByText("No dishes match these filters."),
     ).toBeVisible();
@@ -626,7 +626,7 @@ test("card focal point and options photo round-trip to the public menu", async (
     expect(burger.imageFocus).toEqual({ x: 60, y: 51 });
     expect(burger.optionsImage).toMatch(/^\/api\/media\//);
     expect(burger.image).toBe("/dishes/card/sushinaa-burger.webp");
-    await page.goto("/");
+    await page.goto("/down-town");
     const card = page.locator("#dish-sushinaa-burger img.dish-photo");
     await expect(card).toHaveCSS("object-position", "60% 51%");
     await page.locator("#dish-sushinaa-burger .slide-hit").click();
@@ -653,7 +653,7 @@ test("the options photo opens full screen and closes back to the sheet", async (
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
+  await page.goto("/down-town");
   await page.locator("#dish-sushinaa-burger .slide-hit").click();
   const photo = page.locator(".detail-photo-open");
   await photo.click();
@@ -681,7 +681,7 @@ test("search opens from its button toward the logo and closes back to it", async
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
+  await page.goto("/down-town");
   const toggle = page.locator(".chrome-actions .search-toggle");
   // The menu streams in behind the loading screen; measure once it is shown.
   await expect(toggle).toBeVisible();
@@ -698,7 +698,7 @@ test("search opens from its button toward the logo and closes back to it", async
   await expect(toggle).toHaveAttribute("aria-label", "Clear search");
   const input = page.locator("#menu-search");
   await expect(input).toBeFocused();
-  const logo = page.locator(".brand-navigation > .wordmark-img");
+  const logo = page.locator(".brand-navigation .wordmark-img");
   const logoBox = (await logo.boundingBox())!;
   const field = (await page.locator(".header-search-field").boundingBox())!;
   expect(field.x).toBeLessThanOrEqual(logoBox.x + 1);
@@ -778,7 +778,7 @@ test("search is closed from the first frame and its first open starts on the nex
   };
   for (const lang of ["en", "ar"]) {
     await page.context().addCookies([{ name: "sushina-lang", value: lang, url: baseURL! }]);
-    await page.goto("/");
+    await page.goto("/down-town");
     await expect(toggle).toHaveAttribute("aria-expanded", "false");
     await page.waitForTimeout(800);
     const load = await page.evaluate(() => (window as unknown as { searchProbe: SearchProbe }).searchProbe);
@@ -796,7 +796,7 @@ test("search is closed from the first frame and its first open starts on the nex
 
 test("the header category menu follows the feed", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
+  await page.goto("/down-town");
   const menuButton = page.getByRole("button", { name: /^Category:/ });
   await expect(menuButton).toHaveAccessibleName("Category: New");
   await expect(menuButton).toHaveAttribute("aria-expanded", "false");
@@ -1008,7 +1008,7 @@ test("the longest allowed text and 4-digit prices keep the card and sheet intact
     await page.setViewportSize({ width: 360, height: 740 });
     await page.addInitScript(() => localStorage.clear());
     for (const lang of ["en", "ar"]) {
-      await page.goto("/");
+      await page.goto("/down-town");
       if (lang === "ar")
         await page.getByRole("button", { name: "Switch to Arabic" }).click();
       const card = page.locator("#dish-sushinaa-burger");

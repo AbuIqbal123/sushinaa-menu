@@ -7,9 +7,10 @@ const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://va.vercel-scripts.com`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
+  "img-src 'self' data: blob: https://tiles.openfreemap.org",
   "font-src 'self'",
-  "connect-src 'self' https://vitals.vercel-insights.com https://va.vercel-scripts.com",
+  "worker-src 'self' blob:",
+  "connect-src 'self' https://tiles.openfreemap.org https://vitals.vercel-insights.com https://va.vercel-scripts.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -86,6 +87,10 @@ const nextConfig: NextConfig = {
       {
         source: "/brand/:path*",
         headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
+      {
+        source: "/cms/orders/:id/ticket",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
       },
     ];
   },

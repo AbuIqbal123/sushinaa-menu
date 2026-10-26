@@ -1,20 +1,11 @@
-import { getMenu } from "@/cms/repository";
-import { MenuProvider } from "@/cms/context";
-import { publicMenu } from "@/cms/schema";
-import { MenuFeed } from "@/components/menu/MenuFeed";
+import { BranchPicker } from "@/components/branch/BranchPicker";
 import { pageMeta } from "@/lib/page-meta";
 
+// Returning visitors never see this page: src/proxy.ts sends them to their branch.
 export function generateMetadata() {
-  return pageMeta((t) => t.menu, (t) => t.menuBlurb, "");
+  return pageMeta((t) => `Choose your branch · ${t.brand}`, (t) => t.menuBlurb, "");
 }
 
-export default async function Home() {
-  const { menu } = await getMenu();
-  return (
-    <div className="app-lock">
-      <MenuProvider menu={publicMenu(menu)}>
-        <MenuFeed />
-      </MenuProvider>
-    </div>
-  );
+export default function Home() {
+  return <BranchPicker />;
 }

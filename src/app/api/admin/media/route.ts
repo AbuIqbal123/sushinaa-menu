@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import sharp from "sharp";
-import { adminName, authenticated, sameOrigin } from "@/cms/auth";
+import { currentStaff, sameOrigin } from "@/cms/auth";
 import { auditContext, auditInsert } from "@/cms/audit";
 import { db, initDb } from "@/cms/db";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_LABEL, sniffImage } from "@/cms/media";
 export async function POST(request: Request) {
-  if (!(await authenticated()))
+  const user = await currentStaff();
+  if (!user)
     return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  if (user.role !== "admin")
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!sameOrigin(request))
     return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
   if (Number(request.headers.get("content-length")) > MAX_UPLOAD_BYTES + 100_000)
@@ -45,7 +48,7 @@ export async function POST(request: Request) {
           sql: "INSERT OR IGNORE INTO media(id,content,type) VALUES (?,?,?)",
           args: [id, data, "image/webp"],
         },
-        auditInsert(auditContext(request, adminName()), {
+        auditInsert(auditContext(request, user.username), {
           action: "media.upload",
           entityType: "media",
           entityId: id,

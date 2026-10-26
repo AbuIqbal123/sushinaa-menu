@@ -52,6 +52,17 @@ function menuFromStored(raw: unknown): MenuData {
 
 export async function readMenu(): Promise<MenuSnapshot> {
   await initDb();
+  const source = process.env.CMS_PUBLIC_MENU_SOURCE_URL;
+  if (source) {
+    const parsedUrl = new URL(source);
+    if (parsedUrl.protocol !== 'https:' || parsedUrl.pathname !== '/api/menu' || parsedUrl.username || parsedUrl.password)
+      throw new Error('CMS_PUBLIC_MENU_SOURCE_URL must be an HTTPS public menu endpoint.');
+    const response = await fetch(source, { next: { revalidate: 60 }, signal: AbortSignal.timeout(8000) });
+    if (!response.ok) throw new Error('Published menu is temporarily unavailable.');
+    const raw = await response.json() as { revision?: unknown; menu?: unknown };
+    if (!Number.isInteger(raw.revision) || !raw.menu) throw new Error('Published menu response is invalid.');
+    return { revision: Number(raw.revision), menu: menuSchema.parse(raw.menu) };
+  }
   const result = await db.execute(
     "SELECT revision,content FROM menu WHERE id=1",
   );
