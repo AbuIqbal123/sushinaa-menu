@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { BRANCHES } from '@/branches/branches';
 import { useLocale } from '@/i18n/locale';
+import { useNotify } from './Notices';
 import { allowedTransitions, staffStatus, staffLabels, type OrderStatus } from '@/ordering/status';
 import { printTicket } from './print-ticket';
 import { OrderEditPanel } from './OrderEditPanel';
@@ -13,6 +14,7 @@ import type { MenuData } from '@/cms/schema';
 export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; onBack: () => void; onChange: () => void; role: Role; menu: MenuData }) {
   const { lang, t } = useLocale();
   const text = (en: string, ar: string) => lang === 'ar' ? ar : en;
+  const notify = useNotify();
   const reasons = { customer_request: text('Customer request', 'طلب العميل'), unavailable: text('Item unavailable', 'الصنف غير متوفر'), duplicate: text('Duplicate order', 'طلب مكرر'), branch_closed: text('Branch closed', 'الفرع مغلق') };
   const [data, setData] = useState<OrderDetailData | null>(null);
   const [error, setError] = useState('');
@@ -43,6 +45,7 @@ export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; 
       if (!page.ok) throw new Error('PRINT_FAILED');
       frame.srcdoc = await page.text();
       frame.onload = () => { frame.contentWindow?.print(); window.setTimeout(() => frame.remove(), 1000); };
+      notify({ tone: 'ok', text: text('Receipt sent to print', 'تم إرسال الإيصال للطباعة') });
     } catch { setError('PRINT_FAILED'); }
     finally { setBusy(false); }
   }
@@ -56,6 +59,7 @@ export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; 
       await printTicket(id);
       const done = await fetch(`/api/staff/orders/${id}/print/done`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ claimId: body.claimId }) });
       if (!done.ok) throw new Error('PRINT_FAILED');
+      notify({ tone: 'ok', text: text('Ticket sent to print', 'تم إرسال التذكرة للطباعة') });
       await load(); onChange();
     } catch { setError('PRINT_FAILED'); }
     finally { setBusy(false); }
@@ -68,6 +72,7 @@ export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; 
         body: JSON.stringify({ to, expected: data.status, ...(to === 'completed' && data.paymentMethod === 'pay_at_pickup' ? { recordPayment: true } : {}), ...(to === 'cancelled' ? { reason } : {}) }) });
       const body = await response.json();
       if (!response.ok) { await load(); throw new Error(body.code === 'STALE_STATUS' ? 'STALE_STATUS' : 'UPDATE_FAILED'); }
+      notify({ tone: 'ok', text: text('Order updated', 'تم تحديث الطلب') + ` · ${staffLabels[staffStatus(to)][lang]}` });
       setCancel(false); await load(); onChange();
     } catch (e) { setError(e instanceof Error && e.message === 'STALE_STATUS' ? 'STALE_STATUS' : 'UPDATE_FAILED'); }
     finally { setBusy(false); }

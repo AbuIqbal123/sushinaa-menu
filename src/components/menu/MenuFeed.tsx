@@ -21,9 +21,9 @@ function normalizeSearch(value: string) {
     .replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
 
-type OrderingFeedProps = { branch?: string; onReview?: () => void; branchBar?: ReactNode; testOrderHref?: string };
+type OrderingFeedProps = { branch?: string; onReview?: () => void; branchBar?: ReactNode };
 
-function FeedInner({ branch, onReview, branchBar, testOrderHref }: OrderingFeedProps) {
+function FeedInner({ branch, onReview, branchBar }: OrderingFeedProps) {
   const menu = useMenu();
   const { itemCount, totalQar } = useCart();
   const { lang, t } = useLocale();
@@ -307,7 +307,6 @@ function FeedInner({ branch, onReview, branchBar, testOrderHref }: OrderingFeedP
               </svg>
             </button>
           </div>
-          {testOrderHref ? <Link href={testOrderHref} className="test-order-link">{lang === "ar" ? "طلب تجريبي" : "Test order"}</Link> : null}
           <LangButton />
           <button type="button" className="cart-btn" onClick={() => onReview ? onReview() : setOpen(true)} aria-label={t.openOrder(itemCount)}>
             <TicketIcon />

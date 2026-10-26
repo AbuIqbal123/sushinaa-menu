@@ -813,13 +813,6 @@ body {
   gap: 8px;
   pointer-events: auto;
 }
-.test-order-link {
-  color: #f3e4c4;
-  font-size: 13px;
-  line-height: 1;
-  text-decoration: none;
-  white-space: nowrap;
-}
 
 /* The label names the other language, so its face follows the label's own
    lang: Latin in the sans, Arabic in the Arabic face (Medium is its only weight). */

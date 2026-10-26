@@ -5,6 +5,7 @@ import { publicMenu } from '@/cms/schema';
 import type { Role } from '@/cms/permissions';
 import type { Dish, Selection } from '@/catalog/types';
 import { useLocale } from '@/i18n/locale';
+import { useNotify } from './Notices';
 import { applyEdits, editPreview, editReasonLabels, editReasons, orderTotals, type EditReason, type EditPreview, type OrderTotals, type ResolvedEdit, type WorkingLine } from '@/ordering/edits';
 import { formatMinor, signedMinorAmount } from '@/lib/money';
 import { defaultSelection, preferredPieces, unitPrice } from '@/ordering/price';
@@ -28,6 +29,7 @@ export function OrderEditPanel({ id, data, role, menu, onSaved, onReceipt, onRep
 }) {
   const { lang } = useLocale();
   const text = (en: string, ar: string) => lang === 'ar' ? ar : en;
+  const notify = useNotify();
   const reasons = reasonLabels(lang);
   const dishes = publicMenu(menu).dishes;
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -69,6 +71,7 @@ export function OrderEditPanel({ id, data, role, menu, onSaved, onReceipt, onRep
       setSheet(null);
       setConfirm(null);
       setNote('');
+      notify({ tone: 'ok', text: text('Order saved', 'تم حفظ الطلب') });
       await onSaved();
       return true;
     } catch {

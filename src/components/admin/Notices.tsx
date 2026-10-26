@@ -21,38 +21,39 @@ export function useNotify() {
   return useContext(Notify);
 }
 
+type Item = Notice & { id: number };
+
 export function Notices({ children }: { children: ReactNode }) {
-  const [notice, setNotice] = useState<Notice | null>(null);
-  const timer = useRef(0);
+  const [notices, setNotices] = useState<Item[]>([]);
+  const timers = useRef(new Map<number, number>());
   const pop = useRef<HTMLDivElement>(null);
-  const dismiss = useCallback(() => {
-    window.clearTimeout(timer.current);
-    setNotice(null);
+  const dismiss = useCallback((id: number) => {
+    window.clearTimeout(timers.current.get(id));
+    timers.current.delete(id);
+    setNotices((current) => current.filter((item) => item.id !== id));
   }, []);
   const notify = useCallback(
     (next: Notice) => {
-      window.clearTimeout(timer.current);
-      setNotice(next);
-      timer.current = window.setTimeout(
-        dismiss,
-        next.tone === "error" ? 8000 : 4200,
-      );
+      const id = Date.now() + Math.random();
+      setNotices((current) => [...current, { ...next, id }].slice(-3));
+      timers.current.set(id, window.setTimeout(() => dismiss(id), next.tone === "error" ? 8000 : 4200));
     },
     [dismiss],
   );
-  useEffect(() => () => window.clearTimeout(timer.current), []);
+  useEffect(() => () => { for (const timer of timers.current.values()) window.clearTimeout(timer); }, []);
   useEffect(() => {
     const el = pop.current;
     if (!el) return;
-    if (notice && !el.matches(":popover-open")) el.showPopover();
-    if (!notice && el.matches(":popover-open")) el.hidePopover();
-  }, [notice]);
+    if (notices.length && !el.matches(":popover-open")) el.showPopover();
+    if (!notices.length && el.matches(":popover-open")) el.hidePopover();
+  }, [notices.length]);
   return (
     <Notify.Provider value={notify}>
       {children}
       <div className="admin-toasts" popover="manual" ref={pop}>
-        {notice && (
+        {notices.map((notice) => (
           <div
+            key={notice.id}
             className={`admin-toast${notice.tone === "error" ? " is-error" : ""}`}
             role={notice.tone === "error" ? "alert" : "status"}
           >
@@ -62,11 +63,11 @@ export function Notices({ children }: { children: ReactNode }) {
                 {notice.action.label}
               </button>
             )}
-            <button type="button" aria-label="Dismiss" onClick={dismiss}>
+            <button type="button" aria-label="Dismiss" onClick={() => dismiss(notice.id)}>
               ×
             </button>
           </div>
-        )}
+        ))}
       </div>
     </Notify.Provider>
   );
