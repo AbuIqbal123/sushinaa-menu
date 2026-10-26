@@ -104,8 +104,8 @@ export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; 
         <h2>{data.orderNumber != null ? text(`Order ${data.orderNumber}`, `الطلب ${data.orderNumber}`) : text('Order', 'الطلب')}</h2>
         <div className="staff-head-actions">
           <span className="staff-status">{staffLabels[staffStatus(data.status)][lang]}</span>
-          {allowedTransitions(data.status, data.paidAt).filter((to) => to !== 'cancelled' && to !== 'refunded').slice(0, 1).map((to) => <button key={to} type="button" disabled={busy} className="primary" onClick={() => void change(to)}>
-            {to === 'completed' && data.paymentMethod === 'pay_at_pickup' ? text('Mark paid & collected', 'تأكيد الدفع والاستلام') : to === 'accepted' ? text('Accept order', 'قبول الطلب') : staffLabels[staffStatus(to)][lang]}
+          {allowedTransitions(data.status, data.paidAt).filter((to) => to !== 'cancelled' && to !== 'refunded' && to !== 'accepted').slice(0, 1).map((to) => <button key={to} type="button" disabled={busy} className="primary" onClick={() => void change(to)}>
+            {to === 'completed' && data.paymentMethod === 'pay_at_pickup' ? text('Mark paid & collected', 'تأكيد الدفع والاستلام') : staffLabels[staffStatus(to)][lang]}
           </button>)}
           {role === 'admin' && allowedTransitions(data.status, data.paidAt).includes('refunded') && <button type="button" disabled={busy} onClick={() => void change('refunded')}>{text('Refund (mock)', 'استرداد المبلغ (تجريبي)')}</button>}
           {allowedTransitions(data.status, data.paidAt).includes('cancelled') && <button type="button" className="danger" disabled={busy} onClick={() => setCancel(true)}>{text('Cancel order…', 'إلغاء الطلب…')}</button>}
@@ -135,6 +135,7 @@ export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; 
         </tr>)}</tbody>
       </table></div>
       <p className="order-total"><span>{text('Total', 'الإجمالي')}</span><strong dir="ltr">{formatMinor(data.totalMinor, lang)}</strong></p>
+      {(data.status === 'placed' || data.status === 'paid') && <button type="button" className="primary accept-order" disabled={busy} onClick={() => void change('accepted')}>{text('Accept order', 'قبول الطلب')}</button>}
       <div className="order-detail-actions">
         <button type="button" disabled={busy} onClick={() => void printReceipt()}>{text('Receipt', 'الإيصال')}</button>
         <button type="button" disabled={busy} onClick={() => void printNow(data.printCount > 0 ? 'reprint' : 'manual')}>{text('Reprint kitchen', 'إعادة طباعة المطبخ')}</button>

@@ -777,6 +777,7 @@
 .staff-order-list tr[data-voided] td { text-decoration: line-through; color: var(--muted); }
 .order-total { display: flex; justify-content: space-between; margin: 12px 0; font-size: 15px; }
 .order-detail-actions { display: flex; gap: 8px; margin-bottom: 16px; }
+.accept-order { width: 100%; min-height: 48px; margin: 4px 0 16px; }
 .order-edit-fold { margin-top: 8px; }
 .order-edit-fold summary { cursor: pointer; margin-bottom: 12px; }
 .staff-detail-head {display:flex;align-items:center;gap:8px;justify-content:space-between;margin-block:18px 8px;}
