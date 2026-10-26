@@ -864,6 +864,7 @@
 .order-edit-new-total > span:last-child { display: grid; justify-items: end; }
 .order-edit-new-total small { color: var(--muted); }
 .order-edit-confirm { width: min(480px, calc(100vw - 32px)); }
+.order-edit-confirm .admin-dialog-body { display: grid; gap: 12px; }
 .order-edit-confirm .admin-confirm { margin: 0; }
 .order-edit-confirm .admin-confirm p { display: flex; justify-content: space-between; gap: 8px; margin: 0; }
 .order-edit-confirm .admin-confirm p > span:first-child { min-width: 0; overflow-wrap: anywhere; }

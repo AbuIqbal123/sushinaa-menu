@@ -14,7 +14,7 @@ import { isPrintable } from '@/ordering/status';
 import { useModal } from './Fields';
 
 type Line = OrderDetailData['currentLines'][number];
-type SheetKind = 'qty' | 'price' | 'modifier' | 'discount' | 'order_discount' | 'add';
+type SheetKind = 'qty' | 'price' | 'modifier' | 'discount' | 'add';
 
 const editable = ['placed', 'paid', 'accepted', 'preparing', 'ready'];
 
@@ -34,8 +34,6 @@ export function OrderEditPanel({ id, data, role, menu, onSaved, onReprint }: {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sheet, setSheet] = useState<SheetKind | null>(null);
   const [confirm, setConfirm] = useState<'void' | 'compliment' | null>(null);
-  const [reasonCode, setReason] = useState<EditReason>('customer_request');
-  const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const line = data.currentLines.find((item) => item.id === selectedId) ?? null;
@@ -60,7 +58,7 @@ export function OrderEditPanel({ id, data, role, menu, onSaved, onReprint }: {
     try {
       const response = await fetch(`/api/admin/orders/${id}/edits`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...body, reasonCode, ...(note.trim() ? { note: note.trim() } : {}) }),
+        body: JSON.stringify(body),
       });
       const payload = await response.json() as { code?: string };
       if (!response.ok) {
@@ -69,7 +67,6 @@ export function OrderEditPanel({ id, data, role, menu, onSaved, onReprint }: {
       }
       setSheet(null);
       setConfirm(null);
-      setNote('');
       notify({ tone: 'ok', text: text('Order saved', 'تم حفظ الطلب') });
       await onSaved();
       return true;
@@ -124,28 +121,27 @@ export function OrderEditPanel({ id, data, role, menu, onSaved, onReprint }: {
         <button type="button" disabled={!lineOn || busy} onClick={() => open('qty')}>{text('Qty', 'الكمية')}</button>
         <button type="button" disabled={!lineOn || busy} onClick={() => open('price')}>{text('Price', 'السعر')}</button>
         <button type="button" disabled={!lineOn || busy || !dish || choiceGroups(dish, line?.selection ?? {}, lang).length === 0} onClick={() => open('modifier')}>{text('Modifier', 'الخيار')}</button>
-        <button type="button" disabled={!lineOn || busy} onClick={() => open('discount')}>{text('Discount', 'خصم')}</button>
+        <button type="button" disabled={!canEdit || cancelled || busy} onClick={() => open('discount')}>{text('Discount', 'خصم')}</button>
         <button type="button" disabled={!lineOn || busy || role !== 'admin'} onClick={() => { setError(''); setConfirm('compliment'); }}>{text('Comp', 'هدية')}</button>
         <button type="button" className="danger" disabled={!lineOn || busy} onClick={() => { setError(''); setConfirm('void'); }}>{text('Void', 'إلغاء الصنف')}</button>
       </div>
       <span className="order-edit-divider" />
       <div className="order-edit-group">
         <button type="button" disabled={!canEdit || cancelled || Boolean(data.paidAt) || busy} onClick={() => open('add')}>{text('Add item', 'إضافة صنف')}</button>
-        <button type="button" disabled={!canEdit || cancelled || busy} onClick={() => open('order_discount')}>{text('Order discount', 'خصم الطلب')}</button>
         <button type="button" disabled={cancelled || busy || !isPrintable(data.status)} onClick={onReprint}>{text('Reprint kitchen', 'إعادة طباعة المطبخ')}</button>
       </div>
       <small>{line ? text(`Selected: ${lang === 'ar' ? line.nameAr || line.name : line.name}`, `المحدد: ${line.nameAr || line.name}`) : text('Select a line to edit it.', 'اختر صنفاً لتعديله.')}</small>
     </div>
     {sheet && <EditSheet
       kind={sheet} line={line} dish={dish} dishes={dishes} data={data} totals={totals} busy={busy} error={error}
-      reasonCode={reasonCode} note={note} reasons={reasons} text={text} lang={lang} money={money}
-      onReason={setReason} onNote={setNote} onClose={() => { setSheet(null); setError(''); }}
+      reasons={reasons} text={text} lang={lang} money={money}
+      onClose={() => { setSheet(null); setError(''); }}
       onApply={(body) => void send(body)}
     />}
     {confirm && line && <ConfirmEdit
-      kind={confirm} line={line} data={data} totals={totals} busy={busy} error={error} text={text} lang={lang} money={money}
+      kind={confirm} line={line} data={data} totals={totals} busy={busy} error={error} reasons={reasons} text={text} lang={lang} money={money}
       onCancel={() => setConfirm(null)}
-      onApply={() => void send({ kind: confirm, lineId: line.id })}
+      onApply={(reason, noteText) => void send({ kind: confirm, lineId: line.id, reasonCode: reason, ...(noteText.trim() ? { note: noteText.trim() } : {}) })}
     />}
   </div>;
 }
@@ -224,7 +220,7 @@ function withChoice(dish: Dish, sel: Selection, key: string, value: string): Sel
   return next;
 }
 
-function EditSheet({ kind, line, dish, dishes, data, totals, busy, error, reasonCode, note, reasons, text, lang, money, onReason, onNote, onClose, onApply }: {
+function EditSheet({ kind, line, dish, dishes, data, totals, busy, error, reasons, text, lang, money, onClose, onApply }: {
   kind: SheetKind;
   line: Line | null;
   dish: Dish | undefined;
@@ -233,14 +229,10 @@ function EditSheet({ kind, line, dish, dishes, data, totals, busy, error, reason
   totals: OrderTotals;
   busy: boolean;
   error: string;
-  reasonCode: EditReason;
-  note: string;
   reasons: Record<EditReason, string>;
   text: (en: string, ar: string) => string;
   lang: 'en' | 'ar';
   money: (minor: number) => string;
-  onReason: (reason: EditReason) => void;
-  onNote: (note: string) => void;
   onClose: () => void;
   onApply: (body: Record<string, unknown>) => void;
 }) {
@@ -248,6 +240,9 @@ function EditSheet({ kind, line, dish, dishes, data, totals, busy, error, reason
   useModal(ref);
   const [raw, setRaw] = useState(kind === 'qty' ? String(line?.quantity ?? 1) : kind === 'price' ? ((line?.unitMinor ?? 0) / 100).toFixed(2) : '10');
   const [mode, setMode] = useState<'percent' | 'amount'>('percent');
+  const [scope, setScope] = useState<'line' | 'order'>(line && !line.voided ? 'line' : 'order');
+  const [reasonCode, setReason] = useState<EditReason>('customer_request');
+  const [note, setNote] = useState('');
   const [selection, setSelection] = useState<Selection>(line?.selection ? { ...line.selection } : {});
   const [query, setQuery] = useState('');
   const [addDish, setAddDish] = useState<Dish | null>(null);
@@ -257,7 +252,6 @@ function EditSheet({ kind, line, dish, dishes, data, totals, busy, error, reason
     price: text('Price', 'السعر'),
     modifier: text('Modifier', 'الخيار'),
     discount: text('Discount', 'خصم'),
-    order_discount: text('Order discount', 'خصم الطلب'),
     add: text('Add item', 'إضافة صنف'),
   }[kind];
   const applyLabel = {
@@ -265,7 +259,6 @@ function EditSheet({ kind, line, dish, dishes, data, totals, busy, error, reason
     price: text('Change price', 'تغيير السعر'),
     modifier: text('Update modifier', 'تحديث الخيار'),
     discount: text('Apply discount', 'تطبيق الخصم'),
-    order_discount: text('Apply order discount', 'تطبيق خصم الطلب'),
     add: text('Add item', 'إضافة صنف'),
   }[kind];
   const activeDish = kind === 'add' ? addDish : dish;
@@ -276,9 +269,9 @@ function EditSheet({ kind, line, dish, dishes, data, totals, busy, error, reason
   if (kind === 'qty' && line && Number.isInteger(qty) && qty >= 1 && qty <= 20) edit = { kind: 'qty', lineId: line.id, quantity: qty };
   if (kind === 'price' && line && Number.isFinite(decimal) && decimal >= 0) edit = { kind: 'line_price', lineId: line.id, unitMinor: Math.round(decimal * 100) };
   if (kind === 'modifier' && line && activeDish) edit = { kind: 'modifier', lineId: line.id, selection, unitMinor: Math.round(unitPrice(activeDish, selection) * 100) };
-  if ((kind === 'discount' || kind === 'order_discount') && Number.isFinite(decimal) && decimal > 0 && (mode === 'amount' || decimal <= 100)) {
+  if (kind === 'discount' && Number.isFinite(decimal) && decimal > 0 && (mode === 'amount' || decimal <= 100)) {
     const discount = mode === 'percent' ? { mode: 'percent' as const, bp: Math.round(decimal * 100) } : { mode: 'amount' as const, amountMinor: Math.round(decimal * 100) };
-    edit = kind === 'discount' && line ? { kind: 'line_discount', lineId: line.id, discount } : kind === 'order_discount' ? { kind: 'order_discount', discount } : null;
+    edit = scope === 'line' && line && !line.voided ? { kind: 'line_discount', lineId: line.id, discount } : { kind: 'order_discount', discount };
   }
   if (kind === 'add' && addDish && addQty >= 1 && addQty <= 20) {
     edit = { kind: 'add_item', line: { id: 'preview', dishId: addDish.id, name: addDish.name, nameAr: addDish.nameAr, quantity: addQty, unitMinor: Math.round(unitPrice(addDish, selection) * 100), note: '', voided: false, compliment: false, discount: null, selection, categoryName: '', categoryNameAr: '', categoryOrder: 0 } };
@@ -301,6 +294,7 @@ function EditSheet({ kind, line, dish, dishes, data, totals, busy, error, reason
     : edit?.kind === 'line_discount' ? { kind: 'line_discount', lineId: line?.id, ...edit.discount }
     : edit?.kind === 'order_discount' ? { kind: 'order_discount', ...edit.discount }
     : null;
+  const payload = body && { ...body, reasonCode, ...(note.trim() ? { note: note.trim() } : {}) };
 
   return <dialog ref={ref} className="order-edit-dialog" onClose={onClose}>
     <div className="admin-dialog-head"><h2>{title}</h2></div>
@@ -314,7 +308,11 @@ function EditSheet({ kind, line, dish, dishes, data, totals, busy, error, reason
             <button type="button" onClick={() => setRaw(String(Math.min(20, (Number.isFinite(qty) ? qty : 0) + 1)))} aria-label={text('Increase', 'زيادة')}>+</button>
           </div>}
           {kind === 'price' && <label>{text('Unit price', 'سعر الوحدة')}<input inputMode="decimal" value={raw} onChange={(event) => setRaw(event.target.value)} /></label>}
-          {(kind === 'discount' || kind === 'order_discount') && <>
+          {kind === 'discount' && <>
+            <div className="admin-tabs" role="tablist" aria-label={text('Discount', 'خصم')}>
+              <button type="button" role="tab" aria-selected={scope === 'line'} disabled={!line || line.voided} onClick={() => setScope('line')}>{text('This item', 'هذا الصنف')}</button>
+              <button type="button" role="tab" aria-selected={scope === 'order'} onClick={() => setScope('order')}>{text('Whole order', 'الطلب كامل')}</button>
+            </div>
             <div className="admin-tabs" role="tablist">
               <button type="button" role="tab" aria-selected={mode === 'percent'} onClick={() => setMode('percent')}>{text('Percent', 'نسبة')}</button>
               <button type="button" role="tab" aria-selected={mode === 'amount'} onClick={() => setMode('amount')}>{text('Amount', 'مبلغ')}</button>
@@ -339,8 +337,8 @@ function EditSheet({ kind, line, dish, dishes, data, totals, busy, error, reason
               })}
             </div>
           </div>)}
-          <label>{text('Reason', 'السبب')}<select value={reasonCode} onChange={(event) => onReason(event.target.value as EditReason)}>{editReasons.map((reason) => <option key={reason} value={reason}>{reasons[reason]}</option>)}</select></label>
-          <label>{text('Note', 'ملاحظة')}<textarea value={note} maxLength={140} onChange={(event) => onNote(event.target.value)} /></label>
+          <label>{text('Reason', 'السبب')}<select value={reasonCode} onChange={(event) => setReason(event.target.value as EditReason)}>{editReasons.map((reason) => <option key={reason} value={reason}>{reasons[reason]}</option>)}</select></label>
+          <label>{text('Note', 'ملاحظة')}<textarea value={note} maxLength={140} onChange={(event) => setNote(event.target.value)} /></label>
         </div>
         <div className="order-edit-side">
           <TotalsRows preview={preview} text={text} money={money} lang={lang} />
@@ -349,7 +347,7 @@ function EditSheet({ kind, line, dish, dishes, data, totals, busy, error, reason
     </div>
     <div className="admin-dialog-foot">
       <button type="button" onClick={onClose}>{text('Cancel', 'إلغاء')}</button>
-      <button type="button" className="primary" disabled={busy || !body || blocked} onClick={() => body && onApply(body)}>{applyLabel}</button>
+      <button type="button" className="primary" disabled={busy || !payload || blocked} onClick={() => payload && onApply(payload)}>{applyLabel}</button>
     </div>
   </dialog>;
 }
@@ -364,21 +362,24 @@ function TotalsRows({ preview, text, money, lang }: { preview: EditPreview; text
   </>;
 }
 
-function ConfirmEdit({ kind, line, data, totals, busy, error, text, lang, money, onCancel, onApply }: {
+function ConfirmEdit({ kind, line, data, totals, busy, error, reasons, text, lang, money, onCancel, onApply }: {
   kind: 'void' | 'compliment';
   line: Line;
   data: OrderDetailData;
   totals: OrderTotals;
   busy: boolean;
   error: string;
+  reasons: Record<EditReason, string>;
   text: (en: string, ar: string) => string;
   lang: 'en' | 'ar';
   money: (minor: number) => string;
   onCancel: () => void;
-  onApply: () => void;
+  onApply: (reason: EditReason, note: string) => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useModal(ref);
+  const [reasonCode, setReason] = useState<EditReason>('customer_request');
+  const [note, setNote] = useState('');
   let next = totals;
   let rejected = false;
   try {
@@ -387,7 +388,7 @@ function ConfirmEdit({ kind, line, data, totals, busy, error, text, lang, money,
   const preview = editPreview(totals, next, { paid: Boolean(data.paidAt), owedBackMinor: data.owedBackMinor });
   const name = lang === 'ar' ? line.nameAr || line.name : line.name;
   return <dialog ref={ref} className="order-edit-dialog order-edit-confirm" onClose={onCancel} aria-labelledby="order-edit-confirm-title">
-    <form method="dialog" onSubmit={(event) => { event.preventDefault(); onApply(); }}>
+    <form method="dialog" onSubmit={(event) => { event.preventDefault(); onApply(reasonCode, note); }}>
       <div className="admin-dialog-head"><h2 id="order-edit-confirm-title">{kind === 'void' ? text('Void this line?', 'إلغاء هذا الصنف؟') : text('Comp this line?', 'إهداء هذا الصنف؟')}</h2></div>
       <div className="admin-dialog-body">
         {error && <p role="alert" className="staff-error">{error}</p>}
@@ -395,6 +396,8 @@ function ConfirmEdit({ kind, line, data, totals, busy, error, text, lang, money,
           <p><span>{name} ×{line.quantity}</span><span dir="ltr">{money(line.unitMinor * line.quantity)}</span></p>
           {!rejected && <TotalsRows preview={preview} text={text} money={money} lang={lang} />}
         </div>
+        <label>{text('Reason', 'السبب')}<select aria-label={text('Reason', 'السبب')} value={reasonCode} onChange={(event) => setReason(event.target.value as EditReason)}>{editReasons.map((reason) => <option key={reason} value={reason}>{reasons[reason]}</option>)}</select></label>
+        <label>{text('Note', 'ملاحظة')}<textarea aria-label={text('Note', 'ملاحظة')} value={note} maxLength={140} onChange={(event) => setNote(event.target.value)} /></label>
       </div>
       <div className="admin-dialog-foot">
         <button type="button" onClick={onCancel}>{text('Cancel', 'إلغاء')}</button>

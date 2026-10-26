@@ -54,7 +54,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
           adjustments: off ? [adjustment(line.compliment ? 'Comp' : 'Discount', line.id, off.amountMinor)] : [],
         };
       }),
-      orderAdjustments: projected.discounts.filter((item) => item.scope === 'order').map((item) => adjustment('Order discount', null, item.amountMinor)),
+      orderAdjustments: projected.discounts.filter((item) => item.scope === 'order').map((item) => adjustment('Discount', null, item.amountMinor)),
       subtotal: minorAmount(totals.subtotalMinor),
       discountTotal: minorAmount(-totals.discountMinor),
       total: formatMinor(totals.totalMinor, 'en'),
