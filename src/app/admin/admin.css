@@ -773,21 +773,26 @@
 .staff-order-list time { font-size: 12px; color: var(--muted); }
 .staff-status { display:inline-block; border-radius:20px; padding:3px 9px; background:#eef1f5; font-size:12px; white-space:nowrap; }
 .status-received { background:#fff1d6; color:#805d10; }.status-preparing {background:#e6eefc;color:#245895;}.status-ready{background:#def4e6;color:#216c45;}
-.kitchen-sheet { max-width: 28rem; margin-top: 12px; }
-.kitchen-head { align-items: baseline; }
-.kitchen-head h2 { font-size: 32px; font-weight: 550; line-height: 1; }
-.kitchen-who { margin: 12px 0 0; font-size: 16px; }
-.kitchen-who strong, .kitchen-who span { display: block; }
-.kitchen-meta { margin: 6px 0 0; color: var(--muted); }
-.kitchen-items { list-style: none; margin: 16px 0 0; padding: 0; }
+.kitchen-sheet { display: grid; grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr); gap: 28px 48px; align-items: start; margin-top: 8px; }
+.kitchen-sheet h3 { margin: 0 0 12px; font-size: 13px; font-weight: 550; color: var(--muted); }
+.kitchen-who.staff-detail-head { display: block; margin: 0; }
+.kitchen-facts { display: grid; gap: 8px; margin: 0; }
+.kitchen-facts div { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: 12px; align-items: baseline; }
+.kitchen-facts dt { color: var(--muted); }
+.kitchen-facts dd { margin: 0; font-weight: 550; }
+.kitchen-items { list-style: none; margin: 0; padding: 0; }
 .kitchen-items li { padding: 12px 0; border-top: 1px solid var(--line); }
-.kitchen-item { display: flex; justify-content: space-between; gap: 16px; margin: 0; font-weight: 550; }
-.kitchen-choices, .kitchen-note { margin: 4px 0 0; }
-.kitchen-note { color: var(--muted); }
+.kitchen-item, .kitchen-detail { display: grid; gap: 8px 16px; margin: 0; }
+.kitchen-item { grid-template-columns: minmax(0, 1fr) auto; font-weight: 550; }
+.kitchen-detail { grid-template-columns: 6.5rem minmax(0, 1fr); margin-top: 4px; font-weight: 400; }
+.kitchen-detail span:first-child { color: var(--muted); }
 .kitchen-items li[data-voided] { color: var(--muted); text-decoration: line-through; }
-.kitchen-total { display: flex; justify-content: space-between; margin: 12px 0 16px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 16px; font-weight: 550; }
-.kitchen-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.admin .kitchen-actions button { min-height: 36px; padding: 4px 10px; background: transparent; }
+.kitchen-total { display: flex; justify-content: space-between; margin: 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 16px; font-weight: 550; }
+.kitchen-actions-band { grid-column: 1 / -1; padding-top: 8px; border-top: 1px solid var(--line); }
+.kitchen-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.admin .kitchen-actions button { min-height: 40px; padding: 4px 14px; background: transparent; }
+.admin .kitchen-actions .accept-order { width: auto; min-width: 9rem; margin: 0; background: var(--accent); color: white; }
+@media (max-width: 800px) { .kitchen-sheet { grid-template-columns: 1fr; } }
 .order-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 12px 20px; margin: 16px 0; }
 .order-facts div { display: grid; gap: 2px; }
 .order-facts dt { color: var(--muted); font-size: 12px; }
