@@ -6,14 +6,19 @@ import { useNotify } from './Notices';
 import { allowedTransitions, staffStatus, staffLabels, type OrderStatus } from '@/ordering/status';
 import { formatMinor } from '@/lib/money';
 import { nationalPhone } from '@/ordering/checkout/validation';
+import { selectionLabel } from '@/ordering/price';
+import type { Dish } from '@/catalog/types';
 import { printTicket } from './print-ticket';
 import { OrderEditPanel } from './OrderEditPanel';
 import { cancellationReasons, type OrderDetailData } from '@/ordering/contracts';
 import type { Role } from '@/cms/permissions';
 import type { MenuData } from '@/cms/schema';
 
-function choiceText(selection: OrderDetailData['currentLines'][number]['selection']) {
-  return Object.values(selection).flatMap((value) => Array.isArray(value) ? value : typeof value === 'string' && value ? [value] : typeof value === 'number' ? [String(value)] : []).join(', ');
+function lineChoices(line: OrderDetailData['currentLines'][number], menu: MenuData, lang: 'en' | 'ar', t: Parameters<typeof selectionLabel>[3]) {
+  const stored = line as OrderDetailData['currentLines'][number] & Partial<Pick<Dish, 'kind' | 'freeDips' | 'extras'>>;
+  const dish = stored.kind ? stored : menu.dishes.find((item) => item.id === line.dishId);
+  if (!dish?.kind) return [];
+  return selectionLabel({ kind: dish.kind, freeDips: dish.freeDips, extras: dish.extras }, line.selection, lang, t).split(' · ').map((part) => part.trim()).filter(Boolean);
 }
 
 export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; onBack: () => void; onChange: () => void; role: Role; menu: MenuData }) {
@@ -123,13 +128,15 @@ export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; 
       <div className="staff-order-list"><table>
         <thead><tr>
           <th>{text('Item', 'الصنف')}</th>
-          <th>{text('Choices', 'الخيارات')}</th>
           <th>{text('Qty', 'الكمية')}</th>
           <th>{text('Total', 'الإجمالي')}</th>
         </tr></thead>
         <tbody>{data.currentLines.map(line => <tr key={line.id} data-voided={line.voided || undefined}>
-          <td>{lang === 'ar' ? line.nameAr || line.name : line.name}{line.note ? <small>{line.note}</small> : null}</td>
-          <td>{choiceText(line.selection) || '—'}</td>
+          <td className="order-line">
+            <span className="order-line-name">{lang === 'ar' ? line.nameAr || line.name : line.name}</span>
+            {lineChoices(line, menu, lang, t).map((choice) => <span className="order-line-detail" key={choice}>{choice}</span>)}
+            {line.note ? <span className="order-line-note">{t.commentWord}: {line.note}</span> : null}
+          </td>
           <td>{line.quantity}</td>
           <td dir="ltr">{line.compliment ? text('Comp', 'هدية') : formatMinor(line.unitMinor * line.quantity, lang)}</td>
         </tr>)}</tbody>
