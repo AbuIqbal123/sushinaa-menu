@@ -29,6 +29,7 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
   const router = useRouter();
   const cart = useCart();
   const [step, setStep] = useState<Step>('menu');
+  const [motion, setMotion] = useState<'forward' | 'back'>('forward');
   const [branchId] = useState<BranchId>(initialBranch);
   const [now, setNow] = useState(() => new Date(initialNow));
   const [customer, setCustomer] = useState<Customer>(emptyCustomer);
@@ -85,7 +86,11 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
     const timer = window.setInterval(pull, 30000);
     return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', pull); };
   }, [step, receipt?.id]);
-  function go(next: Step) { setError(''); setStep(next); window.scrollTo({ top: 0, behavior: 'instant' }); }
+  function go(next: Step) {
+    const order: Step[] = ['menu', 'details', 'review', 'payment', 'receipt'];
+    setMotion(order.indexOf(next) < order.indexOf(step) ? 'back' : 'forward');
+    setError(''); setStep(next); window.scrollTo({ top: 0, behavior: 'instant' });
+  }
   function validateDetails(event: React.FormEvent) {
     event.preventDefault();
     const result = customerSchema.safeParse(customer);
@@ -158,7 +163,7 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
       <header className="ordering-header"><button type="button" className="ordering-logo" onClick={() => go('menu')} aria-label={text('Back to the menu', 'العودة إلى القائمة')}><Image src={menu.settings.logo} width={59} height={55} alt={t.brand} unoptimized /></button><LangButton /></header>
       <>
         {step !== 'receipt' && <div className="checkout-navigation"><button type="button" className="text-action" disabled={busy} onClick={() => go(step === 'details' ? 'menu' : step === 'review' ? 'details' : 'review')}><span className="back-arrow" aria-hidden="true">←</span> {text('Back', 'رجوع')}</button>{(['details', 'review'] as Step[]).includes(step) && <span aria-label={text(`Step ${['details', 'review'].indexOf(step) + 1} of 2`, `الخطوة ${['details', 'review'].indexOf(step) + 1} من ٢`)}>{['details', 'review'].indexOf(step) + 1} / 2</span>}</div>}
-        <main id="main" className="checkout-main">
+        <main id="main" className="checkout-main checkout-step" data-motion={motion} key={step}>
           <h1 ref={heading} tabIndex={-1}>{title}</h1>
           {step === 'details' && <p className="checkout-branch">{text('Pickup', 'استلام')} · <strong>{branchName}</strong></p>}
           {step !== 'payment' && step !== 'receipt' && closedNotice}
