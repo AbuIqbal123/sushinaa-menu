@@ -136,7 +136,8 @@ export function CartSheet({ open, onClose, onPickup }: Props) {
 
             {onPickup ? (
               <button type="button" className="checkout-primary ticket-pickup" disabled={unavailableCount > 0} onClick={onPickup}>
-                {lang === "ar" ? "اطلب للاستلام" : "Order for pickup"}
+                <span className="pickup-label">{lang === "ar" ? "اطلب للاستلام" : "Order for pickup"}</span>
+                <span className="pickup-car" aria-hidden="true"><span>🚗</span></span>
               </button>
             ) : (
               <p className="view-only-notice">{t.viewOnlyNotice}</p>
