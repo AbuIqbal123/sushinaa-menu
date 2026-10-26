@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { BRANCHES } from '@/branches/branches';
 import { LangButton, useLocale } from '@/i18n/locale';
-import { isPrintable, staffLabels, staffStatus, type StaffStatus } from '@/ordering/status';
+import { staffLabels, staffStatus, type StaffStatus } from '@/ordering/status';
 import type { OrderSummary } from '@/ordering/contracts';
 import { OrderDetail } from './OrderDetail';
 import { useNotify } from './Notices';
@@ -13,7 +13,7 @@ import { printTicket } from './print-ticket';
 import { createOrderPoller } from './order-poller';
 
 type List = { rows: OrderSummary[]; more: boolean; newCount: number; unprintedCount?: number };
-const AUTO_PRINT = 'sushinaa-auto-print';
+const kitchenStatuses = ['accepted', 'preparing', 'ready', 'completed'];
 export function Orders({ active, onUnread, role, menu }: { active: boolean; onUnread: (n: number) => void; role: Role; menu: MenuData }) {
   const { lang } = useLocale();
   const router = useRouter();
@@ -24,21 +24,15 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
   const [q, setQ] = useState(''); const [search, setSearch] = useState('');
   const [page, setPage] = useState(1); const [data, setData] = useState<List | null>(null);
   const [detail, setDetail] = useState<string | null>(null); const [error, setError] = useState('');
-  const [sound, setSound] = useState(false); const [autoPrint, setAutoPrint] = useState(false); const [revision, setRevision] = useState(0);
+  const [sound, setSound] = useState(false); const [revision, setRevision] = useState(0);
   const [paused, setPaused] = useState(false); const [lastOk, setLastOk] = useState<string | null>(null);
   const latest = useRef<string | null>(null); const unread = useRef(0); const audio = useRef<HTMLAudioElement | null>(null);
-  const activeRef = useRef(active); const soundRef = useRef(sound); const autoRef = useRef(false);
-  const seen = useRef(new Set<string>()); const queue = useRef<string[]>([]); const draining = useRef(false);
-  const pendingAuto = useRef<OrderSummary[]>([]); const drainRef = useRef<() => void>(() => {});
+  const activeRef = useRef(active); const soundRef = useRef(sound);
   useEffect(() => { activeRef.current = active; if (active) { unread.current = 0; onUnread(0); } }, [active, onUnread]);
   useEffect(() => { soundRef.current = sound; }, [sound]);
-  useEffect(() => { autoRef.current = autoPrint; }, [autoPrint]);
   useEffect(() => { audio.current = new Audio('/order-chime.wav');
     const timer = window.setTimeout(() => {
-      try {
-        setSound(localStorage.getItem('sushinaa-order-sound') === 'true');
-        setAutoPrint(localStorage.getItem(AUTO_PRINT) === 'true');
-      } catch { /* Optional preference. */ }
+      try { setSound(localStorage.getItem('sushinaa-order-sound') === 'true'); } catch { /* Optional preference. */ }
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
@@ -53,15 +47,6 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
     notify({ tone: 'ok', text: text('Ticket sent to print', 'تم إرسال التذكرة للطباعة') });
     refresh();
   }
-  const enqueue = useCallback((rows: OrderSummary[]) => {
-    pendingAuto.current = rows;
-    if (!autoRef.current) return;
-    for (const row of rows) {
-      if (seen.current.has(row.id) || queue.current.includes(row.id)) continue;
-      queue.current.push(row.id);
-    }
-    drainRef.current();
-  }, []);
   useEffect(() => {
     let live = true;
     let initial = true;
@@ -72,7 +57,7 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
         try {
           const response = await fetch(`/api/admin/orders?${latest.current ? `since=${latest.current}` : 'limit=100'}`, { cache: 'no-store' });
           if (response.status === 401) return 'unauthorized';
-          const body: List & { code?: string; autoPrint?: OrderSummary[] } = await response.json();
+          const body: List & { code?: string } = await response.json();
           if (!response.ok) {
             if (live) setPaused(true);
             return 'fail';
@@ -88,7 +73,6 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
           }
           if (!initial && activeRef.current) setRevision((value) => value + 1);
           initial = false;
-          enqueue(body.autoPrint ?? []);
           return 'ok';
         } catch {
           if (live) setPaused(true);
@@ -100,37 +84,8 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
     const visible = () => { if (!document.hidden) void poller.wake(); };
     document.addEventListener('visibilitychange', visible);
     return () => { live = false; poller.stop(); document.removeEventListener('visibilitychange', visible); };
-  }, [enqueue, onUnread, router]);
+  }, [onUnread, router]);
   const refresh = useCallback(() => setRevision(v => v + 1), []);
-  const drain = useCallback(async () => {
-    if (draining.current || !autoRef.current || queue.current.length === 0) return;
-    draining.current = true;
-    let printed = 0;
-    try {
-      while (autoRef.current && queue.current.length) {
-        const id = queue.current.shift()!;
-        let claim: Response;
-        try {
-          claim = await fetch(`/api/staff/orders/${id}/print`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'auto' }) });
-        } catch {
-          continue;
-        }
-        if (claim.ok || claim.status === 404 || claim.status === 409) seen.current.add(id);
-        if (!claim.ok) continue;
-        const { claimId } = await claim.json() as { claimId: string };
-        try {
-          await printTicket(id);
-          const done = await fetch(`/api/staff/orders/${id}/print/done`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ claimId }) });
-          if (done.ok) printed += 1;
-        } catch { /* Timeout or a failed print sends no done. The claim expires. */ }
-      }
-    } finally {
-      draining.current = false;
-    }
-    if (printed) refresh();
-  }, [refresh]);
-  useEffect(() => { drainRef.current = () => { void drain(); }; }, [drain]);
-  useEffect(() => { if (autoPrint) enqueue(pendingAuto.current); }, [autoPrint, enqueue]);
   useEffect(() => {
     if (!active) return;
     const controller = new AbortController();
@@ -147,9 +102,6 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
       const next = !sound; setSound(next); try { localStorage.setItem('sushinaa-order-sound', String(next)); } catch { /* Optional preference. */ }
       if (next) void audio.current?.play().catch(() => {});
     }}>{sound ? text('Sound on', 'الصوت مفعّل') : text('Enable sound', 'تفعيل الصوت')}</button>
-      <button aria-pressed={autoPrint} onClick={() => {
-        const next = !autoPrint; setAutoPrint(next); try { localStorage.setItem(AUTO_PRINT, String(next)); } catch { /* Optional preference. */ }
-      }}>{text('Auto-print on this device', 'طباعة تلقائية على هذا الجهاز')}</button>
       {typeof data?.unprintedCount === 'number' && <span className="staff-unprinted-count">{text('Not printed', 'لم تُطبع')} {data.unprintedCount}</span>}
     </div>
     {/* TODO(ar): confirm the paused-updates sentence with the restaurant. */}
@@ -165,12 +117,32 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
       </form>
       {error && <div role="alert" className="staff-error">{error === 'INVALID' ? text('Check the date range or search by an order reference / last 4 phone digits.', 'تحقق من نطاق التاريخ أو ابحث بمرجع الطلب أو آخر ٤ أرقام من الجوال.') : error === 'PRINT_IN_PROGRESS' ? text('This ticket is already being printed.', 'هذه التذكرة قيد الطباعة.') : error === 'PRINT_FAILED' ? text('Unable to print this ticket. Please retry.', 'تعذّرت طباعة التذكرة. يرجى المحاولة مجدداً.') : text('Unable to load orders. Please retry.', 'تعذّر تحميل الطلبات. يرجى المحاولة مجدداً.')} <button onClick={refresh}>{text('Retry', 'إعادة المحاولة')}</button></div>}
       {!error && data?.rows.length === 0 && <p className="admin-empty">{text('No orders here yet.', 'لا توجد طلبات هنا بعد.')}</p>}
-      <ul className="staff-order-list" aria-live="polite">{data?.rows.map(row => {const b = BRANCHES.find(b => b.slug === row.branchId); const printable = isPrintable(row.status); return <li key={row.id} className="staff-order-card"><button onClick={() => setDetail(row.id)} data-order-id={row.id}>
-        <div className="staff-row-top"><strong dir="ltr">{row.orderNumber ?? row.id.slice(0,11)}</strong><span className={`staff-status status-${staffStatus(row.status)}`}>{staffLabels[staffStatus(row.status)][lang]}</span></div>
-        <div>{lang === 'ar' ? b?.nameAr : b?.name}<time>{new Date(row.createdAt).toLocaleTimeString(lang, {timeZone:'Asia/Qatar',hour:'2-digit',minute:'2-digit'})}</time></div>
-        <div className="staff-row-contact" dir="ltr"><span>{row.id.slice(0, 11)}</span><span>{row.phone}</span><span>{row.plate}</span></div>
-        <div><small>{row.paymentMethod === 'mock' ? text('Paid (mock)', 'مدفوع (تجريبي)') : row.paidAt ? text('Paid at pickup', 'تم الدفع عند الاستلام') : text('Pay at pickup', 'الدفع عند الاستلام')}</small>{printable && row.printCount === 0 && <span className="staff-unprinted">{text('Not printed', 'لم تُطبع')}</span>}<strong>{(row.totalMinor / 100).toFixed(2)} {text('QAR', 'ر.ق')}</strong></div>
-      </button>{printable && row.printCount === 0 && <button type="button" className="staff-print" onClick={() => void sendPrint(row.id, 'manual')}>{text('Print', 'طباعة')}</button>}{isPrintable(row.status) && row.printCount > 0 && <button type="button" className="staff-print" onClick={() => void sendPrint(row.id, 'reprint')}>{text('Reprint', 'إعادة الطباعة')}</button>}</li>;})}</ul>
+      {data && data.rows.length > 0 && <div className="staff-order-list" aria-live="polite"><table>
+        <thead><tr>
+          <th>{text('Order', 'الطلب')}</th>
+          <th>{text('Branch', 'الفرع')}</th>
+          <th>{text('Reference', 'المرجع')}</th>
+          <th>{text('Phone', 'الجوال')}</th>
+          <th>{text('Plate', 'اللوحة')}</th>
+          <th>{text('Status', 'الحالة')}</th>
+          <th>{text('Payment', 'الدفع')}</th>
+          <th>{text('Time', 'الوقت')}</th>
+          <th>{text('Total', 'الإجمالي')}</th>
+          <th>{text('Print', 'طباعة')}</th>
+        </tr></thead>
+        <tbody>{data.rows.map(row => { const b = BRANCHES.find(item => item.slug === row.branchId); const printable = kitchenStatuses.includes(row.status); return <tr key={row.id} data-order-id={row.id} onClick={() => setDetail(row.id)}>
+          <td dir="ltr">{row.orderNumber ?? '—'}</td>
+          <td>{lang === 'ar' ? b?.nameAr : b?.name}</td>
+          <td dir="ltr">{row.id.slice(0, 11)}</td>
+          <td dir="ltr">{row.phone}</td>
+          <td dir="ltr">{row.plate}</td>
+          <td><span className={`staff-status status-${staffStatus(row.status)}`}>{staffLabels[staffStatus(row.status)][lang]}</span></td>
+          <td>{row.paymentMethod === 'mock' ? text('Paid (mock)', 'مدفوع (تجريبي)') : row.paidAt ? text('Paid at pickup', 'تم الدفع عند الاستلام') : text('Pay at pickup', 'الدفع عند الاستلام')}</td>
+          <td><time>{new Date(row.createdAt).toLocaleTimeString(lang, { timeZone: 'Asia/Qatar', hour: '2-digit', minute: '2-digit' })}</time></td>
+          <td dir="ltr">{(row.totalMinor / 100).toFixed(2)} {text('QAR', 'ر.ق')}</td>
+          <td>{printable && row.printCount === 0 && <><span className="staff-unprinted">{text('Not printed', 'لم تُطبع')}</span> <button type="button" className="staff-print" onClick={event => { event.stopPropagation(); void sendPrint(row.id, 'manual'); }}>{text('Print', 'طباعة')}</button></>}{printable && row.printCount > 0 && <button type="button" className="staff-print" onClick={event => { event.stopPropagation(); void sendPrint(row.id, 'reprint'); }}>{text('Reprint', 'إعادة الطباعة')}</button>}{!printable && '—'}</td>
+        </tr>; })}</tbody>
+      </table></div>}
       {data && (page > 1 || data.more) && <nav className="admin-pager"><button disabled={page === 1} onClick={() => setPage(page - 1)}>{text('Previous', 'السابق')}</button><span>{page}</span><button disabled={!data.more} onClick={() => setPage(page + 1)}>{text('Next', 'التالي')}</button></nav>}
     </>}
   </section>;
