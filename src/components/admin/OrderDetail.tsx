@@ -59,23 +59,6 @@ export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; 
     }).catch(() => undefined);
     return () => { stop = true; };
   }, [data?.status, id]);
-  async function printReceipt() {
-    if (busy) return;
-    setBusy(true); setError('');
-    try {
-      const audit = await fetch(`/api/admin/orders/${id}/receipt`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-      if (!audit.ok) throw new Error('PRINT_FAILED');
-      const frame = document.createElement('iframe');
-      frame.style.cssText = 'position:fixed;width:0;height:0;border:0';
-      document.body.appendChild(frame);
-      const page = await fetch(`/cms/orders/${id}/receipt`, { cache: 'no-store' });
-      if (!page.ok) throw new Error('PRINT_FAILED');
-      frame.srcdoc = await page.text();
-      frame.onload = () => { frame.contentWindow?.print(); window.setTimeout(() => frame.remove(), 1000); };
-      notify({ tone: 'ok', text: text('Receipt sent to print', 'تم إرسال الإيصال للطباعة') });
-    } catch { setError('PRINT_FAILED'); }
-    finally { setBusy(false); }
-  }
   async function sendKitchenPrint(mode: 'manual' | 'reprint') {
     const claim = await fetch(`/api/staff/orders/${id}/print`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode }) });
     const body = await claim.json() as { claimId?: string };
@@ -156,13 +139,12 @@ export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; 
             {allowedTransitions(data.status, data.paidAt).filter((to) => to !== 'cancelled' && to !== 'refunded' && to !== 'accepted' && staffStatus(to) !== staffStatus(data.status)).slice(0, 1).map((to) => <button key={to} type="button" className="primary accept-order" disabled={busy} onClick={() => void change(to)}>
               {to === 'completed' && data.paymentMethod === 'pay_at_pickup' ? text('Mark paid & collected', 'تأكيد الدفع والاستلام') : staffLabels[staffStatus(to)][lang]}
             </button>)}
-            <button type="button" disabled={busy} onClick={() => void printReceipt()}>{text('Receipt', 'الإيصال')}</button>
-            <button type="button" disabled={busy} onClick={() => void printNow(data.printCount > 0 ? 'reprint' : 'manual')}>{text('Print', 'طباعة')}</button>
+            <button type="button" className="ticket-print" disabled={busy} onClick={() => void printNow(data.printCount > 0 ? 'reprint' : 'manual')}>{text(data.printCount > 0 ? 'Reprint ticket' : 'Print ticket', data.printCount > 0 ? 'إعادة طباعة التذكرة' : 'طباعة التذكرة')}</button>
             {role === 'admin' && allowedTransitions(data.status, data.paidAt).includes('refunded') && <button type="button" disabled={busy} onClick={() => void change('refunded')}>{text('Refund', 'استرداد')}</button>}
             {allowedTransitions(data.status, data.paidAt).includes('cancelled') && <button type="button" className="danger" disabled={busy} onClick={() => setCancel(true)}>{text('Cancel', 'إلغاء')}</button>}
           </div>
         <details className="order-edit-fold"><summary>{text('Edit order', 'تعديل الطلب')}</summary>
-          <OrderEditPanel id={id} data={data} role={role} menu={menu} onSaved={async () => { await load(); onChange(); }} onReceipt={() => void printReceipt()} onReprint={() => void printNow(data.printCount > 0 ? 'reprint' : 'manual')} />
+          <OrderEditPanel id={id} data={data} role={role} menu={menu} onSaved={async () => { await load(); onChange(); }} onReprint={() => void printNow(data.printCount > 0 ? 'reprint' : 'manual')} />
         </details>
         {cancel && <form className="admin-confirm" onSubmit={e => { e.preventDefault(); void change('cancelled'); }}>
           <label>{text('Cancellation reason', 'سبب الإلغاء')}<select value={reason} onChange={e => setReason(e.target.value as typeof reason)}>{cancellationReasons.map(r => <option key={r} value={r}>{reasons[r]}</option>)}</select></label>

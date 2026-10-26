@@ -37,12 +37,14 @@ export async function orderEditMeta(orderId: string) {
 const printableSql = `status IN (${['paid', 'accepted', 'preparing', 'ready', 'completed'].map((status) => `'${status}'`).join(',')})`;
 
 export function summary(row: Row, contact: 'staff' | 'masked' = 'masked'): OrderSummary {
+  const name = typeof row.customer_name === 'string' && row.customer_name ? String(row.customer_name) : '—';
   const phone = typeof row.customer_phone === 'string' && row.customer_phone ? String(row.customer_phone) : '—';
   const plate = typeof row.car_plate === 'string' && row.car_plate ? String(row.car_plate) : '—';
   return { id: String(row.id), orderNumber: row.order_number == null ? null : Number(row.order_number),
     branchId: row.branch_id as BranchId, status: row.status as OrderStatus,
     paymentMethod: row.payment_method as OrderSummary['paymentMethod'], paidAt: nullable(row.paid_at),
     totalMinor: Number(row.total_minor), currency: 'QAR', createdAt: String(row.created_at),
+    name: contact === 'staff' ? name : '—',
     phone: contact === 'staff' ? phone : maskPhone(row.customer_phone),
     plate: contact === 'staff' ? plate : maskPlate(row.car_plate),
     printCount: Number(row.print_count ?? 0), printedAt: nullable(row.printed_at) };
@@ -93,13 +95,13 @@ export async function listOrders(scope: BranchScope, query: OrderQuery) {
   }
   const predicate = where.join(' AND ');
   const rows = await db.execute({
-    sql: `SELECT id,branch_id,status,payment_method,paid_at,total_minor,created_at,customer_phone,car_plate,order_number,print_count,printed_at FROM orders WHERE ${branch.sql} AND ${predicate} ORDER BY COALESCE(paid_at, created_at) DESC, id DESC LIMIT ? OFFSET ?`,
+    sql: `SELECT id,branch_id,status,payment_method,paid_at,total_minor,created_at,customer_name,customer_phone,car_plate,order_number,print_count,printed_at FROM orders WHERE ${branch.sql} AND ${predicate} ORDER BY COALESCE(paid_at, created_at) DESC, id DESC LIMIT ? OFFSET ?`,
     args: [...branch.args, ...args, query.limit + 1, (page - 1) * query.limit],
   });
   const count = followCursor ? Number((await db.execute({ sql: `SELECT COUNT(*) AS n FROM orders WHERE ${branch.sql} AND ${predicate}`, args: [...branch.args, ...args] })).rows[0].n) : 0;
   const cutoff = new Date(Date.now() - AUTO_PRINT_WINDOW_MS).toISOString();
   const autoPrint = (await db.execute({
-    sql: `SELECT id,branch_id,status,payment_method,paid_at,total_minor,created_at,customer_phone,car_plate,order_number,print_count,printed_at
+    sql: `SELECT id,branch_id,status,payment_method,paid_at,total_minor,created_at,customer_name,customer_phone,car_plate,order_number,print_count,printed_at
       FROM orders WHERE ${KITCHEN_VISIBLE} AND ${branch.sql} AND print_count=0 AND print_claimed_at IS NULL AND ${printableSql}
       AND COALESCE(paid_at, created_at)>=? ORDER BY COALESCE(paid_at, created_at), id`,
     args: [...branch.args, cutoff],
@@ -113,7 +115,7 @@ export async function detailOrder(scope: BranchScope, id: string, reveal: boolea
   const row = (await db.execute({ sql: `SELECT * FROM orders WHERE id=? AND ${branch.sql} AND ${KITCHEN_VISIBLE}`, args: [id, ...branch.args] })).rows[0];
   if (!row) throw new OrderError('NOT_FOUND', 404);
   if (reveal) await db.execute(auditInsert(ctx, { action: 'order.contact_viewed', entityType: 'order', entityId: id }));
-  const history = (await db.execute({ sql: "SELECT at,diff,label FROM audit WHERE entity_type='order' AND entity_id=? AND action='order.status' ORDER BY id", args: [id] })).rows;
+  const history = (await db.execute({ sql: "SELECT at,diff,label FROM audit WHERE entity_type='order' AND entity_id=? AND action='order.status' ORDER BY at DESC, id DESC", args: [id] })).rows;
   const snapshot = JSON.parse(String(row.snapshot));
   delete snapshot.customer;
   const { applyEdits, linesFromSnapshot } = await import('./edits');

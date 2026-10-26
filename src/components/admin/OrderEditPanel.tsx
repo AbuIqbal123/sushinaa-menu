@@ -18,13 +18,12 @@ type SheetKind = 'qty' | 'price' | 'modifier' | 'discount' | 'order_discount' | 
 
 const editable = ['placed', 'paid', 'accepted', 'preparing', 'ready'];
 
-export function OrderEditPanel({ id, data, role, menu, onSaved, onReceipt, onReprint }: {
+export function OrderEditPanel({ id, data, role, menu, onSaved, onReprint }: {
   id: string;
   data: OrderDetailData;
   role: Role;
   menu: MenuData;
   onSaved: () => Promise<void>;
-  onReceipt: () => void;
   onReprint: () => void;
 }) {
   const { lang } = useLocale();
@@ -133,7 +132,6 @@ export function OrderEditPanel({ id, data, role, menu, onSaved, onReceipt, onRep
       <div className="order-edit-group">
         <button type="button" disabled={!canEdit || cancelled || Boolean(data.paidAt) || busy} onClick={() => open('add')}>{text('Add item', 'إضافة صنف')}</button>
         <button type="button" disabled={!canEdit || cancelled || busy} onClick={() => open('order_discount')}>{text('Order discount', 'خصم الطلب')}</button>
-        <button type="button" disabled={busy} onClick={onReceipt}>{text('Receipt', 'الإيصال')}</button>
         <button type="button" disabled={cancelled || busy || !isPrintable(data.status)} onClick={onReprint}>{text('Reprint kitchen', 'إعادة طباعة المطبخ')}</button>
       </div>
       <small>{line ? text(`Selected: ${lang === 'ar' ? line.nameAr || line.name : line.name}`, `المحدد: ${line.nameAr || line.name}`) : text('Select a line to edit it.', 'اختر صنفاً لتعديله.')}</small>
