@@ -2,7 +2,7 @@ import type { Row } from '@libsql/client';
 import type { Copy } from '@/i18n/copy';
 import { formatQar } from '@/lib/money';
 import { selectionLabel } from '@/ordering/price';
-import { maskPhone } from '@/ordering/orders';
+import { nationalPhone } from '@/ordering/checkout/validation';
 import type { Selection } from '@/catalog/types';
 import { applyEdits, linesFromSnapshot, type ResolvedEdit } from '@/ordering/edits';
 
@@ -127,7 +127,7 @@ export function ticketModel(row: Row, edits: ResolvedEdit[] = []): TicketModel {
     fulfilment: 'CAR PICKUP',
     car,
     customer: removed ? 'removed' : (typeof row.customer_name === 'string' && row.customer_name ? row.customer_name : 'removed'),
-    phone: removed ? 'removed' : maskPhone(row.customer_phone),
+    phone: removed ? 'removed' : nationalPhone(String(row.customer_phone ?? '')),
     groups: [...groups.entries()]
       .sort((a, b) => a[1].order - b[1].order)
       .map(([name, group]) => ({ name, lines: group.lines })),
