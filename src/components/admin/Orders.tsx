@@ -7,10 +7,8 @@ import { nationalPhone } from '@/ordering/checkout/validation';
 import { staffLabels, staffStatus, type StaffStatus } from '@/ordering/status';
 import type { OrderSummary } from '@/ordering/contracts';
 import { OrderDetail } from './OrderDetail';
-import { useNotify } from './Notices';
 import type { Role } from '@/cms/permissions';
 import type { MenuData } from '@/cms/schema';
-import { printTicket } from './print-ticket';
 import { createOrderPoller } from './order-poller';
 
 type List = { rows: OrderSummary[]; more: boolean; newCount: number; unprintedCount?: number };
@@ -18,7 +16,6 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
   const { lang } = useLocale();
   const router = useRouter();
   const text = (en: string, ar: string) => lang === 'ar' ? ar : en;
-  const notify = useNotify();
   const [branch, setBranch] = useState(''); const [status, setStatus] = useState('');
   const [from, setFrom] = useState(''); const [to, setTo] = useState('');
   const [q, setQ] = useState(''); const [search, setSearch] = useState('');
@@ -36,27 +33,6 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
-  async function sendPrint(id: string, mode: 'manual' | 'reprint') {
-    setError('');
-    const claim = await fetch(`/api/staff/orders/${id}/print`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode }) });
-    const body = await claim.json() as { claimId?: string; code?: string };
-    if (!claim.ok || !body.claimId) { setError(body.code === 'PRINT_IN_PROGRESS' ? 'PRINT_IN_PROGRESS' : 'PRINT_FAILED'); return; }
-    try { await printTicket(id); } catch { setError('PRINT_FAILED'); return; }
-    const done = await fetch(`/api/staff/orders/${id}/print/done`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ claimId: body.claimId }) });
-    if (!done.ok) { setError('PRINT_FAILED'); return; }
-    notify({ tone: 'ok', text: text('Ticket sent to print', 'تم إرسال التذكرة للطباعة') });
-    refresh();
-  }
-  async function accept(row: OrderSummary) {
-    setError('');
-    const move = async (to: 'accepted' | 'preparing', expected: string) => {
-      const response = await fetch(`/api/admin/orders/${row.id}/status`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to, expected }) });
-      return response.ok;
-    };
-    if (!await move('accepted', row.status) || !await move('preparing', 'accepted')) { setError('UPDATE_FAILED'); refresh(); return; }
-    notify({ tone: 'ok', text: text('Order accepted', 'تم قبول الطلب') + ` · ${staffLabels.preparing[lang]}` });
-    await sendPrint(row.id, 'manual');
-  }
   useEffect(() => {
     let live = true;
     let initial = true;
@@ -137,9 +113,8 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
           <th>{text('Payment', 'الدفع')}</th>
           <th>{text('Time', 'الوقت')}</th>
           <th>{text('Total', 'الإجمالي')}</th>
-          <th></th>
         </tr></thead>
-        <tbody>{data.rows.map(row => { const b = BRANCHES.find(item => item.slug === row.branchId); const canAccept = row.status === 'placed' || row.status === 'paid'; return <tr key={row.id} data-order-id={row.id} onClick={() => setDetail(row.id)}>
+        <tbody>{data.rows.map(row => { const b = BRANCHES.find(item => item.slug === row.branchId); return <tr key={row.id} data-order-id={row.id} onClick={() => setDetail(row.id)}>
           <td dir="ltr">{row.orderNumber ?? '—'}</td>
           <td>{lang === 'ar' ? b?.nameAr : b?.name}</td>
           <td dir="ltr">{nationalPhone(row.phone) || '—'}</td>
@@ -148,7 +123,6 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
           <td>{row.paymentMethod === 'mock' ? text('Paid (mock)', 'مدفوع (تجريبي)') : row.paidAt ? text('Paid at pickup', 'تم الدفع عند الاستلام') : text('Pay at pickup', 'الدفع عند الاستلام')}</td>
           <td><time>{new Date(row.createdAt).toLocaleTimeString(lang, { timeZone: 'Asia/Qatar', hour: '2-digit', minute: '2-digit' })}</time></td>
           <td dir="ltr">{(row.totalMinor / 100).toFixed(2)} {text('QAR', 'ر.ق')}</td>
-          <td>{canAccept && <button type="button" className="primary" onClick={event => { event.stopPropagation(); void accept(row); }}>{text('Accept', 'قبول')}</button>}</td>
         </tr>; })}</tbody>
       </table></div>}
       {data && (page > 1 || data.more) && <nav className="admin-pager"><button disabled={page === 1} onClick={() => setPage(page - 1)}>{text('Previous', 'السابق')}</button><span>{page}</span><button disabled={!data.more} onClick={() => setPage(page + 1)}>{text('Next', 'التالي')}</button></nav>}
