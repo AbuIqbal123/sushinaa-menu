@@ -88,7 +88,16 @@
 .checkout-total > span { font-size: 14px; }
 .checkout-total > strong { font-family: var(--font-display); font-weight: 400; font-size: 26px; }
 .checkout-primary { display: flex; justify-content: space-between; align-items: center; gap: 14px; width: 100%; min-height: 56px; padding: 16px 20px; color: #fff1df; background: #a3312c; border: 1px solid #b44c43; border-radius: 9px; font-size: 14px !important; font-weight: 700 !important; transition: background .2s; }
-.ticket-pickup { justify-content: center; margin: 18px 0 8px; }
+.ticket-pickup { position: relative; overflow: hidden; justify-content: center; margin: 18px 0 8px; }
+.ticket-pickup .pickup-label { position: relative; z-index: 1; transform: translateY(-3px); }
+.ticket-pickup .pickup-car { position: absolute; left: 0; width: 100%; bottom: 1px; height: 15px; pointer-events: none; animation: pickup-drive 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+.ticket-pickup .pickup-car > span { position: absolute; left: 0; bottom: 0; font-size: 14px; line-height: 1; }
+@keyframes pickup-drive {
+  0%, 18% { transform: translate3d(-14%, 0, 0); }
+  56%, 100% { transform: translate3d(108%, 0, 0); }
+}
+.ticket-pickup:disabled .pickup-car { display: none; }
+@media (prefers-reduced-motion: reduce) { .ticket-pickup .pickup-car { display: none; } .ticket-pickup .pickup-label { transform: none; } }
 .checkout-branch { margin: 0 0 18px; font-size: 14px; }
 .checkout-primary:hover:not(:disabled) { background: #b03932; }
 .forward-arrow { font-size: 23px; line-height: 1; font-weight: 400; }
