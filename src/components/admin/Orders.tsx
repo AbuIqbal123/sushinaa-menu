@@ -11,6 +11,10 @@ import type { MenuData } from '@/cms/schema';
 import { createOrderPoller } from './order-poller';
 
 type List = { rows: OrderSummary[]; more: boolean; newCount: number; unprintedCount?: number };
+function orderFilter(value: string) {
+  const next = value.trim();
+  return next === '' || /^\d{1,7}$/.test(next) || /^SU-[0-9a-f-]{36}$/.test(next);
+}
 export function Orders({ active, onUnread, role, menu }: { active: boolean; onUnread: (n: number) => void; role: Role; menu: MenuData }) {
   const router = useRouter();
   const text = (en: string, _ar?: string) => en;
@@ -72,6 +76,12 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
   }, [onUnread, router]);
   const refresh = useCallback(() => setRevision(v => v + 1), []);
   useEffect(() => {
+    const next = q.trim();
+    if (!orderFilter(next) || next === search) return;
+    const timer = window.setTimeout(() => { setSearch(next); setPage(1); }, next === '' ? 0 : 200);
+    return () => window.clearTimeout(timer);
+  }, [q, search]);
+  useEffect(() => {
     if (!active) return;
     const controller = new AbortController();
     const query = new URLSearchParams({ page: String(page) });
@@ -92,13 +102,12 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
     {/* TODO(ar): confirm the paused-updates sentence with the restaurant. */}
     {paused && <p className="staff-poll-paused" role="status">{text('Updates paused, retrying', 'التحديثات متوقفة، جارٍ إعادة المحاولة')}{lastOk ? ` · ${new Date(lastOk).toLocaleTimeString('en', { timeZone: 'Asia/Qatar', hour: '2-digit', minute: '2-digit' })}` : ''}</p>}
     {detail ? <OrderDetail key={detail} id={detail} role={role} menu={menu} onBack={() => setDetail(null)} onChange={refresh} /> : <>
-      <form className="staff-filters" onSubmit={e => { e.preventDefault(); setSearch(q.trim()); setPage(1); }}>
+      <form className="staff-filters" onSubmit={e => e.preventDefault()}>
         {!singleBranch && <label>{text('Branch', 'الفرع')}<select aria-label={text('Order branch', 'فرع الطلب')} value={branch} onChange={e => { setBranch(e.target.value); setPage(1); }}><option value="">All branches</option>{BRANCHES.map(b => <option key={b.slug} value={b.slug}>{b.name}</option>)}</select></label>}
         <label>{text('Status', 'الحالة')}<select aria-label={text('Order status', 'حالة الطلب')} value={status} onChange={e => {setStatus(e.target.value);setPage(1);}}><option value="">{text('All statuses', 'كل الحالات')}</option>{(Object.keys(staffLabels) as StaffStatus[]).map(s => <option key={s} value={s}>{staffLabels[s].en}</option>)}</select></label>
         <label>{text('From', 'من')}<input type="date" aria-label={text('From', 'من')} value={from} onChange={e => {setFrom(e.target.value);setPage(1);}} /></label>
         <label>{text('To', 'إلى')}<input type="date" aria-label={text('To', 'إلى')} value={to} onChange={e => {setTo(e.target.value);setPage(1);}} /></label>
-        <label className="staff-filter-search">{text('Order number or last 4', 'رقم الطلب أو آخر ٤')}<input value={q} maxLength={39} placeholder={text('Order number or last 4 phone digits', 'رقم الطلب أو آخر ٤ أرقام')} onChange={e => setQ(e.target.value)} /></label>
-        <button type="submit">{text('Search', 'بحث')}</button>
+        <label className="staff-filter-search">{text('Order number or last 4', 'رقم الطلب أو آخر ٤')}<input type="search" inputMode="numeric" value={q} maxLength={39} placeholder={text('Order number or last 4 phone digits', 'رقم الطلب أو آخر ٤ أرقام')} aria-invalid={q.trim() !== '' && !orderFilter(q)} onChange={e => setQ(e.target.value)} />{q.trim() !== '' && !orderFilter(q) && <small className="staff-filter-hint">{text('Use an order number or the last 4 phone digits.', 'استخدم رقم الطلب أو آخر ٤ أرقام من الجوال.')}</small>}</label>
       </form>
       {error && <div role="alert" className="staff-error">{error === 'INVALID' ? text('Check the date range, or search by an order number or the last 4 phone digits.', 'تحقق من نطاق التاريخ، أو ابحث برقم الطلب أو آخر ٤ أرقام من الجوال.') : error === 'PRINT_IN_PROGRESS' ? text('This ticket is already being printed.', 'هذه التذكرة قيد الطباعة.') : error === 'PRINT_FAILED' ? text('Unable to print this ticket. Please retry.', 'تعذّرت طباعة التذكرة. يرجى المحاولة مجدداً.') : error === 'UPDATE_FAILED' ? text('Unable to accept this order. Please retry.', 'تعذّر قبول الطلب. يرجى المحاولة مجدداً.') : text('Unable to load orders. Please retry.', 'تعذّر تحميل الطلبات. يرجى المحاولة مجدداً.')} <button onClick={refresh}>{text('Retry', 'إعادة المحاولة')}</button></div>}
       {!error && data?.rows.length === 0 && <p className="admin-empty">{text('No orders here yet.', 'لا توجد طلبات هنا بعد.')}</p>}
