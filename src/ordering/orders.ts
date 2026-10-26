@@ -70,7 +70,11 @@ export async function listOrders(scope: BranchScope, query: OrderQuery) {
   if (scope.kind === 'all' && query.branch) { where.push('branch_id=?'); args.push(query.branch); }
   if (query.from) { where.push('created_at>=?'); args.push(new Date(`${query.from}T00:00:00+03:00`).toISOString()); }
   if (query.to) { where.push('created_at<?'); args.push(new Date(Date.parse(`${query.to}T00:00:00+03:00`) + 86400000).toISOString()); }
-  if (query.q) { where.push(query.q.startsWith('SU-') ? 'id=?' : 'substr(customer_phone,-4)=?'); args.push(query.q); }
+  if (query.q) {
+    if (query.q.startsWith('SU-')) { where.push('id=?'); args.push(query.q); }
+    else if (/^\d+$/.test(query.q)) { where.push(query.q.length === 4 ? '(order_number=? OR substr(customer_phone,-4)=?)' : 'order_number=?'); args.push(query.q.length === 4 ? query.q : Number(query.q), ...(query.q.length === 4 ? [query.q] : [])); }
+    else { where.push('substr(customer_phone,-4)=?'); args.push(query.q); }
+  }
   const backlog = await unprintedCount(scope);
   let page = query.page;
   let followCursor = false;

@@ -5,6 +5,7 @@ import { useLocale } from '@/i18n/locale';
 import { useNotify } from './Notices';
 import { allowedTransitions, staffStatus, staffLabels, type OrderStatus } from '@/ordering/status';
 import { formatMinor } from '@/lib/money';
+import { nationalPhone } from '@/ordering/checkout/validation';
 import { printTicket } from './print-ticket';
 import { OrderEditPanel } from './OrderEditPanel';
 import { cancellationReasons, type OrderDetailData } from '@/ordering/contracts';
@@ -102,7 +103,7 @@ export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; 
       </header>
       <dl className="order-facts">
         <div><dt>{text('Name', 'الاسم')}</dt><dd>{data.customer.name || '—'}</dd></div>
-        <div><dt>{text('Phone', 'الجوال')}</dt><dd dir="ltr">{data.customer.phone}</dd></div>
+        <div><dt>{text('Phone', 'الجوال')}</dt><dd dir="ltr">{nationalPhone(data.customer.phone) || '—'}</dd></div>
         <div><dt>{text('Plate', 'اللوحة')}</dt><dd dir="ltr">{data.customer.plate}</dd></div>
         <div><dt>{text('Branch', 'الفرع')}</dt><dd>{lang === 'ar' ? branch?.nameAr : branch?.name}</dd></div>
         <div><dt>{text('Payment', 'الدفع')}</dt><dd>{data.paymentMethod === 'mock' ? text('Paid (mock)', 'مدفوع (تجريبي)') : data.paidAt ? text('Paid at pickup', 'تم الدفع عند الاستلام') : text('Pay at pickup', 'الدفع عند الاستلام')}</dd></div>

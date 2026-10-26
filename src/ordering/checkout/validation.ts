@@ -8,6 +8,15 @@ import { branchId } from '@/ordering/contracts';
 import { branchStatus, qatarClock } from '@/branches/hours';
 
 export const digits = (value: string) => value.replace(/[٠-٩۰-۹]/g, c => String(c.charCodeAt(0) >= 1776 ? c.charCodeAt(0) - 1776 : c.charCodeAt(0) - 1632));
+export function nationalPhone(phone: string) {
+  const digitsOnly = digits(phone).replace(/\D/g, '');
+  return digitsOnly.startsWith('974') ? digitsOnly.slice(3) : digitsOnly;
+}
+export function displayPhone(phone: string) {
+  const digitsOnly = digits(phone).replace(/\D/g, '');
+  if (digitsOnly.startsWith('974') && digitsOnly.length > 3) return `+974 ${digitsOnly.slice(3)}`;
+  return digitsOnly ? `+${digitsOnly}` : phone;
+}
 export const normalizePhone = (value: string) => {
   let n = digits(value).replace(/[\s()+-]/g, '');
   if (n.startsWith('00974')) n = n.slice(2);

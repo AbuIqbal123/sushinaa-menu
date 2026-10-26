@@ -6,7 +6,7 @@ const css = `
 .ticket-sheet * { box-sizing: border-box; }
 .ticket-sheet h1 { margin: 0; font-size: 14px; font-weight: 550; }
 .ticket-sheet .ticket-number { margin: 4px 0; font-size: 28px; font-weight: 550; line-height: 1; }
-.ticket-sheet .ticket-id, .ticket-sheet p { margin: 0 0 4px; }
+.ticket-sheet p { margin: 0 0 4px; }
 .ticket-sheet h2 { margin: 8px 0 2px; font-size: 12px; font-weight: 550; }
 .ticket-sheet ul { list-style: none; margin: 0; padding: 0; }
 .ticket-sheet li { margin: 0 0 6px; }
@@ -29,7 +29,6 @@ export function Ticket({ model }: { model: TicketModel }) {
       {model.reprint && <p className="ticket-banner">{model.reprint}</p>}
       <h1>{model.branchName}</h1>
       {model.orderNumber && <p className="ticket-number">{model.orderNumber}</p>}
-      <p className="ticket-id">{model.id}</p>
       <p>{model.placed}</p>
       <p>{model.fulfilment}{model.car ? ` · ${model.car}` : ''}</p>
       <p>{model.customer}</p>
