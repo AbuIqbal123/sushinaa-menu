@@ -769,6 +769,16 @@
 .staff-order-list time { font-size: 12px; color: var(--muted); }
 .staff-status { display:inline-block; border-radius:20px; padding:3px 9px; background:#eef1f5; font-size:12px; white-space:nowrap; }
 .status-received { background:#fff1d6; color:#805d10; }.status-preparing {background:#e6eefc;color:#245895;}.status-ready{background:#def4e6;color:#216c45;}
+.order-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 12px 20px; margin: 16px 0; }
+.order-facts div { display: grid; gap: 2px; }
+.order-facts dt { color: var(--muted); font-size: 12px; }
+.order-facts dd { margin: 0; }
+.order-facts small, .staff-order-list td small { display: block; color: var(--muted); }
+.staff-order-list tr[data-voided] td { text-decoration: line-through; color: var(--muted); }
+.order-total { display: flex; justify-content: space-between; margin: 12px 0; font-size: 15px; }
+.order-detail-actions { display: flex; gap: 8px; margin-bottom: 16px; }
+.order-edit-fold { margin-top: 8px; }
+.order-edit-fold summary { cursor: pointer; margin-bottom: 12px; }
 .staff-detail-head {display:flex;align-items:center;gap:8px;justify-content:space-between;margin-block:18px 8px;}
 .staff-head-actions {display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
 .staff-head-actions button {min-height:44px;}
