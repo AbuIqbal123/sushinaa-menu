@@ -210,7 +210,7 @@ export function selectionLabel(dish: Pick<Dish, "kind" | "freeDips" | "extras">,
     if (protein && kind.proteins.length > 1) bits.push(pickName(protein, lang));
     if (sel.pieces) bits.push(`${sel.pieces} ${t.pcs}`);
     const topping = kind.topping?.options.find((o) => o.id === sel.topping);
-    if (topping && topping.id !== "none") bits.push(pickName(topping, lang));
+    if (topping) bits.push(pickName(topping, lang));
     const style = kind.style?.options.find((o) => o.id === sel.style);
     if (style) bits.push(pickName(style, lang));
   }

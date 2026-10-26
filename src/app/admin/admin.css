@@ -762,6 +762,10 @@
 .staff-order-list { overflow: auto; background: white; border: 1px solid var(--line); border-radius: 10px; }
 .staff-order-list table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .staff-order-list th, .staff-order-list td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: start; white-space: nowrap; vertical-align: middle; }
+.order-line { white-space: normal; min-width: 12rem; }
+.order-line-name { display: block; font-weight: 550; }
+.order-line-detail, .order-line-note { display: block; margin-top: 2px; }
+.order-line-note { color: var(--muted); }
 .staff-order-list th { color: var(--muted); font-size: 12px; font-weight: 550; }
 .staff-order-list tbody tr { cursor: pointer; }
 .staff-order-list tbody tr:hover { background: #f7f6f3; }
