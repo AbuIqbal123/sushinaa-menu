@@ -730,7 +730,7 @@
   }
 }
 
-/* Orders: readable cards, contact controls and a paper ticket at phone widths. */
+/* Orders: a compact table, contact controls and a paper ticket at phone widths. */
 .staff-orders { text-align: start; }
 .staff-tools { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:8px; margin-bottom:18px; }
 .staff-unread { display:inline-grid; place-items:center; min-width:22px; height:22px; margin-inline-start:8px; padding:2px 6px; border-radius:20px; background:#b52331; color:white; font-size:12px; }
@@ -759,11 +759,14 @@
   .staff-filter-search { grid-column: 1 / -1; }
   .users-page { grid-template-columns: 1fr; }
 }
-.staff-order-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:12px; padding:0; list-style:none; }
-.admin .staff-order-list button { width:100%; padding:18px; background:white; border:1px solid var(--line); text-align:start; }
-.staff-order-list button > div { display:flex; justify-content:space-between; gap:12px; margin-bottom:8px; }
-.staff-order-list button > div:last-child { margin-bottom:0; }
-.staff-order-list time, .staff-row-contact { font-size:12px; color:var(--muted); }
+.staff-order-list { overflow: auto; background: white; border: 1px solid var(--line); border-radius: 10px; }
+.staff-order-list table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.staff-order-list th, .staff-order-list td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: start; white-space: nowrap; vertical-align: middle; }
+.staff-order-list th { color: var(--muted); font-size: 12px; font-weight: 550; }
+.staff-order-list tbody tr { cursor: pointer; }
+.staff-order-list tbody tr:hover { background: #f7f6f3; }
+.admin .staff-order-list button { width: auto; min-height: 28px; padding: 2px 8px; background: transparent; }
+.staff-order-list time { font-size: 12px; color: var(--muted); }
 .staff-status { display:inline-block; border-radius:20px; padding:3px 9px; background:#eef1f5; font-size:12px; white-space:nowrap; }
 .status-received { background:#fff1d6; color:#805d10; }.status-preparing {background:#e6eefc;color:#245895;}.status-ready{background:#def4e6;color:#216c45;}
 .staff-detail-head {display:flex;align-items:center;gap:8px;justify-content:space-between;margin-block:18px 8px;}
@@ -774,8 +777,7 @@
 .admin .staff-ticket p {margin:0;}.staff-ticket .ticket-line {grid-template-columns:minmax(0,1fr) auto auto;gap:12px;}.staff-ticket .line-note {margin-top:6px;}
 .staff-status-actions {display:flex;gap:8px;flex-wrap:wrap;margin-block:20px;}.staff-history{margin-block:24px;}.staff-history summary{cursor:pointer;}.staff-history ol{padding-inline-start:20px;}.staff-error{padding:12px;background:#fceef0;border-radius:8px;color:#a01725;}
 .staff-orders[dir="rtl"] select {background-position:left 12px center;}
-.staff-order-card { display:grid; gap:8px; align-content:start; }
-.admin .staff-order-card > .staff-print { width:auto; justify-self:start; padding:8px 14px; background:white; border:1px solid var(--line); }
+.admin .staff-order-list .staff-print { border: 1px solid var(--line); }
 .staff-unprinted { display:inline-block; border-radius:20px; padding:3px 9px; background:#fff1d6; color:#805d10; font-size:12px; }
 .staff-unprinted-count { align-self:center; font-size:13px; color:var(--muted); white-space:nowrap; }
 .staff-poll-paused { margin:0 0 12px; color:#805d10; }
