@@ -5,11 +5,7 @@ for (const lang of ['en', 'ar']) {
   test(`paper ticket, collection details and review are separate screens (${lang})`, async ({ page, baseURL }) => {
     await page.context().addCookies([{ name: 'sushina-lang', value: lang, url: baseURL! }]);
     await page.clock.setFixedTime(new Date('2026-10-23T15:00:00+03:00'));
-    await page.goto('/order');
-    await page.locator('.branch-map-choice').first().click();
-    const choose = page.locator('.branch-map-selection .checkout-primary');
-    await expect(choose).toBeInViewport({ ratio: 1 });
-    await choose.click();
+    await page.goto('/down-town');
     await page.locator('#dish-sushinaa-burger .slide-hit').click();
     await page.locator('.detail-add').click();
     await page.locator('.ticket-close').click();

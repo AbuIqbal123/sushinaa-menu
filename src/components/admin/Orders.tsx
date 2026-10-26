@@ -6,6 +6,7 @@ import { LangButton, useLocale } from '@/i18n/locale';
 import { isPrintable, staffLabels, staffStatus, type StaffStatus } from '@/ordering/status';
 import type { OrderSummary } from '@/ordering/contracts';
 import { OrderDetail } from './OrderDetail';
+import { useNotify } from './Notices';
 import type { Role } from '@/cms/permissions';
 import type { MenuData } from '@/cms/schema';
 import { printTicket } from './print-ticket';
@@ -17,6 +18,7 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
   const { lang } = useLocale();
   const router = useRouter();
   const text = (en: string, ar: string) => lang === 'ar' ? ar : en;
+  const notify = useNotify();
   const [branch, setBranch] = useState(''); const [status, setStatus] = useState('');
   const [from, setFrom] = useState(''); const [to, setTo] = useState('');
   const [q, setQ] = useState(''); const [search, setSearch] = useState('');
@@ -47,7 +49,8 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
     if (!claim.ok || !body.claimId) { setError(body.code === 'PRINT_IN_PROGRESS' ? 'PRINT_IN_PROGRESS' : 'PRINT_FAILED'); return; }
     try { await printTicket(id); } catch { setError('PRINT_FAILED'); return; }
     const done = await fetch(`/api/staff/orders/${id}/print/done`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ claimId: body.claimId }) });
-    if (!done.ok) setError('PRINT_FAILED');
+    if (!done.ok) { setError('PRINT_FAILED'); return; }
+    notify({ tone: 'ok', text: text('Ticket sent to print', 'تم إرسال التذكرة للطباعة') });
     refresh();
   }
   const enqueue = useCallback((rows: OrderSummary[]) => {

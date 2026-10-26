@@ -2,12 +2,14 @@
 import { useEffect, useState } from 'react';
 import { BRANCHES, type BranchId } from '@/branches/branches';
 import { useLocale } from '@/i18n/locale';
+import { useNotify } from './Notices';
 
 type StaffRow = { id: string; username: string; role: string; branchId: string | null; disabled: boolean };
 
 export function StaffPanel() {
   const { lang } = useLocale();
   const text = (en: string, ar: string) => (lang === 'ar' ? ar : en);
+  const notify = useNotify();
   const [rows, setRows] = useState<StaffRow[]>([]);
   const [error, setError] = useState('');
   const [username, setUsername] = useState('');
@@ -58,6 +60,7 @@ export function StaffPanel() {
     setUsername('');
     setPassword('');
     event.currentTarget.reset();
+    notify({ tone: 'ok', text: text('User added', 'تمت إضافة المستخدم') });
     await load().catch(() => setError('load'));
   }
 
@@ -69,6 +72,7 @@ export function StaffPanel() {
       body: JSON.stringify(body),
     });
     if (!response.ok) { setError('save'); return false; }
+    notify({ tone: 'ok', text: text('User updated', 'تم تحديث المستخدم') });
     await load().catch(() => setError('load'));
     return true;
   }

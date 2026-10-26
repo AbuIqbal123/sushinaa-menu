@@ -5,9 +5,7 @@ test.use({ viewport: { width: 390, height: 844 } });
 async function basket(page: Page, lang: string, baseURL: string) {
   await page.context().addCookies([{name:'sushina-lang',value:lang,url:baseURL}]);
   await page.clock.setFixedTime(new Date('2026-10-23T15:00:00+03:00'));
-  await page.goto('/order');
-  await page.locator('.branch-map-choice').first().click();
-  await page.locator('.branch-map-selection .checkout-primary').click();
+  await page.goto('/down-town');
   await page.locator('#dish-sushinaa-burger .slide-hit').click();
   await page.locator('.detail-sheet textarea').fill('Sauce on the side');
   await page.locator('.detail-add').click();
