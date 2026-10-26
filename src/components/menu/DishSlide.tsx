@@ -19,7 +19,6 @@ type Props = {
   marked?: boolean;
   showHint?: boolean;
   inert?: boolean;
-  ordering?: boolean;
   onOpen: (dish: Dish) => void;
 };
 
@@ -31,7 +30,6 @@ export const DishSlide = memo(function DishSlide({
   marked = false,
   showHint = false,
   inert = false,
-  ordering = false,
   onOpen,
 }: Props) {
   const { lang, t } = useLocale();
@@ -113,7 +111,7 @@ export const DishSlide = memo(function DishSlide({
           <DietTags tags={dish.tags} />
           <p className="dish-desc dish-desc-feed">{description}</p>
           {hint ? <p className="tap-hint">{hint}</p> : null}
-          <span className="slide-cta">{ordering ? (lang === "ar" ? "خصص وأضف" : "Choose & add") : t.addToOrder}</span>
+          <span className="slide-cta">{t.addToOrder}</span>
         </div>
       </button>
     </article>
