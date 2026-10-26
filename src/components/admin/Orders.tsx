@@ -13,7 +13,6 @@ import { printTicket } from './print-ticket';
 import { createOrderPoller } from './order-poller';
 
 type List = { rows: OrderSummary[]; more: boolean; newCount: number; unprintedCount?: number };
-const kitchenStatuses = ['accepted', 'preparing', 'ready', 'completed'];
 export function Orders({ active, onUnread, role, menu }: { active: boolean; onUnread: (n: number) => void; role: Role; menu: MenuData }) {
   const { lang } = useLocale();
   const router = useRouter();
@@ -46,6 +45,13 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
     if (!done.ok) { setError('PRINT_FAILED'); return; }
     notify({ tone: 'ok', text: text('Ticket sent to print', 'تم إرسال التذكرة للطباعة') });
     refresh();
+  }
+  async function accept(row: OrderSummary) {
+    setError('');
+    const response = await fetch(`/api/admin/orders/${row.id}/status`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to: 'accepted', expected: row.status }) });
+    if (!response.ok) { setError('UPDATE_FAILED'); return; }
+    notify({ tone: 'ok', text: text('Order accepted', 'تم قبول الطلب') });
+    await sendPrint(row.id, 'manual');
   }
   useEffect(() => {
     let live = true;
@@ -115,7 +121,7 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
         <label className="staff-filter-search">{text('Reference or last 4', 'المرجع أو آخر ٤')}<input value={q} maxLength={39} placeholder={text('Order reference or last 4 phone digits', 'مرجع الطلب أو آخر ٤ أرقام')} onChange={e => setQ(e.target.value)} /></label>
         <button type="submit">{text('Search', 'بحث')}</button>
       </form>
-      {error && <div role="alert" className="staff-error">{error === 'INVALID' ? text('Check the date range or search by an order reference / last 4 phone digits.', 'تحقق من نطاق التاريخ أو ابحث بمرجع الطلب أو آخر ٤ أرقام من الجوال.') : error === 'PRINT_IN_PROGRESS' ? text('This ticket is already being printed.', 'هذه التذكرة قيد الطباعة.') : error === 'PRINT_FAILED' ? text('Unable to print this ticket. Please retry.', 'تعذّرت طباعة التذكرة. يرجى المحاولة مجدداً.') : text('Unable to load orders. Please retry.', 'تعذّر تحميل الطلبات. يرجى المحاولة مجدداً.')} <button onClick={refresh}>{text('Retry', 'إعادة المحاولة')}</button></div>}
+      {error && <div role="alert" className="staff-error">{error === 'INVALID' ? text('Check the date range or search by an order reference / last 4 phone digits.', 'تحقق من نطاق التاريخ أو ابحث بمرجع الطلب أو آخر ٤ أرقام من الجوال.') : error === 'PRINT_IN_PROGRESS' ? text('This ticket is already being printed.', 'هذه التذكرة قيد الطباعة.') : error === 'PRINT_FAILED' ? text('Unable to print this ticket. Please retry.', 'تعذّرت طباعة التذكرة. يرجى المحاولة مجدداً.') : error === 'UPDATE_FAILED' ? text('Unable to accept this order. Please retry.', 'تعذّر قبول الطلب. يرجى المحاولة مجدداً.') : text('Unable to load orders. Please retry.', 'تعذّر تحميل الطلبات. يرجى المحاولة مجدداً.')} <button onClick={refresh}>{text('Retry', 'إعادة المحاولة')}</button></div>}
       {!error && data?.rows.length === 0 && <p className="admin-empty">{text('No orders here yet.', 'لا توجد طلبات هنا بعد.')}</p>}
       {data && data.rows.length > 0 && <div className="staff-order-list" aria-live="polite"><table>
         <thead><tr>
@@ -128,9 +134,9 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
           <th>{text('Payment', 'الدفع')}</th>
           <th>{text('Time', 'الوقت')}</th>
           <th>{text('Total', 'الإجمالي')}</th>
-          <th>{text('Print', 'طباعة')}</th>
+          <th></th>
         </tr></thead>
-        <tbody>{data.rows.map(row => { const b = BRANCHES.find(item => item.slug === row.branchId); const printable = kitchenStatuses.includes(row.status); return <tr key={row.id} data-order-id={row.id} onClick={() => setDetail(row.id)}>
+        <tbody>{data.rows.map(row => { const b = BRANCHES.find(item => item.slug === row.branchId); const canAccept = row.status === 'placed' || row.status === 'paid'; return <tr key={row.id} data-order-id={row.id} onClick={() => setDetail(row.id)}>
           <td dir="ltr">{row.orderNumber ?? '—'}</td>
           <td>{lang === 'ar' ? b?.nameAr : b?.name}</td>
           <td dir="ltr">{row.id.slice(0, 11)}</td>
@@ -140,7 +146,7 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
           <td>{row.paymentMethod === 'mock' ? text('Paid (mock)', 'مدفوع (تجريبي)') : row.paidAt ? text('Paid at pickup', 'تم الدفع عند الاستلام') : text('Pay at pickup', 'الدفع عند الاستلام')}</td>
           <td><time>{new Date(row.createdAt).toLocaleTimeString(lang, { timeZone: 'Asia/Qatar', hour: '2-digit', minute: '2-digit' })}</time></td>
           <td dir="ltr">{(row.totalMinor / 100).toFixed(2)} {text('QAR', 'ر.ق')}</td>
-          <td>{printable && row.printCount === 0 && <><span className="staff-unprinted">{text('Not printed', 'لم تُطبع')}</span> <button type="button" className="staff-print" onClick={event => { event.stopPropagation(); void sendPrint(row.id, 'manual'); }}>{text('Print', 'طباعة')}</button></>}{printable && row.printCount > 0 && <button type="button" className="staff-print" onClick={event => { event.stopPropagation(); void sendPrint(row.id, 'reprint'); }}>{text('Reprint', 'إعادة الطباعة')}</button>}{!printable && '—'}</td>
+          <td>{canAccept && <button type="button" className="primary" onClick={event => { event.stopPropagation(); void accept(row); }}>{text('Accept', 'قبول')}</button>}</td>
         </tr>; })}</tbody>
       </table></div>}
       {data && (page > 1 || data.more) && <nav className="admin-pager"><button disabled={page === 1} onClick={() => setPage(page - 1)}>{text('Previous', 'السابق')}</button><span>{page}</span><button disabled={!data.more} onClick={() => setPage(page + 1)}>{text('Next', 'التالي')}</button></nav>}
