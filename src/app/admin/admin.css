@@ -740,25 +740,21 @@
 .admin .staff-filters select,
 .admin .staff-filters input { width:100%; min-height:32px; padding:4px 8px; }
 .admin .staff-filters button { flex:0 0 auto; width:auto; min-height:32px; padding:4px 12px; }
-.users-page { display:grid; grid-template-columns: 16rem minmax(0, 1fr); gap:24px; align-items:start; }
-.users-create, .users-list { background:white; border:1px solid var(--line); border-radius:10px; padding:16px; }
-.users-create { display:grid; gap:10px; }
-.users-create h2 { font-size:15px; font-weight:550; }
-.users-create label { display:grid; gap:4px; font-size:12px; color:var(--muted); }
-.users-list { overflow:auto; }
-.users-list table { width:100%; border-collapse:collapse; }
-.users-list th, .users-list td { padding:8px 10px; border-bottom:1px solid var(--line); text-align:start; vertical-align:top; }
+.users-list { overflow:auto; background:white; border:1px solid var(--line); border-radius:10px; }
+.users-list table { width:100%; border-collapse:collapse; font-size:13px; }
+.users-list th, .users-list td { padding:8px 10px; border-bottom:1px solid var(--line); text-align:start; vertical-align:middle; white-space:nowrap; }
 .users-list th { color:var(--muted); font-size:12px; font-weight:550; }
 .users-list tr[data-disabled] td:not(.users-access) { color:var(--muted); }
-.users-access { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
-.admin .users-access button { min-height:28px; padding:2px 8px; background:transparent; }
-.admin .users-access form { display:flex; flex-wrap:wrap; gap:6px; flex-basis:100%; }
-.admin .users-access select,
-.admin .users-access input { width:auto; min-height:32px; min-width:8rem; }
+.users-access { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; }
+.users-list th:last-child { text-align:end; }
+.admin .users-access button { width:auto; min-height:32px; padding:4px 10px; }
+.admin dialog.users-dialog { width:min(26rem, calc(100vw - 32px)); }
+.users-dialog label { margin-bottom:12px; }
+.users-dialog .staff-error { margin:0 0 12px; }
 @media (max-width: 900px) {
   .staff-filters label { flex-basis: calc(50% - 10px); }
   .staff-filters .staff-filter-search { flex: 1 1 100%; }
-  .users-page { grid-template-columns: 1fr; }
+
 }
 .staff-order-list { overflow: auto; background: white; border: 1px solid var(--line); border-radius: 10px; }
 .staff-order-list table { width: 100%; border-collapse: collapse; font-size: 13px; }
