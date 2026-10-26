@@ -92,10 +92,19 @@ test('error responses contain no stack trace or SQL',async()=>{
   const response=http.failure(new Error('SQLITE_ERROR SELECT customer_phone FROM orders at /private/path'));
   assert.equal(response.status,503);assert.deepEqual(await response.json(),{code:'TEMPORARILY_UNAVAILABLE'});assert.equal(response.headers.get('cache-control'),'no-store');
 });
-test('order list shows staff the phone and plate and keeps the name off the list',async()=>{
+test('order list shows staff the name, phone, and plate',async()=>{
   await create();const result=await orders.listOrders(admin, orderQuery.parse({limit:100}));const raw=JSON.stringify(result);
-  assert.ok(raw.includes(snapshot.customer.phone));assert.ok(raw.includes(snapshot.customer.plate));assert.ok(!raw.includes(snapshot.customer.name));
+  assert.equal(result.rows[0]?.name,snapshot.customer.name);
+  assert.ok(raw.includes(snapshot.customer.phone));assert.ok(raw.includes(snapshot.customer.plate));
   assert.equal(orders.maskPhone(snapshot.customer.phone),'+974 •••• 12 34');assert.equal(orders.maskPlate(snapshot.customer.plate),'Q ••• 56');
+});
+test('order history is latest first',async()=>{
+  const order=await create();
+  await orders.transitionOrder(admin, order.id,{expected:'placed',to:'accepted'},ctx);
+  await orders.transitionOrder(admin, order.id,{expected:'accepted',to:'preparing'},ctx);
+  const detail=await orders.detailOrder(admin, order.id,true,ctx);
+  assert.equal(detail.history[0]?.to,'preparing');
+  assert.equal(detail.history.at(-1)?.to,'accepted');
 });
 test('contact reveal is audited and the snapshot cannot leak hidden contact',async()=>{
   const order=await create();const hidden=await orders.detailOrder(admin, order.id,false,ctx);

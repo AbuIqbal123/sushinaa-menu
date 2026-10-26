@@ -106,6 +106,7 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
         <thead><tr>
           <th>{text('Order', 'الطلب')}</th>
           {!singleBranch && <th>{text('Branch', 'الفرع')}</th>}
+          <th>{text('Name', 'الاسم')}</th>
           <th>{text('Phone', 'الجوال')}</th>
           <th>{text('Plate', 'اللوحة')}</th>
           <th>{text('Status', 'الحالة')}</th>
@@ -116,6 +117,7 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
         <tbody>{data.rows.map(row => { const b = BRANCHES.find(item => item.slug === row.branchId); return <tr key={row.id} data-order-id={row.id} onClick={() => setDetail(row.id)}>
           <td dir="ltr">{row.orderNumber ?? '—'}</td>
           {!singleBranch && <td>{b?.name}</td>}
+          <td className="staff-customer">{row.name}</td>
           <td dir="ltr">{nationalPhone(row.phone) || '—'}</td>
           <td dir="ltr">{row.plate}</td>
           <td><span className={`staff-status status-${staffStatus(row.status)}`}>{staffLabels[staffStatus(row.status)].en}</span></td>
