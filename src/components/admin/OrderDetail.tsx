@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { BRANCHES } from '@/branches/branches';
-import { useLocale } from '@/i18n/locale';
+import { useMenu } from '@/cms/context';
+import { strings } from '@/i18n/copy';
 import { useNotify } from './Notices';
 import { allowedTransitions, staffStatus, staffLabels, type OrderStatus } from '@/ordering/status';
 import { formatMinor } from '@/lib/money';
@@ -22,8 +23,10 @@ function lineChoices(line: OrderDetailData['currentLines'][number], menu: MenuDa
 }
 
 export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; onBack: () => void; onChange: () => void; role: Role; menu: MenuData }) {
-  const { lang, t } = useLocale();
-  const text = (en: string, ar: string) => lang === 'ar' ? ar : en;
+  const { copy } = useMenu();
+  const lang = 'en' as const;
+  const t = strings(lang, copy);
+  const text = (en: string, _ar?: string) => en;
   const notify = useNotify();
   const reasons = { customer_request: text('Customer request', 'طلب العميل'), unavailable: text('Item unavailable', 'الصنف غير متوفر'), duplicate: text('Duplicate order', 'طلب مكرر'), branch_closed: text('Branch closed', 'الفرع مغلق') };
   const [data, setData] = useState<OrderDetailData | null>(null);
@@ -120,7 +123,7 @@ export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; 
         <div><dt>{text('Name', 'الاسم')}</dt><dd>{data.customer.name || '—'}</dd></div>
         <div><dt>{text('Phone', 'الجوال')}</dt><dd dir="ltr">{nationalPhone(data.customer.phone) || '—'}</dd></div>
         <div><dt>{text('Plate', 'اللوحة')}</dt><dd dir="ltr">{data.customer.plate}</dd></div>
-        <div><dt>{text('Branch', 'الفرع')}</dt><dd>{lang === 'ar' ? branch?.nameAr : branch?.name}</dd></div>
+        <div><dt>{text('Branch', 'الفرع')}</dt><dd>{branch?.name}</dd></div>
         <div><dt>{text('Payment', 'الدفع')}</dt><dd>{data.paymentMethod === 'mock' ? text('Paid (mock)', 'مدفوع (تجريبي)') : data.paidAt ? text('Paid at pickup', 'تم الدفع عند الاستلام') : text('Pay at pickup', 'الدفع عند الاستلام')}</dd></div>
         {(data.customer.colour || data.customer.car) && <div><dt>{text('Vehicle', 'السيارة')}</dt><dd>{[data.customer.colour, data.customer.car].filter(Boolean).join(' · ')}</dd></div>}
         {data.customer.instructions && <div><dt>{text('Instructions', 'التعليمات')}</dt><dd dir="auto">{data.customer.instructions}</dd></div>}
@@ -133,7 +136,7 @@ export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; 
         </tr></thead>
         <tbody>{data.currentLines.map(line => <tr key={line.id} data-voided={line.voided || undefined}>
           <td className="order-line">
-            <span className="order-line-name">{lang === 'ar' ? line.nameAr || line.name : line.name}</span>
+            <span className="order-line-name">{line.name}</span>
             {lineChoices(line, menu, lang, t).map((choice) => <span className="order-line-detail" key={choice}>{choice}</span>)}
             {line.note ? <span className="order-line-note">{t.commentWord}: {line.note}</span> : null}
           </td>
