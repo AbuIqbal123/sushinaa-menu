@@ -27,7 +27,7 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
   const params = useSearchParams();
   // A filtered menu link (?category=&show=&q=) opens straight on the Menu.
   const sections = role === "admin"
-    ? ["Dashboard", "Orders", "Menu", "Categories", "Settings", "Activity"]
+    ? ["Dashboard", "Orders", "Users", "Menu", "Categories", "Settings", "Activity"]
     : ["Orders"];
   const [section, setSection] = useState(() =>
     role !== "admin" ? "Orders" : ["category", "show", "q"].some((k) => params.has(k)) ? "Menu" : "Dashboard",
@@ -117,7 +117,7 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
               setSection(s);
             }}
           >
-            {s === "Orders" && lang === "ar" ? "الطلبات" : s}{s === "Orders" && unreadOrders > 0 && <span className="staff-unread">{unreadOrders}</span>}
+            {s === "Orders" && lang === "ar" ? "الطلبات" : s === "Users" && lang === "ar" ? "المستخدمون" : s}{s === "Orders" && unreadOrders > 0 && <span className="staff-unread">{unreadOrders}</span>}
           </button>
         ))}
         <a className="bottom" href="/" target="_blank" rel="noreferrer">
@@ -144,7 +144,7 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
       <div className="admin-main">
         <main className="admin-content">
           <div className="admin-heading">
-            <h1>{section === "Menu" ? "Your menu" : section === "Orders" && lang === "ar" ? "الطلبات" : section}</h1>
+            <h1>{section === "Menu" ? "Your menu" : section === "Orders" && lang === "ar" ? "الطلبات" : section === "Users" && lang === "ar" ? "المستخدمون" : section}</h1>
             {section === "Menu" && (
               <button className="primary" onClick={() => newItem()}>
                 Add item
@@ -194,12 +194,10 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
             />
           )}
           <Orders active={section === "Orders"} onUnread={setUnreadOrders} role={role} menu={menu} />
+          {section === "Users" && role === "admin" && <StaffPanel />}
           {section === "Activity" && <Activity />}
           {section === "Settings" && role === "admin" && (
-            <>
-              <StaffPanel />
-              <SettingsEditor key={snapshot.revision} menu={menu} onSave={save} />
-            </>
+            <SettingsEditor key={snapshot.revision} menu={menu} onSave={save} />
           )}
         </main>
       </div>

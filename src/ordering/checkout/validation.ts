@@ -60,9 +60,9 @@ export function validCheckoutSelection(dish: Dish, sel: Selection) {
   }
   return Object.keys(sel).every(key => sel[key as keyof Selection] === undefined || allowed.has(key)) && required.every(key => sel[key as keyof Selection] !== undefined);
 }
-export function quoteOrder(input: CheckoutInput, menu: MenuData, now = new Date()) {
+export function quoteOrder(input: CheckoutInput, menu: MenuData, now = new Date(), options?: { allowClosed?: boolean }) {
   const branch = branches.find(b => b.slug === input.branchId)!;
-  if (!branchStatus(branch.hours, qatarClock(now)).open) throw new CheckoutError('CLOSED');
+  if (!options?.allowClosed && !branchStatus(branch.hours, qatarClock(now)).open) throw new CheckoutError('CLOSED');
   if (input.lines.reduce((n, line) => n + line.quantity, 0) > 100) throw new CheckoutError('LIMIT');
   const available = publicMenu(menu).dishes;
   const lines = input.lines.map(line => {

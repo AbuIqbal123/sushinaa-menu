@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     const previous = await existingOrder(session, key, requestHash);
     if (previous) return reply(previous);
     const { menu, revision } = await readMenu();
-    const snapshot = quoteOrder(parsed, menu);
+    const snapshot = quoteOrder(parsed, menu, new Date(), { allowClosed: method === 'mock' });
     const order = await persistPendingOrder(session, key, requestHash, snapshot, revision, method);
     return reply(order, order.reused ? 200 : 201);
   } catch (error) { return failure(error); }
