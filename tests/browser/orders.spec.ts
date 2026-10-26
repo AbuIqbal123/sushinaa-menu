@@ -39,10 +39,11 @@ for (const lang of ['en','ar']) {
     await page.locator('.sadad-pay').click();
     const response = await settled; expect(response.status()).toBe(200);
     const order = await response.json(); expect(order.paymentStatus).toBe('paid');
-    await expect(page.locator('.order-confirmation-reference')).toHaveText(order.id);
+    await expect(page.locator('[data-order-id]')).toHaveAttribute('data-order-id', order.id);
+    await expect(page.locator('.order-number')).toContainText(String(order.orderNumber));
     await expect(page.locator('.directions-link')).toBeInViewport({ratio:1});
     await expect(page.locator('.directions-link')).toHaveAttribute('href','https://maps.app.goo.gl/ewbskv1D8Dhts5bHA');
-    await expect(page.locator('.checkout-ticket')).toContainText('Sauce on the side');
+    await expect(page.locator('.order-summary')).toContainText('Sauce on the side');
     await page.screenshot({path:info.outputPath(`confirmation-${lang}.png`),fullPage:true});
     // No reload: the new card arrives from the visible-tab polling loop.
     const card = staff.locator(`[data-order-id="${order.id}"]`);
@@ -78,7 +79,7 @@ test('pay-at-pickup order needs Mark paid & collected',async({page,browser,baseU
   await basket(page,'en',baseURL!);
   await page.getByRole('radio',{name:'Pay at pickup',exact:true}).click();
   await page.locator('.checkout-step-action button').click();
-  const id=await page.locator('.order-confirmation-reference').textContent();expect(id).toMatch(/^SU-/);
+  const id=await page.locator('[data-order-id]').getAttribute('data-order-id');expect(id).toMatch(/^SU-/);
   const context=await browser.newContext({baseURL,viewport:{width:390,height:844}});const staff=await context.newPage();
   await signIn(staff,baseURL!);await staff.getByRole('button',{name:'Orders',exact:true}).click();
   await staff.locator(`[data-order-id="${id}"]`).click();
