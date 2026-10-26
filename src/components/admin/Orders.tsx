@@ -48,9 +48,12 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
   }
   async function accept(row: OrderSummary) {
     setError('');
-    const response = await fetch(`/api/admin/orders/${row.id}/status`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to: 'accepted', expected: row.status }) });
-    if (!response.ok) { setError('UPDATE_FAILED'); return; }
-    notify({ tone: 'ok', text: text('Order accepted', 'تم قبول الطلب') });
+    const move = async (to: 'accepted' | 'preparing', expected: string) => {
+      const response = await fetch(`/api/admin/orders/${row.id}/status`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to, expected }) });
+      return response.ok;
+    };
+    if (!await move('accepted', row.status) || !await move('preparing', 'accepted')) { setError('UPDATE_FAILED'); refresh(); return; }
+    notify({ tone: 'ok', text: text('Order accepted', 'تم قبول الطلب') + ` · ${staffLabels.preparing[lang]}` });
     await sendPrint(row.id, 'manual');
   }
   useEffect(() => {
@@ -127,7 +130,6 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
         <thead><tr>
           <th>{text('Order', 'الطلب')}</th>
           <th>{text('Branch', 'الفرع')}</th>
-          <th>{text('Reference', 'المرجع')}</th>
           <th>{text('Phone', 'الجوال')}</th>
           <th>{text('Plate', 'اللوحة')}</th>
           <th>{text('Status', 'الحالة')}</th>
@@ -139,7 +141,6 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
         <tbody>{data.rows.map(row => { const b = BRANCHES.find(item => item.slug === row.branchId); const canAccept = row.status === 'placed' || row.status === 'paid'; return <tr key={row.id} data-order-id={row.id} onClick={() => setDetail(row.id)}>
           <td dir="ltr">{row.orderNumber ?? '—'}</td>
           <td>{lang === 'ar' ? b?.nameAr : b?.name}</td>
-          <td dir="ltr">{row.id.slice(0, 11)}</td>
           <td dir="ltr">{row.phone}</td>
           <td dir="ltr">{row.plate}</td>
           <td><span className={`staff-status status-${staffStatus(row.status)}`}>{staffLabels[staffStatus(row.status)][lang]}</span></td>

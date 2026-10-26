@@ -36,12 +36,15 @@ export async function orderEditMeta(orderId: string) {
 }
 const printableSql = `status IN (${['paid', 'accepted', 'preparing', 'ready', 'completed'].map((status) => `'${status}'`).join(',')})`;
 
-export function summary(row: Row): OrderSummary {
+export function summary(row: Row, contact: 'staff' | 'masked' = 'masked'): OrderSummary {
+  const phone = typeof row.customer_phone === 'string' && row.customer_phone ? String(row.customer_phone) : '—';
+  const plate = typeof row.car_plate === 'string' && row.car_plate ? String(row.car_plate) : '—';
   return { id: String(row.id), orderNumber: row.order_number == null ? null : Number(row.order_number),
     branchId: row.branch_id as BranchId, status: row.status as OrderStatus,
     paymentMethod: row.payment_method as OrderSummary['paymentMethod'], paidAt: nullable(row.paid_at),
     totalMinor: Number(row.total_minor), currency: 'QAR', createdAt: String(row.created_at),
-    phone: maskPhone(row.customer_phone), plate: maskPlate(row.car_plate),
+    phone: contact === 'staff' ? phone : maskPhone(row.customer_phone),
+    plate: contact === 'staff' ? plate : maskPlate(row.car_plate),
     printCount: Number(row.print_count ?? 0), printedAt: nullable(row.printed_at) };
 }
 
@@ -96,8 +99,8 @@ export async function listOrders(scope: BranchScope, query: OrderQuery) {
       FROM orders WHERE ${KITCHEN_VISIBLE} AND ${branch.sql} AND print_count=0 AND print_claimed_at IS NULL AND ${printableSql}
       AND COALESCE(paid_at, created_at)>=? ORDER BY COALESCE(paid_at, created_at), id`,
     args: [...branch.args, cutoff],
-  })).rows.map(summary);
-  return { rows: rows.rows.slice(0, query.limit).map(summary), more: rows.rows.length > query.limit, page, newCount: count, unprintedCount: backlog, autoPrint };
+  })).rows.map(row => summary(row, 'staff'));
+  return { rows: rows.rows.slice(0, query.limit).map(row => summary(row, 'staff')), more: rows.rows.length > query.limit, page, newCount: count, unprintedCount: backlog, autoPrint };
 }
 
 export async function detailOrder(scope: BranchScope, id: string, reveal: boolean, ctx: AuditContext): Promise<OrderDetailData> {
