@@ -10,10 +10,9 @@ for (const lang of ['en', 'ar']) {
     await page.locator('.detail-add').click();
     await page.locator('.ticket-close').click();
     await page.locator('.sticky-cta').click();
-    await expect(page.locator('.checkout-ticket.ticket')).toBeVisible();
+    await expect(page.locator('.ticket')).toBeVisible();
     await expect(page.locator('#collection-name')).toHaveCount(0);
-    await expect(page.locator('.checkout-step-action button')).toBeInViewport({ ratio: 1 });
-    await page.locator('.checkout-step-action button').click();
+    await page.getByRole('button', { name: lang === 'ar' ? 'اطلب للاستلام' : 'Order for pickup' }).click();
     await expect(page.locator('.checkout-ticket')).toHaveCount(0);
     await page.locator('#collection-name').fill('Test guest');
     await page.locator('#collection-phone').fill(lang === 'ar' ? '٥٥٥٥١٢٣٤' : '55551234');

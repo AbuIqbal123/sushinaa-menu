@@ -11,8 +11,8 @@ async function basket(page: Page, lang: string, baseURL: string) {
   await page.locator('.detail-add').click();
   await page.locator('.ticket-close').click();
   await page.locator('.sticky-cta').click();
-  await expect(page.locator('.checkout-ticket')).toContainText('Sauce on the side');
-  await page.locator('.checkout-step-action button').click();
+  await expect(page.locator('.ticket')).toContainText('Sauce on the side');
+  await page.getByRole('button', { name: lang === 'ar' ? 'اطلب للاستلام' : 'Order for pickup' }).click();
   await page.locator('#collection-name').fill('Test guest');
   await page.locator('#collection-phone').fill(lang === 'ar' ? '٥٥٥٥١٢٣٤' : '55551234');
   await page.locator('#collection-plate').fill(lang === 'ar' ? '٠١٢٣' : '0123');

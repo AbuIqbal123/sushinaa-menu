@@ -11,10 +11,11 @@ import { useSheetDismiss } from "@/lib/sheet-dismiss";
 type Props = {
   open: boolean;
   onClose: () => void;
+  onPickup?: () => void;
 };
 
-export function CartSheet({ open, onClose }: Props) {
-  const { lines, totalQar, inc, dec, clear } = useCart();
+export function CartSheet({ open, onClose, onPickup }: Props) {
+  const { lines, totalQar, inc, dec, clear, unavailableCount } = useCart();
   const { lang, t } = useLocale();
   const { settings } = useMenu();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -133,7 +134,13 @@ export function CartSheet({ open, onClose }: Props) {
               <strong>{formatQar(totalQar, lang, settings)}</strong>
             </div>
 
-            <p className="view-only-notice">{t.viewOnlyNotice}</p>
+            {onPickup ? (
+              <button type="button" className="checkout-primary ticket-pickup" disabled={unavailableCount > 0} onClick={onPickup}>
+                {lang === "ar" ? "اطلب للاستلام" : "Order for pickup"}
+              </button>
+            ) : (
+              <p className="view-only-notice">{t.viewOnlyNotice}</p>
+            )}
 
             <p className="ticket-legal">
               <Link href="/privacy">{t.privacy}</Link>
