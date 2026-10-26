@@ -157,8 +157,6 @@
 .ordering-feed .collection-switch > span:nth-child(2) { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .ordering-feed .filter-bar { top: calc(111px + env(safe-area-inset-top, 0px)); }
 .ordering-feed .search-results { padding-top: calc(160px + env(safe-area-inset-top, 0px)); }
-.ordering-feed .slide-copy :is(.section-label, .tags, .tags-spacer, .dish-desc-feed, .tap-hint), .ordering-feed :is(.category-discovery, .swipe-hint) { display: none; }
-.ordering-feed .slide-copy .slide-cta { margin-top: 14px; }
 .branch-page { padding-top: 36px; }
 .branch-intro > p { margin-bottom: 24px; }
 .branch-card { min-height: 104px; padding: 21px 18px; }
