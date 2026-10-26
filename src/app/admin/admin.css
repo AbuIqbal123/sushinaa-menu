@@ -739,7 +739,7 @@
 .staff-filters .staff-filter-search { flex:1 1 16rem; }
 .admin .staff-filters select,
 .admin .staff-filters input { width:100%; min-height:32px; padding:4px 8px; }
-.admin .staff-filters button { flex:0 0 auto; width:auto; min-height:32px; padding:4px 12px; }
+.staff-filter-hint { font-size:11px; font-weight:400; color:#a01725; }
 .users-list { overflow:auto; background:white; border:1px solid var(--line); border-radius:10px; }
 .users-list table { width:100%; border-collapse:collapse; font-size:13px; }
 .users-list th, .users-list td { padding:8px 10px; border-bottom:1px solid var(--line); text-align:start; vertical-align:middle; white-space:nowrap; }

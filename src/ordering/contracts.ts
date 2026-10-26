@@ -8,7 +8,7 @@ const date = z.iso.date();
 export const orderQuery = z.object({
   status: z.enum([...statuses, 'received', 'collected']).optional(), branch: branchId.optional(),
   from: date.optional(), to: date.optional(),
-  q: z.union([orderId, z.string().regex(/^\d{4}$/)]).optional(),
+  q: z.union([orderId, z.string().regex(/^\d{1,7}$/)]).optional(),
   page: z.coerce.number().int().min(1).max(1000).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(25), since: orderId.optional(),
 }).strict().refine(v => !v.from || !v.to || v.from <= v.to);
