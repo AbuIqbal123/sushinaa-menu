@@ -86,7 +86,6 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
     return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', pull); };
   }, [step, receipt?.id]);
   function go(next: Step) { setError(''); setStep(next); window.scrollTo({ top: 0, behavior: 'instant' }); }
-  function changeBranch() { router.push('/?pick=1'); }
   function validateDetails(event: React.FormEvent) {
     event.preventDefault();
     const result = customerSchema.safeParse(customer);
@@ -97,7 +96,7 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
     setErrors([]); setCustomer(result.data); go('review');
   }
   const errorMessage = (code: string) => ({
-    CLOSED: text('This branch has closed. Your basket is saved. Choose an open branch to continue.', 'هذا الفرع مغلق الآن. سلتك محفوظة. اختر فرعاً مفتوحاً للمتابعة.'),
+    CLOSED: text('This branch has closed. Your basket is saved.', 'هذا الفرع مغلق الآن. سلتك محفوظة.'),
     PRICE_CHANGED: text('A price has changed. Refresh the menu and review your basket before continuing.', 'تغيّر أحد الأسعار. حدّث القائمة وراجع سلتك قبل المتابعة.'),
     UNAVAILABLE: text('An item is no longer available. Refresh the menu to update your basket.', 'أحد الأصناف لم يعد متوفراً. حدّث القائمة لتحديث سلتك.'),
     OPTIONS: text('Some choices have changed. Refresh the menu and edit the affected item.', 'تغيّرت بعض الخيارات. حدّث القائمة وعدّل الصنف.'),
@@ -132,7 +131,7 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
   const count = cart.itemCount;
   const demoOpen = paymentProvider === 'mock';
   const canPlace = Boolean(status?.open || demoOpen);
-  const closedNotice = status && !status.open ? <div className="checkout-notice" role="status"><strong>{text('This branch is currently closed', 'هذا الفرع مغلق حالياً')}</strong><p>{demoOpen ? text('You can still place this order.', 'يمكنك إتمام هذا الطلب.') : text('Browse and save your favourites, or choose an open branch to continue.', 'تصفح واحفظ أصنافك المفضلة، أو اختر فرعاً مفتوحاً للمتابعة.')}</p>{demoOpen ? null : <button type="button" className="text-action" onClick={changeBranch}>{text('Choose another branch', 'اختر فرعاً آخر')}</button>}</div> : null;
+  const closedNotice = status && !status.open ? <div className="checkout-notice" role="status"><strong>{text('This branch is currently closed', 'هذا الفرع مغلق حالياً')}</strong><p>{demoOpen ? text('You can still place this order.', 'يمكنك إتمام هذا الطلب.') : text('Come back when this branch is open. Your basket is saved.', 'عُد عندما يفتح هذا الفرع. سلتك محفوظة.')}</p></div> : null;
   function ticket(editable: boolean, canEditBasket = false, serverMinor?: number) { return <section className="ticket checkout-ticket" aria-label={t.yourTicket}>
     <div className="ticket-scallop" aria-hidden="true" />
     <header className="ticket-head"><div><p className="ticket-kicker">{t.brand}</p><h2 className="ticket-title">{t.yourTicket}</h2></div>{canEditBasket ? <button type="button" className="ticket-edit" onClick={() => go('menu')}>{text('Edit items', 'تعديل الأصناف')}</button> : <span className="ticket-count">{count} {text(count === 1 ? 'item' : 'items', 'صنف')}</span>}</header>
@@ -161,7 +160,7 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
         {step !== 'receipt' && <div className="checkout-navigation"><button type="button" className="text-action" disabled={busy} onClick={() => go(step === 'details' ? 'menu' : step === 'review' ? 'details' : 'review')}><span className="back-arrow" aria-hidden="true">←</span> {text('Back', 'رجوع')}</button>{(['details', 'review'] as Step[]).includes(step) && <span aria-label={text(`Step ${['details', 'review'].indexOf(step) + 1} of 2`, `الخطوة ${['details', 'review'].indexOf(step) + 1} من ٢`)}>{['details', 'review'].indexOf(step) + 1} / 2</span>}</div>}
         <main id="main" className="checkout-main">
           <h1 ref={heading} tabIndex={-1}>{title}</h1>
-          {step === 'details' && <p className="checkout-branch">{text('Pickup', 'استلام')} · <strong>{branchName}</strong> <button type="button" className="text-action" onClick={changeBranch}>{text('Change branch', 'تغيير الفرع')}</button></p>}
+          {step === 'details' && <p className="checkout-branch">{text('Pickup', 'استلام')} · <strong>{branchName}</strong></p>}
           {step !== 'payment' && step !== 'receipt' && closedNotice}
           {step !== 'receipt' && cart.unavailableCount > 0 && <div className="checkout-notice" role="alert"><strong>{text('Your basket needs an update', 'تحتاج سلتك إلى تحديث')}</strong><p>{text(`${cart.unavailableCount} serving(s) or their choices are no longer available. Remove them before continuing.`, `${cart.unavailableCount} حصة أو خياراتها لم تعد متوفرة. احذفها قبل المتابعة.`)}</p><button type="button" className="text-action" onClick={cart.discardUnavailable}>{text('Remove unavailable selections', 'حذف الخيارات غير المتوفرة')}</button></div>}
           {step === 'details' && <>
