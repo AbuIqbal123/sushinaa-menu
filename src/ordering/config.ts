@@ -1,7 +1,7 @@
-import type { BranchId } from '@/branches/branches';
+import { BRANCHES, type BranchId } from '@/branches/branches';
 
-/** Placeholder until Abubaker confirms the first ordering branch. */
-export const ORDERING_BRANCHES: readonly BranchId[] = ['down-town'];
+/** Every published branch takes orders. The order is stored on the branch the customer chose. */
+export const ORDERING_BRANCHES: readonly BranchId[] = BRANCHES.map((branch) => branch.slug);
 
 /** Auto-print ignores printable orders older than this. Manual print stays available. */
 export const AUTO_PRINT_WINDOW_MS = 2 * 60 * 60 * 1000;
