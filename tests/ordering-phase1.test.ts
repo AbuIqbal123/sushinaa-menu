@@ -238,19 +238,12 @@ test('cron purge returns 503 on the live database host', () => {
   assert.equal(result.status, 0, result.stderr || String(result.error));
 });
 
-test('checkout for a branch not enabled for ordering is rejected', async () => {
-  const route = await import('../src/app/api/orders/route');
-  const response = await route.POST(new Request('http://localhost/api/orders', {
-    method: 'POST',
-    headers: { origin: 'http://localhost', host: 'localhost', 'content-type': 'application/json', 'idempotency-key': 'phase1-branch-key' },
-    body: JSON.stringify({
-      branchId: 'west-bay',
-      customer: { name: 'Test customer', phone: '97455551234', plate: 'Q123456', colour: '', car: '', instructions: '' },
-      lines: [{ dishId: dish.id, selection: {}, quantity: 1, note: '', expectedUnitMinor: 1 }],
-    }),
-  }));
-  assert.equal(response.status, 409);
-  assert.deepEqual(await response.json(), { code: 'BRANCH_UNAVAILABLE' });
+test('every published branch accepts customer orders', async () => {
+  const { orderingEnabled, ORDERING_BRANCHES } = await import('../src/ordering/config');
+  const { BRANCHES } = await import('../src/branches/branches');
+  assert.deepEqual([...ORDERING_BRANCHES], BRANCHES.map((branch) => branch.slug));
+  for (const branch of BRANCHES) assert.equal(orderingEnabled(branch.slug), true);
+  assert.equal(orderingEnabled('not-a-branch'), false);
 });
 
 test("branch user reading another branch's order by id gets 404", async () => {

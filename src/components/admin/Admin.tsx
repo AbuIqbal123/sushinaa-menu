@@ -27,7 +27,7 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
   const params = useSearchParams();
   // A filtered menu link (?category=&show=&q=) opens straight on the Menu.
   const sections = role === "admin"
-    ? ["Dashboard", "Orders", "Users", "Menu", "Categories", "Settings", "Activity"]
+    ? ["Dashboard", "Orders", "Menu", "Categories", "Users", "Settings", "Activity"]
     : ["Orders"];
   const [section, setSection] = useState(() =>
     role !== "admin" ? "Orders" : ["category", "show", "q"].some((k) => params.has(k)) ? "Menu" : "Dashboard",
