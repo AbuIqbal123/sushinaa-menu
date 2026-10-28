@@ -33,7 +33,7 @@ for (const lang of ['en', 'ar']) {
     await page.locator('.checkout-step-action button').click();
     await expect(page.locator('.checkout-ticket.ticket')).toBeVisible();
     await expect(page.locator('.review-details')).toContainText('Test guest');
-    await expect(page.locator('.review-vehicle .car-brand-logo > span')).toHaveCSS('background-image', /reference-9.jpg/);
+    await expect(page.locator('.review-vehicle .car-brand-logo > span')).toHaveCSS('background-image', /reference-9.webp/);
     await expect(page.locator('.review-details .text-action')).toHaveCSS('text-decoration-line', 'none');
     await expect(page.locator('.ticket-edit').first()).toHaveCSS('text-decoration-line', 'none');
     await expect(page.locator('#collection-name')).toHaveCount(0);

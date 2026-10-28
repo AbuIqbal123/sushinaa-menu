@@ -7,7 +7,7 @@ import { useSetSheetOpen } from '@/i18n/locale';
 
 export function CarBrandLogo({ brand }: { brand?: CarBrand }) {
   return <span className="car-brand-logo" aria-hidden="true">{brand?.sprite ? <span style={{
-    backgroundImage: `url(/car-brands/reference-${brand.sprite}.jpg)`,
+    backgroundImage: `url(/car-brands/reference-${brand.sprite}.webp)`,
     backgroundPosition: `-17px ${-(brand.y - 44) / 2}px`,
   }} /> : <svg width="25" height="25" viewBox="0 0 24 24" fill="none"><path d="m5 9 2-5h10l2 5M4 9h16a1 1 0 0 1 1 1v7H3v-7a1 1 0 0 1 1-1ZM5 17v3m14-3v3M6 13h2m8 0h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}</span>;
 }

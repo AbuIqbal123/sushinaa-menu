@@ -311,7 +311,7 @@ html[dir="rtl"] .ticket-pickup.is-driving .pickup-car { animation-name: pickup-d
 .car-brand-chevron { flex: 0 0 18px; color: #8b2025; }
 [dir="rtl"] .car-brand-chevron { transform: scaleX(-1); }
 .car-brand-logo { display: grid; place-items: center; width: 44px; height: 44px; flex: 0 0 44px; overflow: hidden; background: transparent; color: #766b5c; }
-.car-brand-logo > span { display: block; width: 44px; height: 44px; background-size: 471.5px 1024px; background-repeat: no-repeat; mix-blend-mode: multiply; }
+.car-brand-logo > span { display: block; width: 44px; height: 44px; background-size: 471.5px 1024px; background-repeat: no-repeat; }
 .car-brand-dialog { box-sizing: border-box; width: min(100%, 480px); max-width: min(100%, 480px); height: min(760px, 88dvh); max-height: 88dvh; margin: auto auto 0; padding: 0; border: 0; border-radius: 24px 24px 0 0; background: #fbf4e6; color: #14110f; box-shadow: 0 -16px 60px #0003; font-family: var(--font-sans); overflow: hidden; }
 .car-brand-dialog[open] { animation: car-brand-enter 240ms cubic-bezier(.23,1,.32,1); }
 .car-brand-dialog::backdrop { background: #14110fa6; backdrop-filter: blur(3px); }
