@@ -161,10 +161,11 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
   }
   const branchName = branch ? text(branch.name, branch.nameAr) : '';
   const confirmed = receipt && (receipt.paymentStatus === 'paid' || receipt.paymentMethod === 'pay_at_pickup');
-  if (step === 'menu' && branch) return <div className="app-lock"><MenuFeed branch={branchName} onPickup={() => go('details')}
+  const menuStage = branch ? <div key="menu-stage" className={`app-lock ordering-menu-stage${step !== 'menu' ? ' is-inactive' : ''}`} inert={step !== 'menu'} aria-hidden={step !== 'menu' ? true : undefined}><MenuFeed branch={branchName} inactive={step !== 'menu'} onPickup={() => go('details')}
     orderTracking={confirmed ? <button type="button" className="order-tracker" onClick={() => go('receipt')}>
       {text('Track order', 'تتبّع الطلب')}{receipt.orderNumber != null && <span dir="ltr"> #{receipt.orderNumber}</span>}
-    </button> : undefined} /></div>;
+    </button> : undefined} /></div> : null;
+  if (step === 'menu') return <>{menuStage}</>;
   const receiptCustomer = receipt?.details ? receipt.details.customer ?? emptyCustomer : customer;
   const receiptBranch = branches.find(b => b.slug === receipt?.details?.branchId) ?? branch;
   const receiptBranchName = receiptBranch ? text(receiptBranch.name, receiptBranch.nameAr) : branchName;
@@ -194,14 +195,14 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
     <section className="review-details">{editable && <div className="review-section-title"><button type="button" className="text-action" onClick={() => go('details')}>{text('Edit', 'تعديل')}</button></div>}<strong>{customer.name}</strong><p dir="ltr" className="review-phone">{displayPhone(customer.phone)}</p><QatarPlate plate={customer.plate} /><p className="review-vehicle"><CarBrandLogo brand={findCarBrand(customer.brand)} /><span>{[customer.colour, carBrandName(customer.brand, lang)].filter(Boolean).join(' · ')}</span></p>{customer.instructions && <p className="checkout-note">{customer.instructions}</p>}</section>
     {ticket(false, editable, serverMinor)}
   </>;
-  if (step === 'payment' && receipt && receipt.paymentMethod === 'mock') return <MockSadadGateway amount={money(receipt.totalMinor)} lang={lang} onBack={() => go('review')} onComplete={() => go('receipt')} onPay={async () => {
+  if (step === 'payment' && receipt && receipt.paymentMethod === 'mock') return <>{menuStage}<MockSadadGateway amount={money(receipt.totalMinor)} lang={lang} onBack={() => go('review')} onComplete={() => go('receipt')} onPay={async () => {
     const response = await fetch(`/api/orders/${receipt.id}/mock-pay`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
     const result = await response.json();
     if (!response.ok || result.paymentStatus !== 'paid') throw new Error(errorMessage(result.code || 'NETWORK'));
     setReceipt(current => ({ ...current, ...result }));
     cart.clear(); attempt.current = null;
-  }} />;
-  return <div className="ordering-page" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+  }} /></>;
+  return <>{menuStage}<div className="ordering-page" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
     <div className="ordering-content" inert={Boolean(editing)}>
       <header className="ordering-header"><button type="button" className="ordering-logo" onClick={() => go('menu')} aria-label={text('Back to the menu', 'العودة إلى القائمة')}><Image src={menu.settings.logo} width={59} height={55} alt={t.brand} unoptimized /></button><LangButton /></header>
       <>
@@ -213,7 +214,8 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
           {step !== 'receipt' && cart.unavailableCount > 0 && <div className="checkout-notice" role="alert"><strong>{text('Your basket needs an update', 'تحتاج سلتك إلى تحديث')}</strong><p>{text(`${cart.unavailableCount} serving(s) or their choices are no longer available. Remove them before continuing.`, `${cart.unavailableCount} حصة أو خياراتها لم تعد متوفرة. احذفها قبل المتابعة.`)}</p><button type="button" className="text-action" onClick={cart.discardUnavailable}>{text('Remove unavailable selections', 'حذف الخيارات غير المتوفرة')}</button></div>}
           {step === 'details' && <>
             <form onSubmit={validateDetails} noValidate>
-            <div className="checkout-fields">{(['name', 'phone', 'plate'] as const).map(key => {
+            <div className="checkout-fields">{(['name', 'phone', 'brand', 'plate'] as const).map(key => {
+              if (key === 'brand') return <CarBrandPicker key={key} value={customer.brand} lang={lang} invalid={errors.includes('brand')} onChange={brand => { setCustomer({ ...customer, brand }); setErrors(errors.filter(field => field !== 'brand')); }} />;
               const label = { name: text('Your name', 'اسمك'), phone: text('Mobile number', 'رقم الجوال'), plate: text('Qatar plate number', 'رقم اللوحة القطرية'), colour: text('Car colour', 'لون السيارة'), car: text('Car model', 'طراز السيارة'), instructions: text('Collection instructions', 'تعليمات الاستلام') }[key];
               const invalid = errors.includes(key);
               if (key === 'plate') return <div key={key} className="checkout-field field-plate"><label htmlFor="collection-plate">{label}</label>
@@ -227,7 +229,6 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
                 {invalid && <small id={`hint-${key}`} className="field-error">{key === 'phone' ? text('Enter a valid Qatar mobile number.', 'أدخل رقم جوال قطرياً صالحاً.') : text('Please enter your name.', 'يرجى إدخال اسمك.')}</small>}
               </label>;
             })}
-            <CarBrandPicker value={customer.brand} lang={lang} invalid={errors.includes('brand')} onChange={brand => { setCustomer({ ...customer, brand }); setErrors(errors.filter(field => field !== 'brand')); }} />
             </div>
             <details className="optional-vehicle"><summary>{text('Add vehicle details', 'أضف تفاصيل السيارة')}</summary><div className="checkout-fields">{(['colour', 'instructions'] as const).map(key => <label key={key} className={`checkout-field field-${key}`} htmlFor={`collection-${key}`}><span>{{ colour: text('Car colour', 'لون السيارة'), car: text('Car model', 'طراز السيارة'), instructions: text('Collection instructions', 'تعليمات الاستلام') }[key]}</span>{key === 'instructions' ? <textarea id={`collection-${key}`} value={customer[key]} maxLength={400} rows={3} onChange={e => setCustomer({ ...customer, [key]: e.target.value })} /> : <input id={`collection-${key}`} value={customer[key]} maxLength={key === 'colour' ? 50 : 80} onChange={e => setCustomer({ ...customer, [key]: e.target.value })} />}</label>)}</div></details>
             <div className="checkout-step-action"><button type="submit" className="checkout-primary" disabled={!canPlace || !count || cart.unavailableCount > 0}>{text('Review order', 'مراجعة الطلب')}<Forward /></button></div>
@@ -241,7 +242,11 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
             <p className="order-confirmed" role="status">{receipt.paymentMethod === 'mock' ? text('Payment confirmed', 'تم تأكيد الدفع') : text('Order received', 'تم استلام الطلب')}</p>
             {receipt.orderNumber != null && <p className="order-number" dir="ltr"><span>{text('Order number', 'رقم الطلب')}</span>{receipt.orderNumber}</p>}
             <OrderProgress status={receipt.status} lang={lang} />
-            <p className="checkout-branch">{text('Pickup', 'استلام')} · <strong>{receiptBranchName}</strong></p>
+            <div className="confirmation-branch"><p className="checkout-branch">{text('Pickup', 'استلام')} · <strong>{receiptBranchName}</strong></p>
+              <a className="branch-call" href={`tel:+${menu.settings.whatsappE164}`} aria-label={text(`Call ${receiptBranchName} branch`, `اتصل بفرع ${receiptBranchName}`)}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 3 3 5-2 2c1.3 2.7 3.3 4.7 6 6l2-2 5 3v3c0 1-1 2-2 2C9.6 21.4 2.6 14.4 2 5c0-1 1-2 2-2h3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                {text('Call', 'اتصال')}
+              </a></div>
             {receiptBranch && <DirectionsLink branchName={receiptBranchName} href={receiptBranch.mapsUrl} text={text} />}
             <p className="order-who"><strong>{receiptCustomer.name}</strong><span dir="ltr">{displayPhone(receiptCustomer.phone)}</span></p>
             {/^[QTR]\d{3,6}$/.test(receiptCustomer.plate) && <QatarPlate plate={receiptCustomer.plate} />}
@@ -257,7 +262,7 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
       <footer className="ordering-footer"><span>Sushinaa</span></footer>
     </div>
     {editing && <DishDetailSheet dish={editing.dish} ordering initialEntries={Array.from({ length: editing.qty }, () => ({ sel: editing.sel, note: editing.note }))} onSave={entries => cart.replace(editing.key, entries)} onClose={() => setEditing(null)} />}
-  </div>;
+  </div></>;
 }
 function QatarPlate({ plate }: { plate: string }) { return <div className="plate-card" dir="ltr" aria-label={`Qatar plate ${plate[0]} ${plate.slice(1)}`}><span className="plate-country"><span className="plate-flag" aria-hidden="true">🇶🇦</span><span>QATAR<br /><span lang="ar">قطر</span></span></span><strong className="plate-digits">{plate.slice(1)}</strong><strong className="plate-letter">{plate[0]}</strong></div>; }
 function DirectionsLink({ branchName, href, text }: { branchName: string; href: string; text: (en: string, ar: string) => string }) { return <a className="directions-link" href={href} target="_blank" rel="noopener noreferrer" aria-label={text(`Open Google Maps directions to ${branchName}`, `افتح خرائط Google للوصول إلى ${branchName}`)}><span className="directions-pin" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z" stroke="currentColor" strokeWidth="1.6"/><circle cx="12" cy="10" r="2.3" stroke="currentColor" strokeWidth="1.6"/></svg></span><span className="directions-copy"><strong>{text('Get directions', 'اتجاهات الوصول')}</strong><small>{branchName} · Google Maps</small></span><span className="directions-arrow" aria-hidden="true">↗</span></a>; }

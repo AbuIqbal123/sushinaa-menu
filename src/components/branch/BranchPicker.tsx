@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, 
 import { BRANCHES, BRANCH_COOKIE, type Branch } from "@/branches/branches";
 import { accessibleName, branchStatus, qatarClock } from "@/branches/hours";
 import { useMenu } from "@/cms/context";
-import { useLocale } from "@/i18n/locale";
+import { LangButton, useLocale } from "@/i18n/locale";
 import { Nigiri } from "./Nigiri";
 import "./branch-picker.css";
 
@@ -34,7 +34,8 @@ function rememberBranch(slug: string) {
 
 export function BranchPicker() {
   const { settings } = useMenu();
-  const { t } = useLocale();
+  const { t, lang } = useLocale();
+  const ar = lang === "ar";
   const router = useRouter();
   const minute = useSyncExternalStore(subscribeToMinutes, currentMinute, noMinuteOnServer);
   const clock = minute === null ? null : qatarClock(new Date(minute * 60_000));
@@ -103,23 +104,24 @@ export function BranchPicker() {
       <header className="bp-top">
         <img src={settings.logo} alt={t.brand} width={54} height={52} />
         <div>
-          <h1>Choose your branch</h1>
-          <p>Tap a piece to open its menu</p>
+          <h1>{ar ? "اختر فرعك" : "Choose your branch"}</h1>
+          <p>{ar ? "اضغط على قطعة السوشي لفتح القائمة" : "Tap a piece to open its menu"}</p>
         </div>
+        <LangButton />
       </header>
-      <nav aria-label="Branches">
+      <nav aria-label={ar ? "الفروع" : "Branches"}>
         <ul className={`bp-board${picked ? " is-picking" : ""}`}>
           {BRANCHES.map((branch, i) => {
-            const status = clock && branchStatus(branch.hours, clock);
+            const status = clock && branchStatus(branch.hours, clock, lang);
             const tone = !status ? "" : !status.open ? "closed" : status.soon ? "soon" : "open";
             return (
               <li key={branch.slug} className={`bp-row${picked === branch.slug ? " is-picked" : ""}`}>
                 <Link href={`/${branch.slug}`} className={`bp-pick${status && !status.open ? " is-closed" : ""}`}
-                  style={{ "--i": i } as CSSProperties} aria-label={status ? accessibleName(branch.name, status) : undefined}
+                  style={{ "--i": i } as CSSProperties} aria-label={status ? accessibleName(ar ? branch.nameAr : branch.name, status, lang) : undefined}
                   onClick={(e) => pick(e, branch)}>
                   <span className="bp-piece"><Nigiri kind={branch.nigiri} /></span>
                   <span className="bp-info">
-                    <span className="bp-name">{branch.name}</span>
+                    <span className="bp-name">{ar ? branch.nameAr : branch.name}</span>
                     <span className="bp-hours">{status?.hours}</span>
                     <span className={`bp-status${tone ? ` is-${tone}` : ""}`}>{status?.label}</span>
                   </span>

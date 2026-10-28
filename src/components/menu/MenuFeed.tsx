@@ -21,9 +21,9 @@ function normalizeSearch(value: string) {
     .replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
 
-type OrderingFeedProps = { branch?: string; onPickup?: () => void; branchBar?: ReactNode; orderTracking?: ReactNode };
+type OrderingFeedProps = { branch?: string; onPickup?: () => void; branchBar?: ReactNode; orderTracking?: ReactNode; inactive?: boolean };
 
-function FeedInner({ branch, onPickup, branchBar, orderTracking }: OrderingFeedProps) {
+function FeedInner({ branch, onPickup, branchBar, orderTracking, inactive = false }: OrderingFeedProps) {
   const menu = useMenu();
   const { itemCount, totalQar } = useCart();
   const { lang, t } = useLocale();
@@ -358,7 +358,7 @@ function FeedInner({ branch, onPickup, branchBar, orderTracking }: OrderingFeedP
         </Link>
         {orderTracking}
         {/* Brand and branch both lead back to the branch picker. */}
-        <Link href="/?pick=1" className="brand-mark" aria-label={`${t.brand}, ${branch}, change branch`} prefetch={false}>
+        <Link href="/?pick=1" className="brand-mark" aria-label={`${t.brand}, ${branch}, ${lang === "ar" ? "تغيير الفرع" : "change branch"}`} prefetch={false}>
           <img src={menu.settings.logo} alt="" className="wordmark-img" width={46} height={44} />
         </Link>
         <div className="category-navigation">
@@ -412,7 +412,7 @@ function FeedInner({ branch, onPickup, branchBar, orderTracking }: OrderingFeedP
         </div>
       </header>
       {branchBar ? <div className="order-branch-bar" inert={sheetOpen}>{branchBar}</div> : null}
-      <div ref={feedRef} id="main" className={`feed${search ? " feed-search" : ""}`} role={search ? "region" : "feed"}
+      <div ref={feedRef} id={inactive ? undefined : "main"} className={`feed${search ? " feed-search" : ""}`} role={search ? "region" : "feed"}
         aria-label={t.menuFeed} inert={sheetOpen ? true : undefined} style={{ overflowY: sheetOpen ? "hidden" : undefined }}>
         {dishes.length === 0 ? <div className="empty-filter"><p>{t.noMatch}</p>
           <button type="button" className="chip chip-on" onClick={clearFilters}>{t.clearFilters}</button></div>
@@ -456,7 +456,7 @@ function FeedInner({ branch, onPickup, branchBar, orderTracking }: OrderingFeedP
       <CategoryOverlay open={categoriesOpen} title={t.menu} label={t.category} closeLabel={t.close}
         logo={menu.settings.logo} brand={t.brand} value={category}
         filters={<div className="category-filters" role="group" aria-label={t.filters}>
-          <p>{t.dietary}</p>
+          <p className="sr-only">{t.dietary}</p>
           <div className="chip-row chip-row-diet" aria-label={t.dietary}>
             {dietChips.map((chip) => <button key={chip.id} type="button"
               className={`chip chip-diet ${diet === chip.id ? "chip-on" : ""}`} aria-pressed={diet === chip.id}
@@ -468,7 +468,7 @@ function FeedInner({ branch, onPickup, branchBar, orderTracking }: OrderingFeedP
       <div className="sr-only" aria-live="polite">{pickedCategory}</div>
       <div className="sr-only" aria-live="polite">{search ? t.searchResults(dishes.length) : ""}</div>
       {detail ? <DishDetailSheet key={`${detail.id}-${diet}`} dish={detail} diet={diet} ordering={Boolean(onPickup)} onClose={() => setDetail(null)} /> : null}
-      <CartSheet open={open} onClose={() => setOpen(false)} onPickup={onPickup} />
+      <CartSheet open={open} onClose={() => setOpen(false)} onPickup={onPickup ? () => { setOpen(false); onPickup(); } : undefined} />
     </div>
   );
 }
