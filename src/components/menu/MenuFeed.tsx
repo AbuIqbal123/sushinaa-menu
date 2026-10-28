@@ -214,7 +214,13 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
         const hand = gesture.querySelector<SVGElement>(".scroll-gesture-hand");
         if (hand) hand.style.transform = "rotate(-30deg)";
       }
-      return () => { if (gesture) gesture.hidden = true; };
+      const dismiss = () => { demoSeen.current = true; setShowCategoryHint(false); if (gesture) gesture.hidden = true; };
+      const events = ["pointerdown", "touchstart", "wheel", "keydown"] as const;
+      events.forEach(event => window.addEventListener(event, dismiss, { passive: true, capture: true }));
+      return () => {
+        if (gesture) gesture.hidden = true;
+        events.forEach(event => window.removeEventListener(event, dismiss, true));
+      };
     }
     let frame = 0;
     let origin: number | null = null;
@@ -445,7 +451,7 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
         </svg>
       </div>
       {itemCount > 0 && !sheetOpen ? <button type="button" className="sticky-cta" onClick={() => setOpen(true)}>
-        {t.viewOrder} · {formatQar(totalQar, lang, menu.settings)}</button> : null}
+        <span>{t.viewOrder}</span><small>{formatQar(totalQar, lang, menu.settings)}</small></button> : null}
       <CategoryOverlay open={categoriesOpen} title={t.menu} label={t.category} closeLabel={t.close}
         logo={menu.settings.logo} brand={t.brand} value={category}
         filters={<div className="category-filters" role="group" aria-label={t.filters}>
