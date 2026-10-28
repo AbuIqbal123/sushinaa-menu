@@ -167,11 +167,15 @@ test('every order line stores its dish category id and name (snapshot v2)', asyn
   assert.equal(legacy.groups[0].name, 'Items');
 });
 
-test('guest order number is branch, Qatar day, and a daily sequence', () => {
-  assert.equal(composeOrderNumber('down-town', '05', 1), 105001);
+test('guest order number is branch, Qatar month and day, and a daily sequence', () => {
+  assert.equal(composeOrderNumber('down-town', '10', '05', 1), 11005001);
+  assert.equal(formatOrderNumber(11005001), '011005001');
+  assert.equal(formatOrderNumber(31005012), '031005012');
   assert.equal(formatOrderNumber(105001), '0105001');
-  assert.equal(formatOrderNumber(305012), '0305012');
   assert.equal(formatOrderNumber(4), '4');
+  assert.equal(composeOrderNumber('down-town', '01', '05', 1), 10105001);
+  assert.notEqual(composeOrderNumber('down-town', '01', '05', 1), composeOrderNumber('down-town', '02', '05', 1));
+  assert.equal(qatarDay(new Date('2026-10-06T00:10:00+03:00')).month, '10');
   assert.equal(qatarDay(new Date('2026-10-06T00:10:00+03:00')).day, '06');
   assert.equal(qatarDay(new Date('2026-10-05T23:30:00+03:00')).day, '05');
 });
@@ -180,12 +184,12 @@ test('order numbers are unique per branch under 20 concurrent checkouts and neve
   const created = await Promise.all(Array.from({ length: 20 }, () => place()));
   const numbers = created.map((order) => order.orderNumber);
   assert.equal(new Set(numbers).size, 20);
-  const day = qatarDay(new Date(String((await row(created[0].id)).created_at))).day;
-  assert.ok(numbers.every((number) => formatOrderNumber(number).startsWith(`01${day}`)));
+  const day = qatarDay(new Date(String((await row(created[0].id)).created_at)));
+  assert.ok(numbers.every((number) => formatOrderNumber(number).startsWith(`01${day.month}${day.day}`)));
   const other = await place('west-bay');
-  const otherDay = qatarDay(new Date(String((await row(other.id)).created_at))).day;
-  assert.equal(other.orderNumber, composeOrderNumber('west-bay', otherDay, 1));
-  assert.equal(formatOrderNumber(other.orderNumber), `03${otherDay}001`);
+  const otherDay = qatarDay(new Date(String((await row(other.id)).created_at)));
+  assert.equal(other.orderNumber, composeOrderNumber('west-bay', otherDay.month, otherDay.day, 1));
+  assert.equal(formatOrderNumber(other.orderNumber), `03${otherDay.month}${otherDay.day}001`);
   const sample = created[0];
   const before = (await row(sample.id)).order_number;
   await orders.transitionOrder(admin, sample.id, { expected: 'placed', to: 'accepted' }, ctx);
