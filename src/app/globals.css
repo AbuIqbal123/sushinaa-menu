@@ -1547,14 +1547,14 @@ button {
 
 /* One shared control row on phones, with a full-size branch heading above. */
 .chrome-header {
-  display: grid; grid-template-columns: 64px minmax(0, 1fr) auto auto auto;
-  grid-template-areas: "branch branch . tracker tracker" "logo categories search lang cart";
-  align-items: center; column-gap: 8px; row-gap: 8px;
+  display: grid; grid-template-columns: 64px minmax(0, 1fr) 48px max-content max-content;
+  grid-template-areas: "branch branch . . ." "logo categories search lang cart";
+  align-items: center; justify-content: start; column-gap: 8px; row-gap: 8px;
   padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 24px;
   background: linear-gradient(to bottom, rgba(12,10,9,.9), rgba(12,10,9,.65) 75%, transparent);
 }
 
-/* The action cluster stays one group in the DOM. Its pieces share the header grid so the tracker can use the same edges as the language and order buttons. */
+/* The action cluster stays one group in the DOM. Its pieces share the header grid. The tracker sits on the header's right edge instead, so a short English category can keep the free space. */
 .chrome-actions { display: contents; }
 .chrome-header .header-search { grid-area: search; justify-self: end; }
 .chrome-header .lang-btn { grid-area: lang; justify-self: start; }
@@ -1562,7 +1562,7 @@ button {
 .chrome-header .cart-btn { min-width: 48px; height: 48px; background: rgba(20,17,15,.8); border-color: rgba(243,228,196,.4); }
 .chrome-actions .lang-btn { padding-inline: 12px; font-size: 14px; }
 .chrome-actions .cart-btn > svg { width: 26px; height: 26px; }
-.category-navigation { grid-area: categories; align-self: center; position: relative; min-width: 0; pointer-events: auto; }
+.category-navigation { grid-area: categories; align-self: center; justify-self: stretch; position: relative; width: 100%; min-width: 0; pointer-events: auto; }
 .chrome-header .category-toggle {
   display: flex; align-items: center; gap: 6px; padding-inline: 8px;
   width: 100%; min-width: 0; height: 48px; overflow: hidden;
@@ -1584,7 +1584,8 @@ button {
 @keyframes category-hint-point { 0%, 100% { transform: rotate(90deg) translateX(0); } 50% { transform: rotate(90deg) translateX(-4px); } }
 @keyframes category-hint-fade { 0%, 78% { opacity: 1; } 100% { opacity: 0; } }
 @media (max-width: 360px) {
-  .chrome-header { padding-inline: 10px; column-gap: 6px; grid-template-columns: 56px minmax(0, 1fr) auto auto auto; }
+  .chrome-header { padding-inline: 10px; column-gap: 6px; grid-template-columns: 56px minmax(0, 1fr) 48px max-content max-content; }
+  .order-tracker { inset-inline-end: 10px; }
   .chrome-actions { gap: 4px; }
   .chrome-actions .lang-btn { padding-inline: 9px; }
   .category-discovery { font-size: 12px; gap: 5px; }
@@ -1612,6 +1613,7 @@ button {
   color: #fff3d9; text-decoration: none; pointer-events: auto;
   font-size: 22px; font-weight: 700; line-height: 1.25; text-shadow: 0 1px 4px rgba(0,0,0,.7);
 }
+.branch-switch.with-tracker { min-height: 36px; }
 .branch-switch > span:last-child { font-size: 16px; }
 .branch-switch-name { min-width: 0; overflow-wrap: anywhere; }
 .brand-mark:focus-visible, .branch-switch:focus-visible { outline: 2px solid #f3e4c4; outline-offset: 2px; }
@@ -1621,7 +1623,9 @@ button {
 .chrome-header .header-search, .chrome-header .header-search-field { width: 48px; height: 48px; }
 .chrome-header .header-search-field input { padding-inline-end: 48px; }
 
-.order-tracker { grid-area: tracker; justify-self: stretch; align-self: center; pointer-events: auto;
+.order-tracker {
+  position: absolute; z-index: 1; top: calc(10px + env(safe-area-inset-top, 0px)); inset-inline-end: 14px;
+  pointer-events: auto; width: max-content; max-width: calc(100% - 190px); overflow: hidden;
   display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 36px; padding: 4px 10px;
   border: 1px solid rgba(243,228,196,.55); border-radius: 18px; background: rgba(20,17,15,.8);
   color: #fff3d9; font: inherit; font-size: 13px; font-weight: 700; white-space: nowrap; cursor: pointer;

@@ -57,7 +57,7 @@
 .ticket-count { color: #6a5640; font-size: 11px; white-space: nowrap; }
 .ticket-edit { min-height: 36px; padding: 0; border: 0; background: none; color: #8b2025; font-size: 15px !important; font-weight: 700; text-decoration: none; }
 .checkout-ticket .line-main .ticket-edit { margin-top: 4px; }
-.ticket-static-qty { display: inline-flex; align-items: baseline; justify-content: flex-end; gap: 0.08em; min-width: 2.6ch; color: #6a5640; font-size: 12px; font-variant-numeric: tabular-nums; font-weight: 700; line-height: 36px; white-space: nowrap; }
+.ticket-static-qty { display: inline-flex; align-items: baseline; justify-content: flex-start; gap: 0; color: #6a5640; font-size: 16px; font-weight: 700; line-height: 36px; white-space: nowrap; }
 .checkout-progress { display: flex; gap: 14px; padding: 12px 0 8px; margin: 0; list-style: none; }
 .checkout-progress li { display: flex; align-items: center; gap: 6px; color: #a99b89; font-size: 10px; }
 .checkout-progress li > span { width: 18px; height: 18px; display: grid; place-items: center; border: 1px solid #65594b; border-radius: 50%; font-size: 9px; }
@@ -191,7 +191,7 @@ html[dir="rtl"] .ticket-pickup.is-driving .pickup-car { animation-name: pickup-d
 .ordering-page[dir="rtl"] .order-items-title { font-family: var(--font-arabic); }
 .order-summary { list-style: none; margin: 0; padding: 0; }
 .order-summary li { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: baseline; padding: 12px 0; border-top: 1px solid var(--order-line); }
-.order-qty { display: inline-flex; align-items: baseline; justify-content: flex-end; gap: 0.08em; min-width: 2.4ch; color: var(--order-muted); font-variant-numeric: tabular-nums; font-weight: 650; text-align: end; white-space: nowrap; }
+.order-qty { display: inline-flex; align-items: baseline; justify-content: flex-start; gap: 0; color: var(--order-muted); font-weight: 650; white-space: nowrap; }
 .qty-times { position: relative; top: 0.06em; font-family: system-ui, sans-serif; font-size: 0.78em; font-weight: 400; font-variant-numeric: normal; line-height: 1; letter-spacing: 0; color: color-mix(in srgb, currentColor 62%, transparent); }
 .order-summary b, .order-summary small { display: block; }
 .order-summary small { color: var(--order-muted); font-weight: 400; }
