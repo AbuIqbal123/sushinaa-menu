@@ -195,13 +195,27 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
     };
   }, [search, syncCategory, wrapLoop]);
 
+  // A same-list CMS refresh must not cancel the opening gesture on a slow phone.
+  const syncCategoryRef = useRef(syncCategory);
+  useLayoutEffect(() => { syncCategoryRef.current = syncCategory; }, [syncCategory]);
+
   // A short peek reveals the next photo without skipping the first dish. Any
   // customer input cancels it immediately; never pull someone back mid-swipe.
   useEffect(() => {
     const feed = feedRef.current;
     if (!feed || !showCategoryHint || demoSeen.current || searchOpen || sheetOpen || diet !== "all" || dishes.length < 2) return;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (motion.matches) { demoSeen.current = true; return; }
+    if (motion.matches) {
+      const gesture = gestureRef.current;
+      if (gesture) {
+        gesture.hidden = false;
+        gesture.style.transform = "translate(-50%, -50%)";
+        gesture.style.opacity = "1";
+        const hand = gesture.querySelector<SVGElement>(".scroll-gesture-hand");
+        if (hand) hand.style.transform = "rotate(-30deg)";
+      }
+      return () => { if (gesture) gesture.hidden = true; };
+    }
     let frame = 0;
     let origin: number | null = null;
     let stopped = false;
@@ -220,7 +234,7 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
       demonstrating.current = true;
       feed.style.scrollSnapType = "none";
       if (gestureRef.current) {
-        gestureRef.current.style.transform = "translate(-50%, -50%) translate(-104px, 60px)";
+        gestureRef.current.style.transform = "translate(-50%, -50%) translate(-22px, 82px)";
         gestureRef.current.style.opacity = "0";
         gestureRef.current.hidden = false;
       }
@@ -239,7 +253,7 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
         if (categoryHintRef.current) categoryHintRef.current.style.opacity = String(opacity);
         const gesture = gestureRef.current;
         if (gesture) {
-          gesture.style.transform = `translate(-50%, -50%) translate(${120 * Math.sin(angle)}px, ${-120 * Math.cos(angle)}px)`;
+          gesture.style.transform = `translate(-50%, -50%) translate(${82 + 120 * Math.sin(angle)}px, ${22 - 120 * Math.cos(angle)}px)`;
           gesture.style.opacity = String(opacity);
           const hand = gesture.querySelector<SVGElement>(".scroll-gesture-hand");
           if (hand) hand.style.transform = `rotate(${-120 + 90 * sweep}deg)`;
@@ -249,7 +263,7 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
           demonstrating.current = false;
           if (gestureRef.current) gestureRef.current.hidden = true;
           feed.style.removeProperty("scroll-snap-type");
-          syncCategory();
+          syncCategoryRef.current();
         }
       };
       frame = window.requestAnimationFrame(animate);
@@ -265,7 +279,7 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
       events.forEach((event) => window.removeEventListener(event, interrupt, true));
       motion.removeEventListener("change", interrupt);
     };
-  }, [diet, dishes.length, searchOpen, sheetOpen, showCategoryHint, syncCategory]);
+  }, [diet, dishes.length, searchOpen, sheetOpen, showCategoryHint, listKey]);
 
   const measureSearch = useCallback(() => {
     const button = searchButtonRef.current;
@@ -336,30 +350,28 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
         <Link href="/?pick=1" className="branch-switch" prefetch={false}>
           <span className="branch-switch-name">{branch}</span><span aria-hidden="true">▾</span>
         </Link>
-        <div className="brand-navigation">
-          {/* Brand and branch both lead back to the branch picker. */}
-          <Link href="/?pick=1" className="brand-mark" aria-label={`${t.brand}, ${branch}, change branch`} prefetch={false}>
-            <img src={menu.settings.logo} alt="" className="wordmark-img" width={46} height={44} />
-          </Link>
-          <div className="category-navigation">
-            <button ref={categoryButtonRef} type="button" className="cart-btn category-toggle"
-              aria-label={`${t.category}: ${sectionName(category, lang)}`} title={sectionName(category, lang)}
-              aria-haspopup="dialog" aria-expanded={categoriesOpen} aria-controls="category-overlay"
-              onClick={() => { setShowCategoryHint(false); setSearchOpen(false); setCategoriesOpen(true); }}>
-              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        {/* Brand and branch both lead back to the branch picker. */}
+        <Link href="/?pick=1" className="brand-mark" aria-label={`${t.brand}, ${branch}, change branch`} prefetch={false}>
+          <img src={menu.settings.logo} alt="" className="wordmark-img" width={46} height={44} />
+        </Link>
+        <div className="category-navigation">
+          <button ref={categoryButtonRef} type="button" className="cart-btn category-toggle"
+            aria-label={`${t.category}: ${sectionName(category, lang)}`} title={sectionName(category, lang)}
+            aria-haspopup="dialog" aria-expanded={categoriesOpen} aria-controls="category-overlay"
+            onClick={() => { setShowCategoryHint(false); setSearchOpen(false); setCategoriesOpen(true); }}>
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+            <span className="current-category">{sectionName(category, lang) || t.category}</span>
+          </button>
+          {showCategoryHint && !sheetOpen && !searchOpen && activeIndex === 0 ? (
+            <span ref={categoryHintRef} className="category-discovery" aria-hidden="true">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                <path d="M20 12H4m6-6-6 6 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              <span className="current-category">{sectionName(category, lang) || t.category}</span>
-            </button>
-            {showCategoryHint && !sheetOpen && !searchOpen && activeIndex === 0 ? (
-              <span ref={categoryHintRef} className="category-discovery" aria-hidden="true">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                  <path d="M20 12H4m6-6-6 6 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <span>{t.categoryHint}</span>
-              </span>
-            ) : null}
-          </div>
+              <span>{t.categoryHint}</span>
+            </span>
+          ) : null}
         </div>
         <div className="chrome-actions">
           {/* One element: the button's pill opens into the field, toward the logo. */}

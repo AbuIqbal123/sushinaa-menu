@@ -910,14 +910,14 @@ body {
 
 /* The finger and feed are animated together by the opening scroll preview. */
 .scroll-gesture {
-  position: absolute; z-index: 23; top: 56%; left: 50%;
+  position: absolute; z-index: 23; top: 50%; left: 50%;
   display: grid; justify-items: center; gap: 8px;
   transform: translate(-50%, -50%); pointer-events: none;
   color: #fff3d9; filter: drop-shadow(0 3px 8px rgba(0,0,0,.65));
 }
 .scroll-gesture[hidden] { display: none; }
 .scroll-gesture-hand { transform: rotate(-120deg); transform-origin: 50% 85%; }
-@media (prefers-reduced-motion: reduce) { .scroll-gesture { display: none; } }
+
 
 button {
   touch-action: manipulation;
@@ -1512,9 +1512,9 @@ button {
 .dish-price, .detail-unit, .ticket-sum strong { font-variant-numeric: tabular-nums; }
 
 /* Category navigation experiment: keep the photos clear until navigation is needed. */
-.brand-navigation { display: flex; align-items: center; gap: 8px; pointer-events: auto; }
+
 .search-open .category-toggle { visibility: hidden; pointer-events: none; }
-.brand-navigation .category-toggle:focus-visible,
+.chrome-header .category-toggle:focus-visible,
 .category-overlay button:focus-visible { outline: 2px solid #f3e4c4; outline-offset: 3px; }
 .category-overlay {
   position: fixed; inset: 0; margin: auto; padding: 0; border: 0;
@@ -1552,18 +1552,19 @@ button {
 
 /* One shared control row on phones, with a full-size branch heading above. */
 .chrome-header {
-  display: grid; grid-template-columns: 56px minmax(0, 1fr) auto;
+  display: grid; grid-template-columns: 64px minmax(0, 1fr) auto;
+  grid-template-areas: "branch branch branch" "logo categories actions";
   align-items: center; gap: 8px;
   padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 24px;
   background: linear-gradient(to bottom, rgba(12,10,9,.9), rgba(12,10,9,.65) 75%, transparent);
 }
-.brand-navigation { display: contents; }
-.chrome-actions { grid-column: 3; grid-row: 2; align-self: center; gap: 6px; }
+
+.chrome-actions { grid-area: actions; align-self: center; gap: 6px; }
 .chrome-header .cart-btn { min-width: 48px; height: 48px; background: rgba(20,17,15,.8); border-color: rgba(243,228,196,.4); }
 .chrome-actions .lang-btn { padding-inline: 12px; font-size: 14px; }
 .chrome-actions .cart-btn > svg { width: 26px; height: 26px; }
-.category-navigation { grid-column: 2; grid-row: 2; align-self: center; position: relative; min-width: 0; pointer-events: auto; }
-.brand-navigation .category-toggle {
+.category-navigation { grid-area: categories; align-self: center; position: relative; min-width: 0; pointer-events: auto; }
+.chrome-header .category-toggle {
   display: flex; align-items: center; gap: 6px; padding-inline: 8px;
   width: 100%; min-width: 0; height: 48px; overflow: hidden;
 }
@@ -1584,7 +1585,7 @@ button {
 @keyframes category-hint-point { 0%, 100% { transform: rotate(90deg) translateX(0); } 50% { transform: rotate(90deg) translateX(-4px); } }
 @keyframes category-hint-fade { 0%, 78% { opacity: 1; } 100% { opacity: 0; } }
 @media (max-width: 360px) {
-  .chrome-header { padding-inline: 10px; column-gap: 6px; grid-template-columns: 52px minmax(0, 1fr) auto; }
+  .chrome-header { padding-inline: 10px; column-gap: 6px; grid-template-columns: 56px minmax(0, 1fr) auto; }
   .chrome-actions { gap: 4px; }
   .chrome-actions .lang-btn { padding-inline: 9px; }
   .category-discovery { font-size: 12px; gap: 5px; }
@@ -1601,13 +1602,13 @@ button {
 
 /* Keep the logo and every action centred on exactly the same row. */
 .brand-mark {
-  grid-column: 1; grid-row: 2; display: flex; align-items: center; justify-content: center;
-  width: 100%; height: 56px; pointer-events: auto;
+  grid-area: logo; display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 64px; pointer-events: auto;
   color: #f3e4c4; text-decoration: none; border-radius: 8px;
 }
-.brand-navigation .brand-mark .wordmark-img { height: 56px; width: auto; flex-shrink: 0; }
+.chrome-header .brand-mark .wordmark-img { height: 64px; max-width: 100%; object-fit: contain; width: auto; flex-shrink: 0; }
 .branch-switch {
-  grid-column: 1 / -1; grid-row: 1; justify-self: start;
+  grid-area: branch; justify-self: start;
   display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%;
   color: #fff3d9; text-decoration: none; pointer-events: auto;
   font-size: 22px; font-weight: 700; line-height: 1.25; text-shadow: 0 1px 4px rgba(0,0,0,.7);

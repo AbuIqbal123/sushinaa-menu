@@ -698,7 +698,7 @@ test("search opens from its button toward the logo and closes back to it", async
   await expect(toggle).toHaveAttribute("aria-label", "Clear search");
   const input = page.locator("#menu-search");
   await expect(input).toBeFocused();
-  const logo = page.locator(".brand-navigation .wordmark-img");
+  const logo = page.locator(".chrome-header .brand-mark .wordmark-img");
   const logoBox = (await logo.boundingBox())!;
   const field = (await page.locator(".header-search-field").boundingBox())!;
   expect(field.x).toBeLessThanOrEqual(logoBox.x + 1);
