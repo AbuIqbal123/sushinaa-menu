@@ -1,4 +1,4 @@
-.ordering-page { --order-paper: #14110f; --order-muted: #6b6258; --order-line: #14110f1f; max-width: 480px; min-height: 100dvh; margin: auto; background: #fbf4e6; color: var(--order-paper); padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); }
+.ordering-page { --order-paper: #14110f; --order-muted: #6b6258; --order-line: #14110f1f; max-width: 480px; min-height: 100dvh; overflow-x: clip; margin: auto; background: #fbf4e6; color: var(--order-paper); padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); }
 .ordering-page button, .ordering-page input, .ordering-page textarea { font: inherit; }
 .ordering-page button, .ordering-page a { -webkit-tap-highlight-color: transparent; }
 .ordering-page button { cursor: pointer; }
@@ -10,7 +10,7 @@
 .ordering-logo { display: flex; padding: 0; border: 0; background: transparent; color: inherit; }
 .ordering-header img { object-fit: contain; }
 .collection-label { display: flex; align-items: center; gap: 8px; color: var(--order-muted); font-size: 12px; }
-.ordering-header .lang-btn { min-width: 44px; min-height: 44px; background: #fff; border: 1px solid var(--order-line); color: inherit; }
+.ordering-header .lang-btn { flex: 0 0 auto; width: auto; min-width: 64px; min-height: 44px; padding-inline: 14px; font-size: 13px; line-height: 1; white-space: nowrap; background: #fff; border: 1px solid var(--order-line); color: inherit; }
 .branch-page { padding: 32px 24px 12px; }
 .eyebrow { font-size: 9px; font-weight: 700; letter-spacing: .16em; color: #d5a491; }
 .ordering-page h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(33px, 9vw, 43px); line-height: 1.09; letter-spacing: -.025em; white-space: pre-line; margin: 16px 0; }
@@ -45,7 +45,7 @@
 .ordering-footer > span:first-child { font-weight: 700; }
 .checkout-navigation { display: flex; align-items: center; justify-content: space-between; padding: 6px 24px; }
 .checkout-navigation > span { font-size: 9px; color: var(--order-muted); letter-spacing: .12em; }
-.text-action { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; border: 0; background: transparent; padding: 4px 0; text-align: start; color: #8b2025; font-size: 12px !important; text-decoration: underline; text-underline-offset: 4px; }
+.text-action { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; border: 0; background: transparent; padding: 4px 0; text-align: start; color: #8b2025; font-size: 16px !important; font-weight: 600; text-decoration: none; }
 .checkout-main { padding: 4px 24px 24px; }
 .checkout-main:has(.checkout-step-action) { padding-bottom: 104px; }
 .checkout-step-action { position: fixed; z-index: 30; bottom: 0; left: 50%; transform: translateX(-50%); width: min(100%, 480px); padding: 12px 24px calc(12px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(transparent, #fbf4e6 20%); }
@@ -55,7 +55,7 @@
 .checkout-ticket .ticket-line { animation: none; }
 .checkout-ticket .ticket-head { align-items: center; }
 .ticket-count { color: #6a5640; font-size: 11px; white-space: nowrap; }
-.ticket-edit { min-height: 36px; padding: 0; border: 0; background: none; color: #8b2025; font-size: 11px !important; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.ticket-edit { min-height: 36px; padding: 0; border: 0; background: none; color: #8b2025; font-size: 15px !important; font-weight: 700; text-decoration: none; }
 .checkout-ticket .line-main .ticket-edit { margin-top: 4px; }
 .ticket-static-qty { min-width: 2ch; color: #6a5640; font-size: 12px; font-weight: 700; line-height: 36px; }
 .checkout-progress { display: flex; gap: 14px; padding: 12px 0 8px; margin: 0; list-style: none; }
@@ -78,7 +78,7 @@
 .checkout-line-info > p { color: var(--order-muted); font-size: 11px; line-height: 1.5; margin: 5px 0; overflow-wrap: anywhere; }
 .checkout-line-info .checkout-note { color: #6b6258; }
 .checkout-line-price { display: block; font-size: 11px; color: #e8d5b7; margin-top: 8px; }
-.checkout-line-info .text-action { font-size: 10px !important; }
+.checkout-line-info .text-action { font-size: 15px !important; }
 .checkout-quantity { display: flex; flex-direction: column-reverse; align-items: center; gap: 2px; }
 .checkout-quantity button { min-width: 44px; min-height: 44px; border: 1px solid #ffffff20; background: #ffffff06; border-radius: 50%; color: inherit; font-size: 20px; }
 .checkout-quantity > span { font-size: 12px; }
@@ -105,7 +105,7 @@
 .checkout-intro { color: var(--order-muted); font-size: 13px; line-height: 1.6; margin: 22px 0; }
 .checkout-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 12px; }
 .checkout-field { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px; }
-.field-colour, .field-car { grid-column: auto; }
+.field-colour { grid-column: 1 / -1; }
 .checkout-field > span { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px; font-size: 12px; }
 .checkout-field > span small { color: var(--order-muted); font-size: 10px; }
 .checkout-field input, .checkout-field textarea { color: #14110f; width: 100%; min-width: 0; background: #fff; border: 1px solid #14110f24; border-radius: 7px; padding: 14px 12px; font-size: 16px; }
@@ -267,3 +267,87 @@
 .collection-privacy {font-size:12px;line-height:1.6;color:#c4b9aa;margin-block:20px;}.collection-privacy a {text-decoration:underline;text-underline-offset:3px;}
 .checkout-payment-choice {display:flex;gap:8px;margin-block:22px;}.checkout-payment-choice button {flex:1;padding:12px;border:1px solid #ffffff30;border-radius:8px;background:transparent;color:inherit;}.checkout-payment-choice button[aria-checked="true"]{border-color:#d89071;background:#9d332330;}
 .order-confirmation-reference {overflow-wrap:anywhere;max-width:100%;font-size:11px;}
+
+.order-progress { margin: 12px 0 18px; padding: 14px 16px; border: 1px solid var(--order-line); border-radius: 12px; background: #ffffff70; }
+.order-progress-heading { display: flex; align-items: center; gap: 9px; }
+.order-progress .order-progress-heading h2 { margin: 0; font: inherit; font-size: 15px; font-weight: 700; line-height: 1.45; }
+.order-progress-symbol { display: grid; place-items: center; flex: 0 0 24px; width: 24px; height: 24px; border-radius: 50%; background: #e7e2d8; font: 700 17px/1 system-ui, sans-serif; }
+.order-progress > p { margin: 8px 0 0; color: #35573e; font-size: 12px; line-height: 1.6; }
+.order-progress ol { display: flex; gap: 10px; list-style: none; margin: 14px 0 0; padding: 0; }
+.order-progress li { flex: 1; min-width: 0; color: #756c61; font-size: 11px; line-height: 1.5; }
+.order-progress li > span { display: block; height: 3px; margin-bottom: 6px; background: #ddd7cd; border-radius: 3px; transition: background .25s; }
+.order-progress li.is-reached > span { background: #406c4d; }
+.order-progress li[aria-current] { color: #294c34; font-weight: 700; }
+.order-progress.is-ready { background: #edf4e9; border-color: #98b391; }
+.order-progress.is-ready .order-progress-symbol { color: #fff; background: #406c4d; animation: order-ready-in .35s var(--ease-out) both; }
+.order-progress.is-cancelled .order-progress-symbol { background: #f4dedd; color: #8b2025; }
+@keyframes order-ready-in { from { transform: scale(.7); opacity: .4; } to { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .order-progress.is-ready .order-progress-symbol { animation: none; } .order-progress li > span { transition: none; } }
+
+.field-brand > label { font-size: 12px; }
+.ordering-page .car-brand-trigger { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 66px; padding: 10px 14px; border: 1px solid var(--order-line); border-radius: 8px; background: #fff; color: var(--order-muted); text-align: start; font-size: 14px; }
+.ordering-page .car-brand-trigger.has-value { color: var(--order-paper); }
+.ordering-page .car-brand-trigger[aria-invalid="true"] { border-color: #a3312c; }
+.car-brand-trigger > span:nth-child(2) { flex: 1; }
+.car-brand-chevron { flex: 0 0 18px; color: #8b2025; }
+[dir="rtl"] .car-brand-chevron { transform: scaleX(-1); }
+.car-brand-logo { display: grid; place-items: center; width: 44px; height: 44px; flex: 0 0 44px; overflow: hidden; border-radius: 8px; background: #fff; color: #766b5c; }
+.car-brand-logo > span { display: block; width: 44px; height: 44px; background-size: 471.5px 1024px; background-repeat: no-repeat; }
+.car-brand-dialog { box-sizing: border-box; width: min(100%, 480px); max-width: min(100%, 480px); height: min(760px, 88dvh); max-height: 88dvh; margin: auto auto 0; padding: 0; border: 0; border-radius: 24px 24px 0 0; background: #fbf4e6; color: #14110f; box-shadow: 0 -16px 60px #0003; font-family: var(--font-sans); overflow: hidden; }
+.car-brand-dialog[open] { animation: car-brand-enter 240ms cubic-bezier(.23,1,.32,1); }
+.car-brand-dialog::backdrop { background: #14110fa6; backdrop-filter: blur(3px); }
+.car-brand-panel { display: flex; flex-direction: column; height: 100%; padding: 12px 20px env(safe-area-inset-bottom, 0px); }
+.car-brand-handle { display: block; flex: 0 0 4px; width: 44px; margin: 0 auto 10px; border-radius: 4px; background: #d3c4ae; }
+.car-brand-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 0 12px; }
+.car-brand-header h2 { margin: 0; font-family: var(--font-display); font-size: 25px; font-weight: 400; line-height: 1.25; }
+.car-brand-dialog[dir="rtl"] .car-brand-header h2 { font-family: var(--font-arabic); font-size: 23px; }
+.car-brand-dialog .car-brand-close { display: grid; place-items: center; min-width: 44px; min-height: 44px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #8b2025; }
+.car-brand-dialog button { cursor: pointer; }
+.car-brand-dialog :is(button,input):focus-visible { outline: 2px solid #a3312c; outline-offset: 2px; }
+.car-brand-search { display: flex; flex: 0 0 auto; align-items: center; gap: 10px; min-height: 48px; margin: 0 0 10px; padding-inline: 14px; border: 1px solid #d8cdbd; border-radius: 12px; background: #f1e7d7; color: #7d6b54; }
+.car-brand-search input { width: 100%; min-width: 0; min-height: 46px; padding: 0; background: transparent; border: 0; color: #14110f; font: inherit; font-size: 16px; outline-offset: 0; }
+.car-brand-search input::placeholder { color: #7d6b54; opacity: 1; }
+.car-brand-list { flex: 1; overflow-y: auto; min-height: 0; list-style: none; margin: 0 -4px; padding: 0 4px; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #c8b99f transparent; }
+.car-brand-option { display: flex; align-items: center; gap: 14px; min-height: 70px; width: 100%; padding: 11px 0; border: 0; border-bottom: 1px solid #14110f16; background: transparent; color: #14110f; text-align: start; font: inherit; }
+.car-brand-option:hover, .car-brand-option[aria-pressed="true"] { background: #efe1cb75; }
+.car-brand-name { flex: 1; font-size: 15px; font-weight: 500; }
+.car-brand-dialog[dir="rtl"] .car-brand-name { font-family: var(--font-arabic); }
+.car-brand-check { display: grid; place-items: center; width: 22px; height: 22px; flex: 0 0 22px; border: 1.5px solid #c0ab8b; border-radius: 50%; color: white; }
+.car-brand-option[aria-pressed="true"] .car-brand-check { background: #a3312c; border-color: #a3312c; }
+.car-brand-empty { padding: 22px 0; color: #766b5c; text-align: center; font-size: 14px; }
+@keyframes car-brand-enter { from { transform: translateY(24px); opacity: .6; } to { transform: translateY(0); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .car-brand-dialog[open] { animation: none; } }
+.order-vehicle { margin: 10px 0; font-size: 13px; color: var(--order-muted); }
+
+.review-vehicle { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.review-vehicle .car-brand-logo { flex-shrink: 0; }
+.review-vehicle > span:last-child { font-size: 15px; }
+
+.order-discount { display: flex; justify-content: space-between; gap: 12px; color: #6b6258; font-size: 14px; margin: 12px 0; }
+
+/* Keep decoded menu images and scroll position alive throughout checkout. */
+.ordering-menu-stage.is-inactive { position: fixed; inset: 0; visibility: hidden; pointer-events: none; z-index: -1; }
+.confirmation-branch { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0; }
+.confirmation-branch .checkout-branch { margin: 0; }
+.branch-call { display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex-shrink: 0; min-height: 44px; padding: 6px 12px; border: 1px solid #a3312c66; border-radius: 22px; color: #8b2025; text-decoration: none; font-size: 14px; font-weight: 700; }
+
+
+/* Keep checkout compact without changing the paper receipt or touch targets. */
+.ordering-page:is([data-step="details"], [data-step="review"]) .ordering-header { padding-block: 8px; }
+.ordering-page:is([data-step="details"], [data-step="review"]) .checkout-navigation { padding-block: 0; }
+.ordering-page:is([data-step="details"], [data-step="review"]) .checkout-main h1 { margin: 4px 0 12px; font-size: clamp(29px, 7.5vw, 36px); line-height: 1.25; }
+.ordering-page:is([data-step="details"], [data-step="review"]) .checkout-main:has(.checkout-step-action) { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+.ordering-page:is([data-step="details"], [data-step="review"]) .checkout-step-action { padding-top: 8px; padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+.ordering-page[data-step="details"] .checkout-branch { margin-bottom: 8px; }
+.ordering-page[data-step="details"] .checkout-fields { margin: 12px 0; row-gap: 10px; }
+.ordering-page[data-step="details"] .checkout-field { gap: 4px; }
+.ordering-page[data-step="details"] .car-brand-trigger { min-height: 54px; padding-block: 4px; }
+.ordering-page[data-step="details"] .plate-entry { min-height: 62px; }
+.ordering-page[data-step="details"] .plate-entry > input { height: 56px; }
+.ordering-page[data-step="details"] .optional-vehicle { margin-bottom: 0; }
+.ordering-page[data-step="details"] .optional-vehicle summary { padding-block: 10px; min-height: 44px; }
+.ordering-page[data-step="review"] .review-details { display: flow-root; padding: 4px 0 12px; margin: 0 0 12px; }
+.ordering-page[data-step="review"] .review-section-title { float: inline-end; margin-block-start: -4px; }
+.ordering-page[data-step="review"] .review-details > strong { display: block; padding-top: 4px; }
+.ordering-page[data-step="review"] .review-details .plate-card { margin-block: 10px 6px; min-height: 64px; }
+.ordering-page[data-step="review"] .review-details > .review-vehicle { margin-block: 4px 0; }

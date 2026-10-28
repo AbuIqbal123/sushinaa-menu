@@ -14,6 +14,8 @@ Sushinaa has two databases and two sites. Production is the live restaurant menu
 
 https://test-dev-abu-iqbal-projects.vercel.app follows the `dev` branch. A push to `dev` updates that site. It does not update production. `https://test-dev.vercel.app` is not ours. Other branches do not deploy the `test-dev` project.
 
+For a built local phone preview over HTTP, set `SUSHINAA_LOCAL_HTTP_PREVIEW=1` for both build and start, with `VERCEL` and `VERCEL_ENV` unset. This keeps Safari from upgrading local assets to HTTPS. The flag has no effect on hosted deployments. Do not add it to Vercel.
+
 ## Databases
 
 Both databases are in `aws-ap-south-1`. The app reads `CMS_DATABASE_URL` and `CMS_DATABASE_AUTH_TOKEN`. It does not read `TURSO_*`.

@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 import { isProductionDeployment } from "./src/lib/deploy-env";
 
 const isDev = process.env.NODE_ENV !== "production";
+// Explicitly allow HTTP for a built local phone preview. Hosted deployments
+// always retain HTTPS enforcement, even if this local flag is set by mistake.
+const localHttpPreview = process.env.SUSHINAA_LOCAL_HTTP_PREVIEW === "1"
+  && !process.env.VERCEL && !process.env.VERCEL_ENV;
 
 const csp = [
   "default-src 'self'",
@@ -16,7 +20,7 @@ const csp = [
   "form-action 'self'",
   // Safari upgrades http://localhost assets to https when this is set, so the
   // dev menu loses its stylesheet and photos. Production stays on HTTPS.
-  ...(isDev ? [] : ["upgrade-insecure-requests"]),
+  ...(isDev || localHttpPreview ? [] : ["upgrade-insecure-requests"]),
 ].join("; ");
 
 const securityHeaders = [

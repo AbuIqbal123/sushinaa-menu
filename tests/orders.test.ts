@@ -18,7 +18,7 @@ let db: (typeof import('../src/cms/db'))['db'];
 let dir: string;
 const ctx = { actor: 'test-staff', ip: null, userAgent: null };
 const admin = { kind: 'all' as const };
-const snapshot: OrderSnapshot = { branchId:'down-town', branchName:'Down Town',collection:'car',customer:{name:'Test customer',phone:'97455551234',plate:'Q123456',colour:'silver',car:'test car',instructions:'test instructions'},lines:[],totalMinor:1234,currency:'QAR' };
+const snapshot: OrderSnapshot = { branchId:'down-town', branchName:'Down Town',collection:'car',customer:{name:'Test customer',phone:'97455551234',brand: 'toyota', plate:'Q123456',colour:'silver',car:'test car',instructions:'test instructions'},lines:[],totalMinor:1234,currency:'QAR' };
 before(async () => {
   dir = mkdtempSync(join(tmpdir(),'sn-order-suite-'));
   process.env.CMS_DATABASE_URL = `file:${dir}/orders.db`; process.env.CMS_DATABASE_AUTH_TOKEN = '';
@@ -85,7 +85,10 @@ test('stale status update returns 409 and writes no audit row',async()=>{
 });
 test('customer A cannot read customer B\'s order',async()=>{
   const a=randomUUID();const order=await repository.persistPendingOrder(a,randomUUID(),'same',snapshot,1);
-  assert.equal((await repository.customerOrder(order.id,a)).id,order.id);
+  const own = await repository.customerOrder(order.id,a);
+  assert.equal(own.id,order.id); assert.equal(own.details.customer?.name, snapshot.customer.name);
+  assert.equal(own.details.branchId,'down-town');
+  assert.equal('session_hash' in own,false); assert.equal('request_hash' in own,false);
   await rejected(repository.customerOrder(order.id,'other'),'NOT_FOUND');await rejected(repository.customerOrder(order.id,null),'NOT_FOUND');
 });
 test('error responses contain no stack trace or SQL',async()=>{
@@ -141,6 +144,7 @@ test('purge removes customer columns, snapshot contact and personal notes only a
   const order=await create();const at=new Date('2026-01-01T12:00:00Z');await orders.transitionOrder(admin, order.id,{expected:'placed',to:'cancelled',reason:'customer_request'},ctx,at);
   await db.execute({sql:'UPDATE orders SET snapshot=? WHERE id=?',args:[JSON.stringify({...snapshot,lines:[{note:'Personal collection instruction',totalMinor:1234}]}),order.id]});
   await orders.purgeOrders(new Date(at.getTime()+89*86400000));assert.equal((await row(order.id)).customer_phone,snapshot.customer.phone);
+  assert.equal(JSON.parse(String((await row(order.id)).snapshot)).customer.brand,'toyota');
   await orders.purgeOrders(new Date(at.getTime()+91*86400000));const purged=await row(order.id);
   for(const key of ['customer_name','customer_phone','car_plate','car_colour','car_model','instructions']) assert.equal(purged[key],null);
   assert.equal(JSON.parse(String(purged.snapshot)).customer,null);assert.equal(purged.total_minor,1234);

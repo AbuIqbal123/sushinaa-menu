@@ -10,6 +10,7 @@ mkdirSync(shots, { recursive: true });
 test.use({ viewport: { width: 390, height: 844 } });
 
 const customer = {
+  brand: 'toyota',
   name: 'Test guest',
   phone: '97455551234',
   plate: 'Q123456',

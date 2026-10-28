@@ -88,3 +88,14 @@ test("a UTC instant is read on the Qatar day", () => {
 test("the accessible name reads status and hours", () => {
   assert.equal(accessibleName("Down Town", at("down-town", WED, 15)), "Down Town, open now, today 12pm to 2:30am");
 });
+
+ test("Arabic branch hours preserve overnight logic and localize status and time", () => {
+  const hours = branch("down-town").hours;
+  const overnight = branchStatus(hours, {day: FRI, minute: 60}, "ar");
+  assert.equal(overnight.label, "مفتوح الآن");
+  assert.equal(overnight.hours, "١٢ م\u2009–\u2009٢:٣٠ ص");
+  assert.equal(accessibleName("داون تاون", overnight, "ar"), "داون تاون، مفتوح الآن، اليوم ١٢ م إلى ٢:٣٠ ص");
+  assert.equal(branchStatus(hours, {day: FRI, minute: 150}, "ar").label, "يفتح ١ م");
+  assert.equal(branchStatus(hours, {day: FRI, minute: 140}, "ar").label, "يغلق خلال ١٠ دقيقة");
+  assert.equal(branchStatus(branch("west-bay").hours, {day: THU, minute: 1380}, "ar").label, "يفتح غدًا");
+});

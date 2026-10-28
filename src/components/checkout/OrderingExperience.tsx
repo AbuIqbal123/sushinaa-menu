@@ -11,12 +11,18 @@ import { BRANCHES as branches, type BranchId } from '@/branches/branches';
 import { branchStatus, qatarClock } from '@/branches/hours';
 import { customerSchema, digits, displayPhone, type Customer } from '@/ordering/checkout/validation';
 import { formatQar } from '@/lib/money';
+import type { CustomerReceiptDetails } from '@/ordering/contracts';
+import { selectionLabel } from '@/ordering/price';
+import { pickName } from '@/i18n/localize';
 import type { PaymentStatus } from '@/ordering/checkout/payment';
 import { MockSadadGateway } from './MockSadadGateway';
+import { CarBrandPicker, CarBrandLogo } from './CarBrandPicker';
+import { carBrandName, findCarBrand } from '@/ordering/car-brands';
+import { OrderProgress } from './OrderProgress';
 
-const emptyCustomer: Customer = { name: '', phone: '', plate: 'Q', colour: '', car: '', instructions: '' };
+const emptyCustomer: Customer = { name: '', phone: '', plate: 'Q', brand: '', colour: '', car: '', instructions: '' };
 type Step = 'menu' | 'details' | 'review' | 'payment' | 'receipt';
-type Receipt = { id: string; orderNumber?: number | null; paymentStatus: PaymentStatus; totalMinor: number; paymentMethod: 'mock' | 'pay_at_pickup'; status: string };
+type Receipt = { id: string; orderNumber?: number | null; paymentStatus: PaymentStatus; totalMinor: number; paymentMethod: 'mock' | 'pay_at_pickup'; status: string; details?: CustomerReceiptDetails };
 export function OrderingExperience({ initialNow, branchId }: { initialNow: string; branchId: BranchId }) {
   return <CartProvider storageKey="sushinaa-curbside-basket-v1"><Experience initialNow={initialNow} branchId={branchId} /></CartProvider>;
 }
@@ -63,29 +69,51 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
     previousStep.current = step;
   }, [step]);
   useEffect(() => {
-    const stored = sessionStorage.getItem(orderKey);
-    if (!stored) return;
+    let stored: string | null = null;
+    try { stored = localStorage.getItem(orderKey) || sessionStorage.getItem(orderKey); } catch { return; }
+    if (!stored || !/^SU-[0-9a-f-]{36}$/.test(stored)) return;
     let cancel = false;
     void fetch(`/api/orders/${stored}`, { cache: 'no-store' }).then(async (response) => {
-      if (!response.ok || cancel) return;
-      setReceipt(await response.json() as Receipt);
-      setStep('receipt');
+      if (cancel) return;
+      if (!response.ok) {
+        if (response.status === 404 || response.status === 401) {
+          try { localStorage.removeItem(orderKey); sessionStorage.removeItem(orderKey); } catch { /* Storage unavailable. */ }
+        }
+        return;
+      }
+      const saved = await response.json() as Receipt;
+      if (cancel) return;
+      setReceipt(saved);
+      if (saved.paymentStatus === 'paid' || saved.paymentMethod === 'pay_at_pickup') setStep('receipt');
+      else if (saved.paymentStatus === 'awaiting_payment' && saved.paymentMethod === 'mock') setStep('payment');
     }).catch(() => {});
     return () => { cancel = true; };
   }, []);
   useEffect(() => {
-    if (step !== 'receipt' || !receipt?.id) return;
-    sessionStorage.setItem(orderKey, receipt.id);
-    const pull = () => {
-      if (document.visibilityState === 'hidden') return;
-      void fetch(`/api/orders/${receipt.id}`, { cache: 'no-store' }).then(async (response) => {
-        if (response.ok) setReceipt(await response.json() as Receipt);
-      }).catch(() => {});
+    if (!['receipt', 'menu'].includes(step) || !receipt?.id) return;
+    try { localStorage.setItem(orderKey, receipt.id); } catch { /* Keep tracking in memory. */ }
+    if (receipt.status === 'completed' || receipt.status === 'refunded') return;
+    let stopped = false;
+    let running = false;
+    const controller = new AbortController();
+    const pull = async () => {
+      if (document.hidden || running || stopped) return;
+      running = true;
+      try {
+        const response = await fetch(`/api/orders/${receipt.id}`, { cache: 'no-store', signal: controller.signal });
+        if (response.ok && !stopped) setReceipt(await response.json() as Receipt);
+      } catch { /* Keep the last confirmed state and retry when online. */ }
+      finally { running = false; }
     };
+    void pull();
     document.addEventListener('visibilitychange', pull);
-    const timer = window.setInterval(pull, 30000);
-    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', pull); };
-  }, [step, receipt?.id]);
+    window.addEventListener('online', pull);
+    const timer = window.setInterval(pull, 5000);
+    return () => {
+      stopped = true; controller.abort(); window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', pull); window.removeEventListener('online', pull);
+    };
+  }, [step, receipt?.id, receipt?.status]);
   function go(next: Step) {
     const order: Step[] = ['menu', 'details', 'review', 'payment', 'receipt'];
     setMotion(order.indexOf(next) < order.indexOf(step) ? 'back' : 'forward');
@@ -124,12 +152,27 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
       const res = await fetch('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': attempt.current.key }, body });
       const data = await res.json();
       if (!res.ok) { setError(errorMessage(data.code)); return; }
-      setReceipt(data); sessionStorage.setItem(orderKey, data.id); go(data.paymentMethod === 'pay_at_pickup' || data.paymentStatus === 'paid' ? 'receipt' : 'payment');
+      setReceipt(data); try { localStorage.setItem(orderKey, data.id); } catch { /* Keep tracking in memory. */ }
+      const confirmedNow = data.paymentMethod === 'pay_at_pickup' || data.paymentStatus === 'paid';
+      if (confirmedNow) { cart.clear(); attempt.current = null; }
+      go(confirmedNow ? 'receipt' : 'payment');
     } catch { setError(errorMessage('NETWORK')); }
     finally { setBusy(false); busyRef.current = false; }
   }
   const branchName = branch ? text(branch.name, branch.nameAr) : '';
-  if (step === 'menu' && branch) return <div className="app-lock"><MenuFeed branch={branchName} onPickup={() => go('details')} /></div>;
+  const confirmed = receipt && (receipt.paymentStatus === 'paid' || receipt.paymentMethod === 'pay_at_pickup');
+  const menuStage = branch ? <div key="menu-stage" className={`app-lock ordering-menu-stage${step !== 'menu' ? ' is-inactive' : ''}`} inert={step !== 'menu'} aria-hidden={step !== 'menu' ? true : undefined}><MenuFeed branch={branchName} inactive={step !== 'menu'} onPickup={() => go('details')}
+    orderTracking={confirmed ? <button type="button" className="order-tracker" onClick={() => go('receipt')}>
+      {text('Track order', 'تتبّع الطلب')}{receipt.orderNumber != null && <span dir="ltr"> #{receipt.orderNumber}</span>}
+    </button> : undefined} /></div> : null;
+  if (step === 'menu') return <>{menuStage}</>;
+  const receiptCustomer = receipt?.details ? receipt.details.customer ?? emptyCustomer : customer;
+  const receiptBranch = branches.find(b => b.slug === receipt?.details?.branchId) ?? branch;
+  const receiptBranchName = receiptBranch ? text(receiptBranch.name, receiptBranch.nameAr) : branchName;
+  const receiptLines = receipt?.details?.lines.map(line => ({ key: line.id, displayName: pickName(line, lang),
+    meta: line.kind ? selectionLabel({ ...line, kind: line.kind }, line.selection, lang, t) : '',
+    note: line.note, qty: line.quantity, lineTotal: line.totalMinor / 100,
+  })) ?? cart.lines;
   const title = step === 'details' ? text('Collection details', 'بيانات الاستلام')
     : step === 'review' ? text('Review your order', 'راجع طلبك')
     : step === 'receipt' ? text('Your order', 'طلبك') : text('Payment', 'الدفع');
@@ -149,16 +192,17 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
     <div className="ticket-sum"><span>{t.total}</span><strong>{serverMinor != null ? money(serverMinor) : ticketMoney(cart.totalQar)}</strong></div>
   </section>; }
   const receiptBody = (editable: boolean, serverMinor?: number) => <>
-    <section className="review-details">{editable && <div className="review-section-title"><button type="button" className="text-action" onClick={() => go('details')}>{text('Edit', 'تعديل')}</button></div>}<strong>{customer.name}</strong><p dir="ltr" className="review-phone">{displayPhone(customer.phone)}</p><QatarPlate plate={customer.plate} /><p>{[customer.colour, customer.car].filter(Boolean).join(' · ')}</p>{customer.instructions && <p className="checkout-note">{customer.instructions}</p>}</section>
+    <section className="review-details">{editable && <div className="review-section-title"><button type="button" className="text-action" onClick={() => go('details')}>{text('Edit', 'تعديل')}</button></div>}<strong>{customer.name}</strong><p dir="ltr" className="review-phone">{displayPhone(customer.phone)}</p><QatarPlate plate={customer.plate} /><p className="review-vehicle"><CarBrandLogo brand={findCarBrand(customer.brand)} /><span>{[customer.colour, carBrandName(customer.brand, lang)].filter(Boolean).join(' · ')}</span></p>{customer.instructions && <p className="checkout-note">{customer.instructions}</p>}</section>
     {ticket(false, editable, serverMinor)}
   </>;
-  if (step === 'payment' && receipt && receipt.paymentMethod === 'mock') return <MockSadadGateway amount={money(receipt.totalMinor)} lang={lang} onBack={() => go('review')} onComplete={() => go('receipt')} onPay={async () => {
+  if (step === 'payment' && receipt && receipt.paymentMethod === 'mock') return <>{menuStage}<MockSadadGateway amount={money(receipt.totalMinor)} lang={lang} onBack={() => go('review')} onComplete={() => go('receipt')} onPay={async () => {
     const response = await fetch(`/api/orders/${receipt.id}/mock-pay`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
     const result = await response.json();
     if (!response.ok || result.paymentStatus !== 'paid') throw new Error(errorMessage(result.code || 'NETWORK'));
-    setReceipt(result);
-  }} />;
-  return <div className="ordering-page" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+    setReceipt(current => ({ ...current, ...result }));
+    cart.clear(); attempt.current = null;
+  }} /></>;
+  return <>{menuStage}<div className="ordering-page" data-step={step} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
     <div className="ordering-content" inert={Boolean(editing)}>
       <header className="ordering-header"><button type="button" className="ordering-logo" onClick={() => go('menu')} aria-label={text('Back to the menu', 'العودة إلى القائمة')}><Image src={menu.settings.logo} width={59} height={55} alt={t.brand} unoptimized /></button><LangButton /></header>
       <>
@@ -170,8 +214,9 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
           {step !== 'receipt' && cart.unavailableCount > 0 && <div className="checkout-notice" role="alert"><strong>{text('Your basket needs an update', 'تحتاج سلتك إلى تحديث')}</strong><p>{text(`${cart.unavailableCount} serving(s) or their choices are no longer available. Remove them before continuing.`, `${cart.unavailableCount} حصة أو خياراتها لم تعد متوفرة. احذفها قبل المتابعة.`)}</p><button type="button" className="text-action" onClick={cart.discardUnavailable}>{text('Remove unavailable selections', 'حذف الخيارات غير المتوفرة')}</button></div>}
           {step === 'details' && <>
             <form onSubmit={validateDetails} noValidate>
-            <div className="checkout-fields">{(['name', 'phone', 'plate'] as const).map(key => {
-              const label = { name: text('Your name', 'اسمك'), phone: text('Mobile number', 'رقم الجوال'), plate: text('Qatar plate number', 'رقم اللوحة القطرية'), colour: text('Car colour', 'لون السيارة'), car: text('Make / model', 'نوع / طراز السيارة'), instructions: text('Collection instructions', 'تعليمات الاستلام') }[key];
+            <div className="checkout-fields">{(['name', 'phone', 'brand', 'plate'] as const).map(key => {
+              if (key === 'brand') return <CarBrandPicker key={key} value={customer.brand} lang={lang} invalid={errors.includes('brand')} onChange={brand => { setCustomer({ ...customer, brand }); setErrors(errors.filter(field => field !== 'brand')); }} />;
+              const label = { name: text('Your name', 'اسمك'), phone: text('Mobile number', 'رقم الجوال'), plate: text('Qatar plate number', 'رقم اللوحة القطرية'), colour: text('Car colour', 'لون السيارة'), car: text('Car model', 'طراز السيارة'), instructions: text('Collection instructions', 'تعليمات الاستلام') }[key];
               const invalid = errors.includes(key);
               if (key === 'plate') return <div key={key} className="checkout-field field-plate"><label htmlFor="collection-plate">{label}</label>
                 <div className="plate-entry" dir="ltr"><span className="plate-country"><span className="plate-flag" aria-hidden="true">🇶🇦</span><span>QATAR<br /><span lang="ar">قطر</span></span></span><input id="collection-plate" type="text" inputMode="numeric" autoComplete="off" required minLength={3} maxLength={6} pattern="[0-9]{3,6}" placeholder="000000" value={customer.plate.slice(1)} aria-label={text('Plate number, 3 to 6 digits', 'رقم اللوحة، من ٣ إلى ٦ أرقام')} aria-invalid={invalid} aria-describedby={invalid ? 'hint-plate' : undefined} onChange={e => { const number = digits(e.target.value).replace(/\D/g, '').slice(0, 6); setCustomer({ ...customer, plate: `${customer.plate[0] || 'Q'}${number}` }); setErrors(errors.filter(x => x !== 'plate')); }} /><strong className="plate-current-series" aria-hidden="true">{customer.plate[0] || 'Q'}</strong></div>
@@ -183,8 +228,9 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
                   : <input id={`collection-${key}`} type="text" autoComplete={key === 'name' ? 'name' : 'off'} required maxLength={100} value={customer[key]} aria-invalid={invalid} aria-describedby={invalid ? `hint-${key}` : undefined} onChange={e => { setCustomer({ ...customer, [key]: e.target.value }); setErrors(errors.filter(x => x !== key)); }} />}
                 {invalid && <small id={`hint-${key}`} className="field-error">{key === 'phone' ? text('Enter a valid Qatar mobile number.', 'أدخل رقم جوال قطرياً صالحاً.') : text('Please enter your name.', 'يرجى إدخال اسمك.')}</small>}
               </label>;
-            })}</div>
-            <details className="optional-vehicle"><summary>{text('Add vehicle details', 'أضف تفاصيل السيارة')}</summary><div className="checkout-fields">{(['colour', 'car', 'instructions'] as const).map(key => <label key={key} className={`checkout-field field-${key}`} htmlFor={`collection-${key}`}><span>{{ colour: text('Car colour', 'لون السيارة'), car: text('Make / model', 'نوع / طراز السيارة'), instructions: text('Collection instructions', 'تعليمات الاستلام') }[key]}</span>{key === 'instructions' ? <textarea id={`collection-${key}`} value={customer[key]} maxLength={400} rows={3} onChange={e => setCustomer({ ...customer, [key]: e.target.value })} /> : <input id={`collection-${key}`} value={customer[key]} maxLength={key === 'colour' ? 50 : 80} onChange={e => setCustomer({ ...customer, [key]: e.target.value })} />}</label>)}</div></details>
+            })}
+            </div>
+            <details className="optional-vehicle"><summary>{text('Add vehicle details', 'أضف تفاصيل السيارة')}</summary><div className="checkout-fields">{(['colour', 'instructions'] as const).map(key => <label key={key} className={`checkout-field field-${key}`} htmlFor={`collection-${key}`}><span>{{ colour: text('Car colour', 'لون السيارة'), car: text('Car model', 'طراز السيارة'), instructions: text('Collection instructions', 'تعليمات الاستلام') }[key]}</span>{key === 'instructions' ? <textarea id={`collection-${key}`} value={customer[key]} maxLength={400} rows={3} onChange={e => setCustomer({ ...customer, [key]: e.target.value })} /> : <input id={`collection-${key}`} value={customer[key]} maxLength={key === 'colour' ? 50 : 80} onChange={e => setCustomer({ ...customer, [key]: e.target.value })} />}</label>)}</div></details>
             <div className="checkout-step-action"><button type="submit" className="checkout-primary" disabled={!canPlace || !count || cart.unavailableCount > 0}>{text('Review order', 'مراجعة الطلب')}<Forward /></button></div>
           </form>
           </>}
@@ -195,13 +241,20 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
           {step === 'receipt' && receipt && <div data-order-id={receipt.id}>
             <p className="order-confirmed" role="status">{receipt.paymentMethod === 'mock' ? text('Payment confirmed', 'تم تأكيد الدفع') : text('Order received', 'تم استلام الطلب')}</p>
             {receipt.orderNumber != null && <p className="order-number" dir="ltr"><span>{text('Order number', 'رقم الطلب')}</span>{receipt.orderNumber}</p>}
-            <p className="checkout-branch">{text('Pickup', 'استلام')} · <strong>{branchName}</strong></p>
-            <p className="order-who"><strong>{customer.name}</strong><span dir="ltr">{displayPhone(customer.phone)}</span></p>
-            <QatarPlate plate={customer.plate} />
-            <ul className="order-summary">{cart.lines.map(line => <li key={line.key}><span><b>{line.displayName}</b>{line.meta && <small>{line.meta}</small>}{line.note && <small>{line.note}</small>}</span><span>×{line.qty}</span><span dir="ltr">{ticketMoney(line.lineTotal)}</span></li>)}</ul>
+            <OrderProgress status={receipt.status} lang={lang} />
+            <div className="confirmation-branch"><p className="checkout-branch">{text('Pickup', 'استلام')} · <strong>{receiptBranchName}</strong></p>
+              <a className="branch-call" href={`tel:+${menu.settings.whatsappE164}`} aria-label={text(`Call ${receiptBranchName} branch`, `اتصل بفرع ${receiptBranchName}`)}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 3 3 5-2 2c1.3 2.7 3.3 4.7 6 6l2-2 5 3v3c0 1-1 2-2 2C9.6 21.4 2.6 14.4 2 5c0-1 1-2 2-2h3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                {text('Call', 'اتصال')}
+              </a></div>
+            {receiptBranch && <DirectionsLink branchName={receiptBranchName} href={receiptBranch.mapsUrl} text={text} />}
+            <p className="order-who"><strong>{receiptCustomer.name}</strong><span dir="ltr">{displayPhone(receiptCustomer.phone)}</span></p>
+            {/^[QTR]\d{3,6}$/.test(receiptCustomer.plate) && <QatarPlate plate={receiptCustomer.plate} />}
+            {receiptCustomer.brand && <p className="order-vehicle review-vehicle"><CarBrandLogo brand={findCarBrand(receiptCustomer.brand)} /><span>{[receiptCustomer.colour, carBrandName(receiptCustomer.brand, lang)].filter(Boolean).join(' · ')}</span></p>}
+            <ul className="order-summary">{receiptLines.map(line => <li key={line.key}><span><b>{line.displayName}</b>{line.meta && <small>{line.meta}</small>}{line.note && <small>{line.note}</small>}</span><span>×{line.qty}</span><span dir="ltr">{ticketMoney(line.lineTotal)}</span></li>)}</ul>
+            {(receipt.details?.discountMinor ?? 0) > 0 && <p className="order-discount"><span>{text('Discounts', 'الخصومات')}</span><span dir="ltr">−{money(receipt.details!.discountMinor)}</span></p>}
             <p className="order-total"><span>{t.total}</span><strong dir="ltr">{money(receipt.totalMinor)}</strong></p>
-            {branch && <DirectionsLink branchName={branchName} href={branch.mapsUrl} text={text} />}
-            <button type="button" className="checkout-primary" onClick={() => { cart.clear(); setCustomer(emptyCustomer); setReceipt(null); sessionStorage.removeItem(orderKey); attempt.current = null; go('menu'); }}>{text('Back to menu', 'العودة للقائمة')}<Forward /></button>
+            <button type="button" className="checkout-primary" onClick={() => go('menu')}>{text('Back to menu', 'العودة للقائمة')}<Forward /></button>
           </div>}
           {error && <div className="checkout-error" role="alert"><p>{error}</p><button className="text-action" type="button" onClick={() => { go('menu'); router.refresh(); }}>{text('Refresh menu', 'تحديث القائمة')}</button></div>}
         </main>
@@ -209,7 +262,7 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
       <footer className="ordering-footer"><span>Sushinaa</span></footer>
     </div>
     {editing && <DishDetailSheet dish={editing.dish} ordering initialEntries={Array.from({ length: editing.qty }, () => ({ sel: editing.sel, note: editing.note }))} onSave={entries => cart.replace(editing.key, entries)} onClose={() => setEditing(null)} />}
-  </div>;
+  </div></>;
 }
 function QatarPlate({ plate }: { plate: string }) { return <div className="plate-card" dir="ltr" aria-label={`Qatar plate ${plate[0]} ${plate.slice(1)}`}><span className="plate-country"><span className="plate-flag" aria-hidden="true">🇶🇦</span><span>QATAR<br /><span lang="ar">قطر</span></span></span><strong className="plate-digits">{plate.slice(1)}</strong><strong className="plate-letter">{plate[0]}</strong></div>; }
 function DirectionsLink({ branchName, href, text }: { branchName: string; href: string; text: (en: string, ar: string) => string }) { return <a className="directions-link" href={href} target="_blank" rel="noopener noreferrer" aria-label={text(`Open Google Maps directions to ${branchName}`, `افتح خرائط Google للوصول إلى ${branchName}`)}><span className="directions-pin" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z" stroke="currentColor" strokeWidth="1.6"/><circle cx="12" cy="10" r="2.3" stroke="currentColor" strokeWidth="1.6"/></svg></span><span className="directions-copy"><strong>{text('Get directions', 'اتجاهات الوصول')}</strong><small>{branchName} · Google Maps</small></span><span className="directions-arrow" aria-hidden="true">↗</span></a>; }
