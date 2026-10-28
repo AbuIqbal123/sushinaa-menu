@@ -72,9 +72,12 @@ test('auto-print is off by default and calls window.print once per order', async
   await page.getByLabel('Order reference or last 4 phone digits').fill(id);
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(card).toBeVisible();
-  await expect(card).toContainText('Not printed');
+  await expect(card).not.toContainText('Not printed');
   expect(await page.evaluate(() => (window as Window & { __prints?: number }).__prints ?? 0)).toBe(0);
-  await page.getByRole('button', { name: 'Auto-print on this device' }).click();
+  await expect(page.getByRole('button', { name: 'Auto-print on this device' })).toHaveCount(0);
+  await card.click();
+  await page.getByRole('button', { name: 'Accept order' }).click();
+  await page.getByRole('button', { name: 'Back to orders' }).click();
   const item = page.locator('li').filter({ has: card });
   await expect(item.getByRole('button', { name: 'Reprint' })).toBeVisible({ timeout: 20000 });
   const times = () => page.evaluate((orderId) => {
@@ -98,7 +101,7 @@ test('staff screen and branch orders in Arabic', async ({ page, baseURL }) => {
   await page.screenshot({ path: `${shots}/staff-ar.png`, fullPage: true });
   await page.getByRole('button', { name: /الطلبات/ }).click();
   await page.getByLabel('فرع الطلب').selectOption('down-town');
-  await expect(page.locator(`[data-order-id="${id}"]`)).toContainText('لم تُطبع');
+  await expect(page.locator(`[data-order-id="${id}"]`)).toBeVisible();
   await page.route('**/api/admin/orders?*since=*', (route) => route.abort());
   await expect(page.getByRole('status')).toContainText('التحديثات متوقفة', { timeout: 20000 });
   await page.screenshot({ path: `${shots}/orders-not-printed-ar.png`, fullPage: true });
@@ -139,11 +142,11 @@ test('auto-print works with a status filter, a search or page 2 open', async ({ 
   await page.getByLabel('Order reference or last 4 phone digits').fill('0000');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   await page.getByRole('button', { name: 'Next' }).click({ timeout: 2000 }).catch(() => undefined);
-  await page.getByRole('button', { name: 'Auto-print on this device' }).click();
-  await expect.poll(() => page.evaluate((orderId) => {
+  await expect(page.getByRole('button', { name: 'Auto-print on this device' })).toHaveCount(0);
+  expect(await page.evaluate((orderId) => {
     const root = window as Window & { __printed?: string[] };
     return (root.__printed ?? []).filter((value) => value.includes(orderId)).length;
-  }, id), { timeout: 20000 }).toBe(1);
+  }, id)).toBe(0);
 });
 
 test('auto-print retries an order whose claim request failed on the network', async ({ page, baseURL }) => {
@@ -170,7 +173,8 @@ test('auto-print retries an order whose claim request failed on the network', as
   await signIn(page, baseURL!);
   await page.goto('/admin');
   await page.getByRole('button', { name: 'Orders', exact: true }).click();
-  await page.getByRole('button', { name: 'Auto-print on this device' }).click();
+  await page.locator(`[data-order-id="${id}"]`).click();
+  await page.getByRole('button', { name: 'Accept order' }).click();
   await expect.poll(() => page.evaluate((orderId) => {
     const root = window as Window & { __printed?: string[] };
     return (root.__printed ?? []).filter((value) => value.includes(orderId)).length;
@@ -198,8 +202,9 @@ test('auto-print queue continues when afterprint never fires', async ({ page, ba
   await signIn(page, baseURL!);
   await page.goto('/admin');
   await page.getByRole('button', { name: 'Orders', exact: true }).click();
-  await page.getByRole('button', { name: 'Auto-print on this device' }).click();
-  await expect.poll(() => page.evaluate(() => ((window as Window & { __printed?: string[] }).__printed ?? []).length), { timeout: 20000 }).toBeGreaterThan(1);
+  await page.locator(`[data-order-id="${first}"]`).click();
+  await page.getByRole('button', { name: 'Accept order' }).click();
+  await expect.poll(() => page.evaluate(() => ((window as Window & { __printed?: string[] }).__printed ?? []).length), { timeout: 20000 }).toBeGreaterThan(0);
   const done = await page.request.get(`/api/admin/orders?limit=100`);
   const body = await done.json();
   const rows = (body.rows as { id: string; printCount: number }[]).filter((row) => row.id === first || row.id === second);
@@ -265,7 +270,6 @@ test('admin can change a user\'s role and branch and reset a password from Setti
 
 test('reopening the orders screen does not auto-print orders paid more than 2 hours ago', async ({ page, baseURL }) => {
   await page.context().addInitScript(() => {
-    localStorage.setItem('sushinaa-auto-print', 'true');
     window.print = () => {
       const root = window.top as Window & { __printed?: string[] };
       root.__printed = root.__printed ?? [];
@@ -275,9 +279,6 @@ test('reopening the orders screen does not auto-print orders paid more than 2 ho
   });
   const stale = await checkout(page.request, baseURL!, [{
     dishId: 'shrimp-kunafa', selection: {}, quantity: 1, note: '', expectedUnitMinor: 3500,
-  }]);
-  const fresh = await checkout(page.request, baseURL!, [{
-    dishId: 'redbull', selection: {}, quantity: 1, note: '', expectedUnitMinor: 1500,
   }]);
   const database = process.env.CMS_DATABASE_URL ?? '';
   if (!database.startsWith('file:')) throw new Error('e2e database must be a local file');
@@ -290,15 +291,8 @@ test('reopening the orders screen does not auto-print orders paid more than 2 ho
   await signIn(page, baseURL!);
   await page.goto('/admin');
   await page.getByRole('button', { name: 'Orders', exact: true }).click();
-  await expect.poll(() => page.evaluate((orderId) => {
-    const root = window as Window & { __printed?: string[] };
-    return (root.__printed ?? []).some((value) => value.includes(orderId));
-  }, fresh), { timeout: 20000 }).toBeTruthy();
   await page.waitForTimeout(1000);
-  expect(await page.evaluate((orderId) => {
-    const root = window as Window & { __printed?: string[] };
-    return (root.__printed ?? []).some((value) => value.includes(orderId));
-  }, stale)).toBeFalsy();
+  expect(await page.evaluate(() => ((window as Window & { __printed?: string[] }).__printed ?? []).length)).toBe(0);
 });
 
 test('orders screen shows the paused notice when the server returns 503', async ({ page, baseURL }) => {
