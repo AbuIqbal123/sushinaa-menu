@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 export type PickerOption = { id: string; label: string; disabled: boolean };
 
-export function CategoryOverlay({ open, title, label, closeLabel, logo, brand, options, value, onChange, onClose }: {
+export function CategoryOverlay({ open, title, label, closeLabel, logo, brand, options, value, filters, onChange, onClose }: {
   open: boolean;
   title: string;
   label: string;
@@ -13,6 +13,7 @@ export function CategoryOverlay({ open, title, label, closeLabel, logo, brand, o
   brand: string;
   options: PickerOption[];
   value: string;
+  filters: ReactNode;
   onChange: (id: string) => void;
   onClose: () => void;
 }) {
@@ -44,6 +45,7 @@ export function CategoryOverlay({ open, title, label, closeLabel, logo, brand, o
           <p>{label}</p>
           <h2 id="category-overlay-title">{title}</h2>
         </div>
+        {filters}
         <nav className="category-grid" aria-label={label}>
           {options.map((option, index) => (
             <button key={option.id} type="button" className="category-tile" disabled={option.disabled}

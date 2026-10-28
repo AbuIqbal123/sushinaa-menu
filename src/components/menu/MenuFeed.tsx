@@ -44,7 +44,7 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
   const [showCategoryHint, setShowCategoryHint] = useState(true);
   const [pickedCategory, setPickedCategory] = useState("");
   useEffect(() => {
-    const timer = window.setTimeout(() => setShowCategoryHint(false), 3500);
+    const timer = window.setTimeout(() => setShowCategoryHint(false), 6500);
     return () => window.clearTimeout(timer);
   }, []);
   const searchButtonRef = useRef<HTMLButtonElement>(null);
@@ -103,9 +103,11 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
 
   // A category jump scrolls on a later turn. Ignore the position until the latest one lands.
   const snapHold = useRef(0);
+  const demonstrating = useRef(false);
+  const demoSeen = useRef(false);
   const syncCategory = useCallback(() => {
     const feed = feedRef.current;
-    if (!feed || search || !dishes.length || !feed.clientHeight || snapHold.current > 0) return;
+    if (!feed || search || !dishes.length || !feed.clientHeight || snapHold.current > 0 || demonstrating.current) return;
     const visual = Math.round(feed.scrollTop / feed.clientHeight);
     const real = ((visual % dishes.length) + dishes.length) % dishes.length;
     setVisualIndex(visual);
@@ -118,7 +120,7 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
   const wrapLoop = useCallback(() => {
     const feed = feedRef.current;
     const n = dishes.length;
-    if (!feed || search || !n || !feed.clientHeight) return;
+    if (!feed || search || !n || !feed.clientHeight || demonstrating.current) return;
     const visual = Math.round(feed.scrollTop / feed.clientHeight);
     if (visual < n) feed.scrollTo({ top: (visual + n) * feed.clientHeight, behavior: "instant" });
     else if (visual >= n * 2) feed.scrollTo({ top: (visual - n) * feed.clientHeight, behavior: "instant" });
@@ -190,6 +192,58 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
       window.cancelAnimationFrame(raf);
     };
   }, [search, syncCategory, wrapLoop]);
+
+  // A short peek reveals the next photo without skipping the first dish. Any
+  // customer input cancels it immediately; never pull someone back mid-swipe.
+  useEffect(() => {
+    const feed = feedRef.current;
+    if (!feed || demoSeen.current || searchOpen || sheetOpen || diet !== "all" || dishes.length < 2) return;
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (motion.matches) { demoSeen.current = true; return; }
+    let frame = 0;
+    let origin: number | null = null;
+    let stopped = false;
+    const stop = () => {
+      stopped = true;
+      window.clearTimeout(timer);
+      window.cancelAnimationFrame(frame);
+      demonstrating.current = false;
+      feed.style.removeProperty("scroll-snap-type");
+    };
+    const timer = window.setTimeout(() => {
+      if (stopped) return;
+      demoSeen.current = true;
+      origin = feed.scrollTop;
+      demonstrating.current = true;
+      feed.style.scrollSnapType = "none";
+      const start = performance.now();
+      const animate = (now: number) => {
+        const progress = Math.min(1, (now - start) / 1500);
+        // Ease out, pause briefly at the peek, then settle back.
+        const phase = progress < .4 ? progress / .4 : progress < .6 ? 1 : (1 - progress) / .4;
+        const eased = (1 - Math.cos(Math.PI * phase)) / 2;
+        feed.scrollTop = origin! + feed.clientHeight * .3 * eased;
+        if (progress < 1) frame = window.requestAnimationFrame(animate);
+        else {
+          demonstrating.current = false;
+          feed.style.removeProperty("scroll-snap-type");
+          syncCategory();
+        }
+      };
+      frame = window.requestAnimationFrame(animate);
+    }, 1100);
+    const interrupt = () => { demoSeen.current = true; stop(); };
+    const events = ["pointerdown", "touchstart", "wheel", "keydown"] as const;
+    events.forEach((event) => window.addEventListener(event, interrupt, { passive: true, capture: true }));
+    motion.addEventListener("change", interrupt);
+    return () => {
+      // A rerender/modal must not leave the menu partway through the demo.
+      if (demonstrating.current && origin !== null) feed.scrollTop = origin;
+      stop();
+      events.forEach((event) => window.removeEventListener(event, interrupt, true));
+      motion.removeEventListener("change", interrupt);
+    };
+  }, [diet, dishes.length, searchOpen, sheetOpen, syncCategory]);
 
   const measureSearch = useCallback(() => {
     const button = searchButtonRef.current;
@@ -263,23 +317,25 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
             <img src={menu.settings.logo} alt="" className="wordmark-img" width={46} height={44} />
             <span className="branch-switch"><span className="branch-switch-name">{branch}</span><span aria-hidden="true">▾</span></span>
           </Link>
-          <button ref={categoryButtonRef} type="button" className="cart-btn category-toggle"
-            aria-label={`${t.category}: ${sectionName(category, lang)}`} title={sectionName(category, lang)}
-            aria-haspopup="dialog" aria-expanded={categoriesOpen} aria-controls="category-overlay"
-            onClick={() => { setShowCategoryHint(false); setSearchOpen(false); setCategoriesOpen(true); }}>
-            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-            <span className="current-category">{sectionName(category, lang) || t.category}</span>
-          </button>
-          {showCategoryHint && !sheetOpen && !searchOpen && activeIndex === 0 ? (
-            <span className="category-discovery" aria-hidden="true">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                <path d="M20 12H4m6-6-6 6 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <div className="category-navigation">
+            <button ref={categoryButtonRef} type="button" className="cart-btn category-toggle"
+              aria-label={`${t.category}: ${sectionName(category, lang)}`} title={sectionName(category, lang)}
+              aria-haspopup="dialog" aria-expanded={categoriesOpen} aria-controls="category-overlay"
+              onClick={() => { setShowCategoryHint(false); setSearchOpen(false); setCategoriesOpen(true); }}>
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
               </svg>
-              <span>{t.categoryHint}</span>
-            </span>
-          ) : null}
+              <span className="current-category">{sectionName(category, lang) || t.category}</span>
+            </button>
+            {showCategoryHint && !sheetOpen && !searchOpen && activeIndex === 0 ? (
+              <span className="category-discovery" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                  <path d="M20 12H4m6-6-6 6 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span>{t.categoryHint}</span>
+              </span>
+            ) : null}
+          </div>
         </div>
         <div className="chrome-actions">
           {/* One element: the button's pill opens into the field, toward the logo. */}
@@ -313,13 +369,6 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
         </div>
       </header>
       {branchBar ? <div className="order-branch-bar" inert={sheetOpen}>{branchBar}</div> : null}
-      <div className="filter-bar" aria-label={t.filters} inert={sheetOpen ? true : undefined}>
-        <div className="chip-row chip-row-diet" aria-label={t.dietary}>
-          {dietChips.map((chip) => <button key={chip.id} type="button"
-            className={`chip chip-diet ${diet === chip.id ? "chip-on" : ""}`} aria-pressed={diet === chip.id}
-            onClick={() => setDiet(chip.id)}>{t[chip.id]}</button>)}
-        </div>
-      </div>
       <div ref={feedRef} id="main" className={`feed${search ? " feed-search" : ""}`} role={search ? "region" : "feed"}
         aria-label={t.menuFeed} inert={sheetOpen ? true : undefined} style={{ overflowY: sheetOpen ? "hidden" : undefined }}>
         {dishes.length === 0 ? <div className="empty-filter"><p>{t.noMatch}</p>
@@ -350,13 +399,21 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
               active={item.copy === 1 && item.real === activeIndex}
               eager={close(delta) || (atSeam && (close(delta - n) || close(delta + n)))}
               inert={item.copy !== 1}
-              showHint={item.copy === 1 && item.real === 0 && n > 1} onOpen={setDetail} />;
+              showHint={showCategoryHint && !sheetOpen && !searchOpen && item.copy === 1 && item.real === 0 && n > 1} onOpen={setDetail} />;
           })}
       </div>
       {itemCount > 0 && !sheetOpen ? <button type="button" className="sticky-cta" onClick={() => setOpen(true)}>
         {t.viewOrder} · {formatQar(totalQar, lang, menu.settings)}</button> : null}
       <CategoryOverlay open={categoriesOpen} title={t.menu} label={t.category} closeLabel={t.close}
         logo={menu.settings.logo} brand={t.brand} value={category}
+        filters={<div className="category-filters" role="group" aria-label={t.filters}>
+          <p>{t.dietary}</p>
+          <div className="chip-row chip-row-diet" aria-label={t.dietary}>
+            {dietChips.map((chip) => <button key={chip.id} type="button"
+              className={`chip chip-diet ${diet === chip.id ? "chip-on" : ""}`} aria-pressed={diet === chip.id}
+              onClick={() => setDiet(chip.id)}>{t[chip.id]}</button>)}
+          </div>
+        </div>}
         options={menu.categories.map((c) => ({ id: c.id, label: sectionName(c.id, lang), disabled: !filledSections.has(c.id) }))}
         onClose={closeCategories} onChange={(section) => { jumpTo(section); setPickedCategory(sectionName(section, lang)); closeCategories(); }} />
       <div className="sr-only" aria-live="polite">{pickedCategory}</div>
