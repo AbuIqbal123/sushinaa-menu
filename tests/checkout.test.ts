@@ -39,7 +39,7 @@ test('every day and branch changes status at exactly its configured boundaries',
     assert.equal(branchStatus(b.hours, qatarClock(new Date(midnight + end * 60000))).open, false);
   }
 });
-const customer = { name: 'علي O’Neil', phone: '+974 ٥٥٥٥ ١٢٣٤', plate: 'q٠٠١٢٣', colour: '', car: '', instructions: '' };
+const customer = { name: 'علي O’Neil', phone: '+974 ٥٥٥٥ ١٢٣٤', brand: 'toyota', plate: 'q٠٠١٢٣', colour: '', car: '', instructions: '' };
 test('normalises Arabic and Persian digits and requires a Q, T or R plate with 3–6 numbers', () => {
   const parsed = customerSchema.parse(customer);
   assert.equal(parsed.phone, '97455551234'); assert.equal(parsed.plate, 'Q00123');

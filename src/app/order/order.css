@@ -283,3 +283,38 @@
 .order-progress.is-cancelled .order-progress-symbol { background: #f4dedd; color: #8b2025; }
 @keyframes order-ready-in { from { transform: scale(.7); opacity: .4; } to { transform: scale(1); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .order-progress.is-ready .order-progress-symbol { animation: none; } .order-progress li > span { transition: none; } }
+
+.field-brand > label { font-size: 12px; }
+.ordering-page .car-brand-trigger { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 66px; padding: 10px 14px; border: 1px solid var(--order-line); border-radius: 8px; background: #fff; color: var(--order-muted); text-align: start; font-size: 14px; }
+.ordering-page .car-brand-trigger.has-value { color: var(--order-paper); }
+.ordering-page .car-brand-trigger[aria-invalid="true"] { border-color: #a3312c; }
+.car-brand-trigger > span:nth-child(2) { flex: 1; }
+.car-brand-chevron { flex: 0 0 18px; color: #8b2025; }
+[dir="rtl"] .car-brand-chevron { transform: scaleX(-1); }
+.car-brand-logo { display: grid; place-items: center; width: 44px; height: 44px; flex: 0 0 44px; overflow: hidden; border-radius: 8px; background: #fff; color: #766b5c; }
+.car-brand-logo > span { display: block; width: 44px; height: 44px; background-size: 471.5px 1024px; background-repeat: no-repeat; }
+.car-brand-dialog { box-sizing: border-box; width: min(100%, 480px); max-width: min(100%, 480px); height: min(760px, 88dvh); max-height: 88dvh; margin: auto auto 0; padding: 0; border: 0; border-radius: 24px 24px 0 0; background: #fbf4e6; color: #14110f; box-shadow: 0 -16px 60px #0003; font-family: var(--font-sans); overflow: hidden; }
+.car-brand-dialog[open] { animation: car-brand-enter 240ms cubic-bezier(.23,1,.32,1); }
+.car-brand-dialog::backdrop { background: #14110fa6; backdrop-filter: blur(3px); }
+.car-brand-panel { display: flex; flex-direction: column; height: 100%; padding: 12px 20px env(safe-area-inset-bottom, 0px); }
+.car-brand-handle { display: block; flex: 0 0 4px; width: 44px; margin: 0 auto 10px; border-radius: 4px; background: #d3c4ae; }
+.car-brand-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 0 12px; }
+.car-brand-header h2 { margin: 0; font-family: var(--font-display); font-size: 25px; font-weight: 400; line-height: 1.25; }
+.car-brand-dialog[dir="rtl"] .car-brand-header h2 { font-family: var(--font-arabic); font-size: 23px; }
+.car-brand-dialog .car-brand-close { display: grid; place-items: center; min-width: 44px; min-height: 44px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #8b2025; }
+.car-brand-dialog button { cursor: pointer; }
+.car-brand-dialog :is(button,input):focus-visible { outline: 2px solid #a3312c; outline-offset: 2px; }
+.car-brand-search { display: flex; flex: 0 0 auto; align-items: center; gap: 10px; min-height: 48px; margin: 0 0 10px; padding-inline: 14px; border: 1px solid #d8cdbd; border-radius: 12px; background: #f1e7d7; color: #7d6b54; }
+.car-brand-search input { width: 100%; min-width: 0; min-height: 46px; padding: 0; background: transparent; border: 0; color: #14110f; font: inherit; font-size: 16px; outline-offset: 0; }
+.car-brand-search input::placeholder { color: #7d6b54; opacity: 1; }
+.car-brand-list { flex: 1; overflow-y: auto; min-height: 0; list-style: none; margin: 0 -4px; padding: 0 4px; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #c8b99f transparent; }
+.car-brand-option { display: flex; align-items: center; gap: 14px; min-height: 70px; width: 100%; padding: 11px 0; border: 0; border-bottom: 1px solid #14110f16; background: transparent; color: #14110f; text-align: start; font: inherit; }
+.car-brand-option:hover, .car-brand-option[aria-pressed="true"] { background: #efe1cb75; }
+.car-brand-name { flex: 1; font-size: 15px; font-weight: 500; }
+.car-brand-dialog[dir="rtl"] .car-brand-name { font-family: var(--font-arabic); }
+.car-brand-check { display: grid; place-items: center; width: 22px; height: 22px; flex: 0 0 22px; border: 1.5px solid #c0ab8b; border-radius: 50%; color: white; }
+.car-brand-option[aria-pressed="true"] .car-brand-check { background: #a3312c; border-color: #a3312c; }
+.car-brand-empty { padding: 22px 0; color: #766b5c; text-align: center; font-size: 14px; }
+@keyframes car-brand-enter { from { transform: translateY(24px); opacity: .6; } to { transform: translateY(0); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .car-brand-dialog[open] { animation: none; } }
+.order-vehicle { margin: 10px 0; font-size: 13px; color: var(--order-muted); }

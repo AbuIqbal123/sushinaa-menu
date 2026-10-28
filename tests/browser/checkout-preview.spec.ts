@@ -19,6 +19,9 @@ for (const lang of ['en', 'ar']) {
     await page.locator('#collection-plate').fill(lang === 'ar' ? '٠١٢٣' : '0123');
     await expect(page.locator('#collection-phone')).toHaveValue('55551234');
     await expect(page.locator('#collection-plate')).toHaveValue('0123');
+  await page.locator('#collection-brand').click();
+  await page.locator('#car-brand-dialog input[type=search]').fill('Toyota');
+  await page.locator('[data-brand-id="toyota"]').click();
     await expect(page.locator('.checkout-step-action button')).toBeEnabled({ timeout: 20000 });
     await page.locator('.checkout-step-action button').click();
     await expect(page.locator('.checkout-ticket.ticket')).toBeVisible();

@@ -116,7 +116,7 @@ export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; 
             <div><dt>{text('Plate', 'اللوحة')}</dt><dd dir="ltr">{data.customer.plate}</dd></div>
             <div><dt>{text('Branch', 'الفرع')}</dt><dd>{branch?.name}</dd></div>
             <div><dt>{text('Payment', 'الدفع')}</dt><dd>{data.paymentMethod === 'mock' || data.paidAt ? text('Paid', 'مدفوع') : text('Pay at pickup', 'الدفع عند الاستلام')}</dd></div>
-            {(data.customer.colour || data.customer.car) && <div><dt>{text('Vehicle', 'السيارة')}</dt><dd>{[data.customer.colour, data.customer.car].filter(Boolean).join(' ')}</dd></div>}
+            {(data.customer.colour || data.customer.brand || data.customer.car) && <div><dt>{text('Vehicle', 'السيارة')}</dt><dd>{[data.customer.colour, data.customer.brand, data.customer.car].filter(Boolean).join(' ')}</dd></div>}
             {data.customer.instructions && <div><dt>{text('Instructions', 'التعليمات')}</dt><dd>{data.customer.instructions}</dd></div>}
           </dl>
         </section>

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CAR_BRANDS } from '@/ordering/car-brands';
 import type { Dish, Selection } from '@/catalog/types';
 import type { MenuData } from '@/cms/schema';
 import { publicMenu } from '@/cms/schema';
@@ -28,6 +29,7 @@ export const customerSchema = z.object({
   name: z.string().trim().min(1).max(100),
   phone: z.string().max(30).transform(normalizePhone).pipe(z.string().regex(/^974[3567]\d{7}$/)),
   plate: z.string().transform(s => digits(s).trim().toUpperCase()).pipe(z.string().regex(/^[QTR]\d{3,6}$/)),
+  brand: z.enum(CAR_BRANDS.map(brand => brand.id)),
   colour: optionalText(50), car: optionalText(80), instructions: optionalText(400),
 }).strict();
 export type Customer = z.infer<typeof customerSchema>;

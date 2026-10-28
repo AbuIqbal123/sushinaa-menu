@@ -1,5 +1,6 @@
 import type { Row } from '@libsql/client';
 import type { Copy } from '@/i18n/copy';
+import { carBrandName } from './car-brands';
 import { BRANCHES } from '@/branches/branches';
 import { minorAmount, formatQar } from '@/lib/money';
 import { selectionLabel } from '@/ordering/price';
@@ -94,6 +95,7 @@ export function ticketModel(row: Row, edits: ResolvedEdit[] = []): TicketModel {
     version?: number;
     branchName?: string;
     collection?: string;
+    customer?: { brand?: string } | null;
     lines?: StoredLine[];
     totalMinor?: number;
   };
@@ -134,7 +136,7 @@ export function ticketModel(row: Row, edits: ResolvedEdit[] = []): TicketModel {
     group.lines.push({ name: 'Discount', amount: minorAmount(-orderDiscount.amountMinor), quantity: 1, note: '', total: price(-orderDiscount.amountMinor), options: '', voided: false });
     groups.set('Items', group);
   }
-  const car = [row.car_plate, row.car_colour, row.car_model].filter((part) => typeof part === 'string' && part).join(' · ');
+  const car = [row.car_plate, row.car_colour, removed ? '' : carBrandName(snapshot.customer?.brand), row.car_model].filter((part) => typeof part === 'string' && part).join(' · ');
   const printCount = Number(row.print_count ?? 0);
   return {
     branchName: snapshot.branchName || 'Sushinaa',

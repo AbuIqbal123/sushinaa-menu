@@ -11,7 +11,7 @@ async function login(request: APIRequestContext, origin: string) {
 async function order(request: APIRequestContext, origin: string, long = false) {
   await request.get('/api/orders');
   const response = await request.post('/api/orders', { headers: { ...headers(origin), 'Idempotency-Key': crypto.randomUUID() }, data: {
-    branchId: 'down-town', paymentMethod: 'mock', customer: { name: 'Preview guest', phone: '55551234', plate: 'Q123456' },
+    branchId: 'down-town', paymentMethod: 'mock', customer: { brand: 'toyota', name: 'Preview guest', phone: '55551234', plate: 'Q123456' },
     lines: long ? [
       { dishId: 'sushinaa-burger', selection: { extras: ['spicy-mayo'] }, quantity: 2, note: 'Sauce on the side · الصوص على الجانب', expectedUnitMinor: 5800 },
       { dishId: 'shrimp-kunafa', selection: {}, quantity: 1, note: 'No sesame', expectedUnitMinor: 3500 },
@@ -46,6 +46,9 @@ for (const lang of ['en', 'ar']) test(`customer sees staff readiness live, inclu
   if(lang === 'ar') await expect(page.locator('.ordering-header .lang-btn')).toHaveText('English');
   await page.locator('#collection-name').fill('Preview guest');
   await page.locator('#collection-phone').fill('55551234'); await page.locator('#collection-plate').fill('123456');
+  await page.locator('#collection-brand').click();
+  await page.locator('#car-brand-dialog input[type=search]').fill('Toyota');
+  await page.locator('[data-brand-id="toyota"]').click();
   await page.locator('.checkout-step-action button').click(); await page.locator('.checkout-step-action button').click();
   const paid = page.waitForResponse(r=>r.url().includes('/mock-pay') && r.request().method()==='POST');
   await page.locator('.sadad-pay').click(); const id=(await (await paid).json()).id as string;

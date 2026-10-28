@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
+import { carBrandName } from '@/ordering/car-brands';
 import { getMenu } from '@/cms/repository';
 import { nationalPhone } from '@/ordering/checkout/validation';
 import { receiptReference } from '@/ordering/ticket';
@@ -22,7 +23,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   try {
     const id = (await params).id;
     const row = await loadTicket(staff.branchScope, id);
-    const snapshot = JSON.parse(String(row.snapshot)) as { branchName?: string; lines?: Parameters<typeof linesFromSnapshot>[0]; totalMinor?: number };
+    const snapshot = JSON.parse(String(row.snapshot)) as { customer?: { brand?: string } | null; branchName?: string; lines?: Parameters<typeof linesFromSnapshot>[0]; totalMinor?: number };
     const projected = applyEdits(linesFromSnapshot(snapshot.lines ?? []), await storedEdits(id));
     const meta = await orderEditMeta(id);
     const totals = orderTotals({ lines: projected.lines, totalMinor: Number(row.total_minor) });
@@ -43,7 +44,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
     model = {
       branchName: snapshot.branchName || 'Sushinaa',
       orderLabel: orderNumber ? `Order ${orderNumber}` : `Order ${orderShortCode(String(row.id))}`,
-      car: [row.car_plate, row.car_colour, row.car_model].filter(Boolean).join(' · '),
+      car: [row.car_plate, row.car_colour, carBrandName(snapshot.customer?.brand), row.car_model].filter(Boolean).join(' · '),
       customer: row.customer_name == null ? 'removed' : String(row.customer_name),
       phone: row.customer_phone == null ? 'removed' : nationalPhone(String(row.customer_phone)),
       reference: receiptReference(String(row.created_at), String(row.branch_id), orderNumber || '0'),

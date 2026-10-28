@@ -43,7 +43,7 @@ const when = new Date('2026-10-23T15:00:00+03:00');
 const dish = menu.dishes.find((item) => item.visible && item.available && item.kind.type === 'simple')!;
 const quoteInput = checkoutSchema.parse({
   branchId: 'down-town',
-  customer: { name: 'Test customer', phone: '97455551234', plate: 'Q123456', colour: 'silver', car: 'test car', instructions: 'gate note' },
+  customer: { name: 'Test customer', phone: '97455551234', brand: 'toyota', plate: 'Q123456', colour: 'silver', car: 'test car', instructions: 'gate note' },
   lines: [{ dishId: dish.id, selection: defaultSelection(dish), quantity: 1, note: 'line note', expectedUnitMinor: Math.round(unitPrice(dish, defaultSelection(dish)) * 100) }],
 });
 const snapshot: OrderSnapshot = quoteOrder(quoteInput, menu, when);
@@ -499,7 +499,7 @@ test('ticket prints CAR PICKUP with the car details', async () => {
     car_plate: 'Q123456', car_colour: 'silver', car_model: 'test car',
   });
   assert.equal(model.fulfilment, 'CAR PICKUP');
-  assert.equal(model.car, 'Q123456 · silver · test car');
+  assert.equal(model.car, 'Q123456 · silver · Toyota · test car');
 });
 
 test('polling with a cursor for a deleted order returns the first page and auto-print rows', async () => {
