@@ -24,17 +24,36 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
   const [q, setQ] = useState(''); const [search, setSearch] = useState('');
   const [page, setPage] = useState(1); const [data, setData] = useState<List | null>(null);
   const [detail, setDetail] = useState<string | null>(null); const [error, setError] = useState('');
-  const [sound, setSound] = useState(false); const [revision, setRevision] = useState(0);
+  const [sound, setSound] = useState(true); const [revision, setRevision] = useState(0);
   const [paused, setPaused] = useState(false); const [lastOk, setLastOk] = useState<string | null>(null);
   const latest = useRef<string | null>(null); const unread = useRef(0); const audio = useRef<HTMLAudioElement | null>(null);
   const activeRef = useRef(active); const soundRef = useRef(sound);
   useEffect(() => { activeRef.current = active; if (active) { unread.current = 0; onUnread(0); } }, [active, onUnread]);
   useEffect(() => { soundRef.current = sound; }, [sound]);
-  useEffect(() => { audio.current = new Audio('/order-chime.wav');
+  useEffect(() => { const chime = new Audio('/order-chime.wav');
+    chime.preload = 'auto';
+    audio.current = chime;
     const timer = window.setTimeout(() => {
-      try { setSound(localStorage.getItem('sushinaa-order-sound') === 'true'); } catch { /* Optional preference. */ }
+      try { setSound(localStorage.getItem('sushinaa-order-sound') !== 'false'); } catch { /* Enabled when preferences are unavailable. */ }
     }, 0);
-    return () => window.clearTimeout(timer);
+    // Browsers require a user gesture before audible playback. Unlock silently on
+    // the first interaction with the CMS, without requiring a separate sound toggle.
+    const unlock = () => {
+      if (!soundRef.current || !chime.paused) return;
+      chime.muted = true;
+      void chime.play().then(() => {
+        chime.pause(); chime.currentTime = 0; chime.muted = false;
+        document.removeEventListener('pointerdown', unlock, true);
+        document.removeEventListener('keydown', unlock, true);
+      }).catch(() => { chime.muted = false; });
+    };
+    document.addEventListener('pointerdown', unlock, true);
+    document.addEventListener('keydown', unlock, true);
+    return () => {
+      window.clearTimeout(timer); chime.pause();
+      document.removeEventListener('pointerdown', unlock, true);
+      document.removeEventListener('keydown', unlock, true);
+    };
   }, []);
   useEffect(() => {
     let live = true;
@@ -94,7 +113,7 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
   if (!active) return null;
   return <section className="staff-orders" dir="ltr">
     <div className="staff-tools"><button aria-pressed={sound} onClick={() => {
-      const next = !sound; setSound(next); try { localStorage.setItem('sushinaa-order-sound', String(next)); } catch { /* Optional preference. */ }
+      const next = !sound; soundRef.current = next; setSound(next); try { localStorage.setItem('sushinaa-order-sound', String(next)); } catch { /* Optional preference. */ }
       if (next) void audio.current?.play().catch(() => {});
     }}>{sound ? text('Sound on', 'الصوت مفعّل') : text('Enable sound', 'تفعيل الصوت')}</button>
       {typeof data?.unprintedCount === 'number' && <span className="staff-unprinted-count">{text('Not printed', 'لم تُطبع')} {data.unprintedCount}</span>}

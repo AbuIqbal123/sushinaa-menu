@@ -1,4 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
+import { getMenu } from '@/cms/repository';
+import { nationalPhone } from '@/ordering/checkout/validation';
+import { receiptReference } from '@/ordering/ticket';
 import { currentStaff } from '@/cms/auth';
 import { Receipt, type CustomerReceipt, type ReceiptAdjustment } from '@/components/order/Receipt';
 import { formatMinor, minorAmount } from '@/lib/money';
@@ -40,6 +43,10 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
     model = {
       branchName: snapshot.branchName || 'Sushinaa',
       orderLabel: orderNumber ? `Order ${orderNumber}` : `Order ${orderShortCode(String(row.id))}`,
+      car: [row.car_plate, row.car_colour, row.car_model].filter(Boolean).join(' · '),
+      customer: row.customer_name == null ? 'removed' : String(row.customer_name),
+      phone: row.customer_phone == null ? 'removed' : nationalPhone(String(row.customer_phone)),
+      reference: receiptReference(String(row.created_at), String(row.branch_id), orderNumber || '0'),
       when: new Date(String(row.created_at)).toLocaleString('en-GB', { timeZone: 'Asia/Qatar', dateStyle: 'medium', timeStyle: 'short' }),
       amended: Boolean(row.amended_at),
       lines: projected.lines.map((line) => {
@@ -47,6 +54,9 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
         const modifiers = line.kind ? selectionLabel({ kind: line.kind as never, freeDips: line.freeDips as never, extras: line.extras as never }, line.selection, 'en', copy) : '';
         return {
           name: line.name,
+          nameAr: line.nameAr,
+          quantity: line.quantity,
+          note: line.note,
           qtyLine: `${line.quantity} x ${minorAmount(line.unitMinor)}`,
           total: minorAmount(line.voided ? 0 : line.unitMinor * line.quantity),
           modifiers,
@@ -65,5 +75,6 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
     if (error instanceof OrderError && error.code === 'NOT_FOUND') notFound();
     throw error;
   }
-  return <Receipt model={model} />;
+  const { menu } = await getMenu();
+  return <Receipt model={model} logo={menu.settings.documentLogo || menu.settings.logo} />;
 }

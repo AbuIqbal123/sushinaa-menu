@@ -13,6 +13,7 @@ import { customerSchema, digits, displayPhone, type Customer } from '@/ordering/
 import { formatQar } from '@/lib/money';
 import type { PaymentStatus } from '@/ordering/checkout/payment';
 import { MockSadadGateway } from './MockSadadGateway';
+import { OrderProgress } from './OrderProgress';
 
 const emptyCustomer: Customer = { name: '', phone: '', plate: 'Q', colour: '', car: '', instructions: '' };
 type Step = 'menu' | 'details' | 'review' | 'payment' | 'receipt';
@@ -76,16 +77,28 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
   useEffect(() => {
     if (step !== 'receipt' || !receipt?.id) return;
     sessionStorage.setItem(orderKey, receipt.id);
-    const pull = () => {
-      if (document.visibilityState === 'hidden') return;
-      void fetch(`/api/orders/${receipt.id}`, { cache: 'no-store' }).then(async (response) => {
-        if (response.ok) setReceipt(await response.json() as Receipt);
-      }).catch(() => {});
+    if (receipt.status === 'completed' || receipt.status === 'refunded') return;
+    let stopped = false;
+    let running = false;
+    const controller = new AbortController();
+    const pull = async () => {
+      if (document.hidden || running || stopped) return;
+      running = true;
+      try {
+        const response = await fetch(`/api/orders/${receipt.id}`, { cache: 'no-store', signal: controller.signal });
+        if (response.ok && !stopped) setReceipt(await response.json() as Receipt);
+      } catch { /* Keep the last confirmed state and retry when online. */ }
+      finally { running = false; }
     };
+    void pull();
     document.addEventListener('visibilitychange', pull);
-    const timer = window.setInterval(pull, 30000);
-    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', pull); };
-  }, [step, receipt?.id]);
+    window.addEventListener('online', pull);
+    const timer = window.setInterval(pull, 5000);
+    return () => {
+      stopped = true; controller.abort(); window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', pull); window.removeEventListener('online', pull);
+    };
+  }, [step, receipt?.id, receipt?.status]);
   function go(next: Step) {
     const order: Step[] = ['menu', 'details', 'review', 'payment', 'receipt'];
     setMotion(order.indexOf(next) < order.indexOf(step) ? 'back' : 'forward');
@@ -195,12 +208,13 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
           {step === 'receipt' && receipt && <div data-order-id={receipt.id}>
             <p className="order-confirmed" role="status">{receipt.paymentMethod === 'mock' ? text('Payment confirmed', 'تم تأكيد الدفع') : text('Order received', 'تم استلام الطلب')}</p>
             {receipt.orderNumber != null && <p className="order-number" dir="ltr"><span>{text('Order number', 'رقم الطلب')}</span>{receipt.orderNumber}</p>}
+            <OrderProgress status={receipt.status} lang={lang} />
             <p className="checkout-branch">{text('Pickup', 'استلام')} · <strong>{branchName}</strong></p>
+            {branch && <DirectionsLink branchName={branchName} href={branch.mapsUrl} text={text} />}
             <p className="order-who"><strong>{customer.name}</strong><span dir="ltr">{displayPhone(customer.phone)}</span></p>
             <QatarPlate plate={customer.plate} />
             <ul className="order-summary">{cart.lines.map(line => <li key={line.key}><span><b>{line.displayName}</b>{line.meta && <small>{line.meta}</small>}{line.note && <small>{line.note}</small>}</span><span>×{line.qty}</span><span dir="ltr">{ticketMoney(line.lineTotal)}</span></li>)}</ul>
             <p className="order-total"><span>{t.total}</span><strong dir="ltr">{money(receipt.totalMinor)}</strong></p>
-            {branch && <DirectionsLink branchName={branchName} href={branch.mapsUrl} text={text} />}
             <button type="button" className="checkout-primary" onClick={() => { cart.clear(); setCustomer(emptyCustomer); setReceipt(null); sessionStorage.removeItem(orderKey); attempt.current = null; go('menu'); }}>{text('Back to menu', 'العودة للقائمة')}<Forward /></button>
           </div>}
           {error && <div className="checkout-error" role="alert"><p>{error}</p><button className="text-action" type="button" onClick={() => { go('menu'); router.refresh(); }}>{text('Refresh menu', 'تحديث القائمة')}</button></div>}

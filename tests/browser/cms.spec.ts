@@ -18,8 +18,8 @@ test("authenticated CMS CRUD, persistence, uploads and public integration", asyn
   await page.getByLabel("Username").fill(admin.username);
   await page.getByLabel("Password", { exact: true }).fill(`wrong-${Date.now()}`);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  // Next also renders an empty role="alert" route announcer; match the sign-in error only.
-  await expect(page.getByRole("alert").filter({ hasText: "Invalid" })).toBeVisible();
+  // The CMS uses Sonner for sign-in errors. Match the visible message itself.
+  await expect(page.getByText("Invalid username or password", { exact: true })).toBeVisible();
   await page.getByLabel("Password", { exact: true }).fill(admin.password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(
