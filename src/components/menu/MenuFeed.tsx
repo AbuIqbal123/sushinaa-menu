@@ -59,6 +59,7 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
   const pendingJump = useRef<Section | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
   const gestureRef = useRef<HTMLDivElement>(null);
+  const categoryHintRef = useRef<HTMLSpanElement>(null);
   const search = normalizeSearch(query);
   const searchNames = useMemo(
     () => new Map(menu.dishes.map((dish) => [dish.id, normalizeSearch(`${pickName(dish, "en")} ${pickName(dish, "ar")}`)])),
@@ -198,7 +199,7 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
   // customer input cancels it immediately; never pull someone back mid-swipe.
   useEffect(() => {
     const feed = feedRef.current;
-    if (!feed || demoSeen.current || searchOpen || sheetOpen || diet !== "all" || dishes.length < 2) return;
+    if (!feed || !showCategoryHint || demoSeen.current || searchOpen || sheetOpen || diet !== "all" || dishes.length < 2) return;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (motion.matches) { demoSeen.current = true; return; }
     let frame = 0;
@@ -219,28 +220,29 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
       demonstrating.current = true;
       feed.style.scrollSnapType = "none";
       if (gestureRef.current) {
-        gestureRef.current.style.transform = "translate(-50%, -50%) translateY(110px)";
+        gestureRef.current.style.transform = "translate(-50%, -50%) translate(-104px, 60px)";
         gestureRef.current.style.opacity = "0";
         gestureRef.current.hidden = false;
       }
       const start = performance.now();
       const animate = (now: number) => {
-        const progress = Math.min(1, (now - start) / 1600);
-        // Touch low, accelerate upward, then lift the finger away. Only the
-        // menu settles back; the hand never visibly travels downward.
-        const drag = Math.min(1, Math.max(0, (progress - .1) / .25)) ** 2;
-        const coast = Math.min(1, Math.max(0, (progress - .35) / .15));
-        const settle = Math.min(1, Math.max(0, (progress - .5) / .5));
-        const offset = progress < .35 ? .28 * drag
-          : progress < .5 ? .28 + .04 * (1 - (1 - coast) ** 3)
-          : .32 * (1 + Math.cos(Math.PI * settle)) / 2;
+        const progress = Math.min(1, (now - start) / 6500);
+        // Sweep clockwise along an arc from eight to eleven o'clock. One
+        // timeline keeps the hand, scroll preview and category hint together.
+        const raw = Math.min(1, Math.max(0, (progress - .1) / .3));
+        const sweep = raw * raw * (3 - 2 * raw);
+        const angle = (240 + 90 * sweep) * Math.PI / 180;
+        const settle = Math.min(1, Math.max(0, (progress - .52) / .2));
+        const offset = .3 * sweep * (1 + Math.cos(Math.PI * settle)) / 2;
         feed.scrollTop = origin! + feed.clientHeight * offset;
+        const opacity = Math.min(1, progress / .05, (1 - progress) / .22);
+        if (categoryHintRef.current) categoryHintRef.current.style.opacity = String(opacity);
         const gesture = gestureRef.current;
         if (gesture) {
-          const lift = Math.min(1, Math.max(0, (progress - .35) / .12));
-          gesture.style.transform = `translate(-50%, -50%) translateY(${110 - 220 * drag - 20 * lift}px)`;
-          gesture.style.opacity = String(Math.min(1, progress / .08) * (1 - lift));
-          if (progress >= .47) gesture.hidden = true;
+          gesture.style.transform = `translate(-50%, -50%) translate(${120 * Math.sin(angle)}px, ${-120 * Math.cos(angle)}px)`;
+          gesture.style.opacity = String(opacity);
+          const hand = gesture.querySelector<SVGElement>(".scroll-gesture-hand");
+          if (hand) hand.style.transform = `rotate(${-120 + 90 * sweep}deg)`;
         }
         if (progress < 1) frame = window.requestAnimationFrame(animate);
         else {
@@ -251,8 +253,8 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
         }
       };
       frame = window.requestAnimationFrame(animate);
-    }, 1100);
-    const interrupt = () => { demoSeen.current = true; stop(); };
+    }, 0);
+    const interrupt = () => { demoSeen.current = true; setShowCategoryHint(false); stop(); };
     const events = ["pointerdown", "touchstart", "wheel", "keydown"] as const;
     events.forEach((event) => window.addEventListener(event, interrupt, { passive: true, capture: true }));
     motion.addEventListener("change", interrupt);
@@ -263,7 +265,7 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
       events.forEach((event) => window.removeEventListener(event, interrupt, true));
       motion.removeEventListener("change", interrupt);
     };
-  }, [diet, dishes.length, searchOpen, sheetOpen, syncCategory]);
+  }, [diet, dishes.length, searchOpen, sheetOpen, showCategoryHint, syncCategory]);
 
   const measureSearch = useCallback(() => {
     const button = searchButtonRef.current;
@@ -350,7 +352,7 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
               <span className="current-category">{sectionName(category, lang) || t.category}</span>
             </button>
             {showCategoryHint && !sheetOpen && !searchOpen && activeIndex === 0 ? (
-              <span className="category-discovery" aria-hidden="true">
+              <span ref={categoryHintRef} className="category-discovery" aria-hidden="true">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
                   <path d="M20 12H4m6-6-6 6 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -425,9 +427,6 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
           })}
       </div>
       <div ref={gestureRef} className="scroll-gesture" hidden aria-hidden="true">
-        <svg className="scroll-gesture-trail" width="26" height="35" viewBox="0 0 26 35" fill="none">
-          <path d="m5 12 8-8 8 8M13 5v25" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
         <svg className="scroll-gesture-hand" width="64" height="80" viewBox="0 0 26 32" fill="currentColor">
           <path d="M8 16V4a2 2 0 0 1 4 0v8a2 2 0 0 1 4 0v1a2 2 0 0 1 4 0v2a2 2 0 0 1 4 0v7c0 5-3 8-8 8h-2c-3 0-5-2-7-5l-5-7c-1.5-2.5 1-4.5 3-2l3 3Z" stroke="#3a241d" strokeWidth="1" strokeLinejoin="round" />
           <path d="M12 12v6m4-5v6m4-4v5" stroke="#9d7663" strokeWidth=".8" strokeLinecap="round" />

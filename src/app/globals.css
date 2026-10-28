@@ -916,7 +916,7 @@ body {
   color: #fff3d9; filter: drop-shadow(0 3px 8px rgba(0,0,0,.65));
 }
 .scroll-gesture[hidden] { display: none; }
-.scroll-gesture-trail { opacity: .9; }
+.scroll-gesture-hand { transform: rotate(-120deg); transform-origin: 50% 85%; }
 @media (prefers-reduced-motion: reduce) { .scroll-gesture { display: none; } }
 
 button {
@@ -1572,11 +1572,11 @@ button {
 [dir="rtl"] .current-category { font-family: var(--font-arabic); }
 .category-discovery {
   position: absolute; top: calc(100% + 8px); inset-inline-start: 0;
-  display: flex; align-items: center; gap: 6px; width: 160px;
+  display: flex; align-items: center; gap: 6px; width: max-content; white-space: nowrap;
   padding: 6px 9px; border-radius: 10px; background: rgba(12,10,9,.85);
   color: #fff3d9; font: inherit; font-size: 13px; line-height: 1.25; font-weight: 700;
   text-shadow: 0 1px 5px #000; pointer-events: none;
-  animation: category-hint-fade 6500ms ease both;
+
 }
 .category-discovery svg { width: 20px; height: 20px; flex: 0 0 20px; animation: category-hint-point 650ms ease-in-out infinite; }
 [dir="rtl"] .category-discovery { font-family: var(--font-arabic); }

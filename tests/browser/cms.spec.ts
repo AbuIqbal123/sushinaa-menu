@@ -228,7 +228,7 @@ test("public menu works at mobile and desktop widths in both languages", async (
     await expect(page.locator("#dish-sushinaa-burger")).toBeVisible();
     await page.locator("#dish-sushinaa-burger .slide-hit").click();
     await expect(page.getByRole("dialog")).toContainText("Sushinaa burger");
-    await page.getByRole("button", { name: /Save item ·/ }).click();
+    await page.getByRole("button", { name: /Add to cart ·/ }).click();
     await expect(page.locator(".sticky-cta")).toContainText("53");
     await page.locator(".sticky-cta").click();
     await expect(page.getByRole("dialog")).toContainText("Sushinaa burger");

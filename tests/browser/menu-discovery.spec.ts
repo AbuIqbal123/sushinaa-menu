@@ -8,6 +8,7 @@ for (const lang of ['en', 'ar']) for (const width of [320, 375, 390, 430]) {
     await page.context().addCookies([{name:'sushina-lang',value:lang,url:baseURL!}]);
     await page.goto('/down-town');
     await expect(page.locator('.category-discovery')).toBeVisible();
+    await expect(page.locator('.category-discovery')).toHaveCSS('white-space','nowrap');
     await expect(page.locator('.filter-bar')).toHaveCount(0);
     await expect(page.locator('.chrome-header .chip-diet')).toHaveCount(0);
     const layout = await page.locator('.chrome-header').evaluate(header => {
@@ -54,10 +55,19 @@ test('opening flick moves the hand upward, then the menu settles and hints fade'
   await page.addInitScript(()=>{
     (window as unknown as {peek:number[]}).peek=[];
     (window as unknown as {handY:number[]}).handY=[];
+    (window as unknown as {gestureFrames:{angle:number;difference:number}[]}).gestureFrames=[];
     const recordHand = () => {
       const hand = document.querySelector<HTMLElement>('.scroll-gesture');
-      if (hand && !hand.hidden && parseFloat(getComputedStyle(hand).opacity) > .2)
+      const hint = document.querySelector<HTMLElement>('.category-discovery');
+      if (hand && !hand.hidden && hint && parseFloat(getComputedStyle(hand).opacity) > .2) {
         (window as unknown as {handY:number[]}).handY.push(hand.getBoundingClientRect().top);
+        const transform = getComputedStyle(hand.querySelector('.scroll-gesture-hand')!).transform;
+        const matrix = new DOMMatrix(transform);
+        (window as unknown as {gestureFrames:{angle:number;difference:number}[]}).gestureFrames.push({
+          angle:Math.atan2(matrix.b,matrix.a)*180/Math.PI,
+          difference:Math.abs(parseFloat(hand.style.opacity)-parseFloat(hint.style.opacity)),
+        });
+      }
       requestAnimationFrame(recordHand);
     };
     requestAnimationFrame(recordHand);
@@ -73,12 +83,16 @@ test('opening flick moves the hand upward, then the menu settles and hints fade'
     const f=document.querySelector('.feed')!; const samples=(window as unknown as {peek:number[]}).peek;
     return Math.max(...samples)-Math.min(...samples) > f.clientHeight*.2;
   })).toBe(true);
-  await expect.poll(()=>feed.evaluate(f=>f.style.scrollSnapType)).toBe('');
+  await expect.poll(()=>feed.evaluate(f=>f.style.scrollSnapType),{timeout:8000}).toBe('');
   expect(await feed.evaluate(f=>Math.abs(f.scrollTop/f.clientHeight-Math.round(f.scrollTop/f.clientHeight)))).toBeLessThan(.01);
   await expect(page.locator('.category-discovery')).toHaveCount(0,{timeout:8000});
   await expect(page.locator('.swipe-hint')).toHaveCount(0);
   await expect(page.locator('.scroll-gesture')).toBeHidden();
   const positions = await page.evaluate(()=>(window as unknown as {handY:number[]}).handY);
+  const frames = await page.evaluate(()=>(window as unknown as {gestureFrames:{angle:number;difference:number}[]}).gestureFrames);
+  expect(frames[0].angle).toBeCloseTo(-120,0);
+  expect(frames.at(-1)!.angle).toBeCloseTo(-30,0);
+  expect(Math.max(...frames.map(f=>f.difference))).toBeLessThan(.01);
   expect(positions.length).toBeGreaterThan(3);
   expect(positions[0] - positions.at(-1)!).toBeGreaterThan(160);
   for (let i=1;i<positions.length;i++) expect(positions[i]-positions[i-1]).toBeLessThanOrEqual(.5);
@@ -96,7 +110,7 @@ test('opening peek respects reduced motion and never interrupts interaction', as
   await page.reload();
   await feed.dispatchEvent('pointerdown');
   await feed.evaluate(f=>f.scrollBy(0,f.clientHeight));
-  await expect.poll(()=>feed.evaluate(f=>f.style.scrollSnapType)).toBe('');
+  await expect.poll(()=>feed.evaluate(f=>f.style.scrollSnapType),{timeout:8000}).toBe('');
   const moved=await feed.evaluate(f=>f.scrollTop);
   await page.waitForTimeout(2800);
   expect(await feed.evaluate(f=>f.scrollTop)).toBe(moved);

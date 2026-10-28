@@ -13,8 +13,8 @@ import { customerSchema, digits, displayPhone, type Customer } from '@/ordering/
 import { formatQar } from '@/lib/money';
 import type { PaymentStatus } from '@/ordering/checkout/payment';
 import { MockSadadGateway } from './MockSadadGateway';
-import { CarBrandPicker } from './CarBrandPicker';
-import { carBrandName } from '@/ordering/car-brands';
+import { CarBrandPicker, CarBrandLogo } from './CarBrandPicker';
+import { carBrandName, findCarBrand } from '@/ordering/car-brands';
 import { OrderProgress } from './OrderProgress';
 
 const emptyCustomer: Customer = { name: '', phone: '', plate: 'Q', brand: '', colour: '', car: '', instructions: '' };
@@ -164,7 +164,7 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
     <div className="ticket-sum"><span>{t.total}</span><strong>{serverMinor != null ? money(serverMinor) : ticketMoney(cart.totalQar)}</strong></div>
   </section>; }
   const receiptBody = (editable: boolean, serverMinor?: number) => <>
-    <section className="review-details">{editable && <div className="review-section-title"><button type="button" className="text-action" onClick={() => go('details')}>{text('Edit', 'تعديل')}</button></div>}<strong>{customer.name}</strong><p dir="ltr" className="review-phone">{displayPhone(customer.phone)}</p><QatarPlate plate={customer.plate} /><p>{[customer.colour, carBrandName(customer.brand, lang), customer.car].filter(Boolean).join(' · ')}</p>{customer.instructions && <p className="checkout-note">{customer.instructions}</p>}</section>
+    <section className="review-details">{editable && <div className="review-section-title"><button type="button" className="text-action" onClick={() => go('details')}>{text('Edit', 'تعديل')}</button></div>}<strong>{customer.name}</strong><p dir="ltr" className="review-phone">{displayPhone(customer.phone)}</p><QatarPlate plate={customer.plate} /><p className="review-vehicle"><CarBrandLogo brand={findCarBrand(customer.brand)} /><span>{[customer.colour, carBrandName(customer.brand, lang)].filter(Boolean).join(' · ')}</span></p>{customer.instructions && <p className="checkout-note">{customer.instructions}</p>}</section>
     {ticket(false, editable, serverMinor)}
   </>;
   if (step === 'payment' && receipt && receipt.paymentMethod === 'mock') return <MockSadadGateway amount={money(receipt.totalMinor)} lang={lang} onBack={() => go('review')} onComplete={() => go('receipt')} onPay={async () => {
@@ -201,7 +201,7 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
             })}
             <CarBrandPicker value={customer.brand} lang={lang} invalid={errors.includes('brand')} onChange={brand => { setCustomer({ ...customer, brand }); setErrors(errors.filter(field => field !== 'brand')); }} />
             </div>
-            <details className="optional-vehicle"><summary>{text('Add vehicle details', 'أضف تفاصيل السيارة')}</summary><div className="checkout-fields">{(['colour', 'car', 'instructions'] as const).map(key => <label key={key} className={`checkout-field field-${key}`} htmlFor={`collection-${key}`}><span>{{ colour: text('Car colour', 'لون السيارة'), car: text('Car model', 'طراز السيارة'), instructions: text('Collection instructions', 'تعليمات الاستلام') }[key]}</span>{key === 'instructions' ? <textarea id={`collection-${key}`} value={customer[key]} maxLength={400} rows={3} onChange={e => setCustomer({ ...customer, [key]: e.target.value })} /> : <input id={`collection-${key}`} value={customer[key]} maxLength={key === 'colour' ? 50 : 80} onChange={e => setCustomer({ ...customer, [key]: e.target.value })} />}</label>)}</div></details>
+            <details className="optional-vehicle"><summary>{text('Add vehicle details', 'أضف تفاصيل السيارة')}</summary><div className="checkout-fields">{(['colour', 'instructions'] as const).map(key => <label key={key} className={`checkout-field field-${key}`} htmlFor={`collection-${key}`}><span>{{ colour: text('Car colour', 'لون السيارة'), car: text('Car model', 'طراز السيارة'), instructions: text('Collection instructions', 'تعليمات الاستلام') }[key]}</span>{key === 'instructions' ? <textarea id={`collection-${key}`} value={customer[key]} maxLength={400} rows={3} onChange={e => setCustomer({ ...customer, [key]: e.target.value })} /> : <input id={`collection-${key}`} value={customer[key]} maxLength={key === 'colour' ? 50 : 80} onChange={e => setCustomer({ ...customer, [key]: e.target.value })} />}</label>)}</div></details>
             <div className="checkout-step-action"><button type="submit" className="checkout-primary" disabled={!canPlace || !count || cart.unavailableCount > 0}>{text('Review order', 'مراجعة الطلب')}<Forward /></button></div>
           </form>
           </>}
@@ -217,7 +217,7 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
             {branch && <DirectionsLink branchName={branchName} href={branch.mapsUrl} text={text} />}
             <p className="order-who"><strong>{customer.name}</strong><span dir="ltr">{displayPhone(customer.phone)}</span></p>
             <QatarPlate plate={customer.plate} />
-            {customer.brand && <p className="order-vehicle">{[customer.colour, carBrandName(customer.brand, lang), customer.car].filter(Boolean).join(' · ')}</p>}
+            {customer.brand && <p className="order-vehicle review-vehicle"><CarBrandLogo brand={findCarBrand(customer.brand)} /><span>{[customer.colour, carBrandName(customer.brand, lang)].filter(Boolean).join(' · ')}</span></p>}
             <ul className="order-summary">{cart.lines.map(line => <li key={line.key}><span><b>{line.displayName}</b>{line.meta && <small>{line.meta}</small>}{line.note && <small>{line.note}</small>}</span><span>×{line.qty}</span><span dir="ltr">{ticketMoney(line.lineTotal)}</span></li>)}</ul>
             <p className="order-total"><span>{t.total}</span><strong dir="ltr">{money(receipt.totalMinor)}</strong></p>
             <button type="button" className="checkout-primary" onClick={() => { cart.clear(); setCustomer(emptyCustomer); setReceipt(null); sessionStorage.removeItem(orderKey); attempt.current = null; go('menu'); }}>{text('Back to menu', 'العودة للقائمة')}<Forward /></button>

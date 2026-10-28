@@ -45,7 +45,7 @@
 .ordering-footer > span:first-child { font-weight: 700; }
 .checkout-navigation { display: flex; align-items: center; justify-content: space-between; padding: 6px 24px; }
 .checkout-navigation > span { font-size: 9px; color: var(--order-muted); letter-spacing: .12em; }
-.text-action { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; border: 0; background: transparent; padding: 4px 0; text-align: start; color: #8b2025; font-size: 12px !important; text-decoration: underline; text-underline-offset: 4px; }
+.text-action { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; border: 0; background: transparent; padding: 4px 0; text-align: start; color: #8b2025; font-size: 16px !important; font-weight: 600; text-decoration: none; }
 .checkout-main { padding: 4px 24px 24px; }
 .checkout-main:has(.checkout-step-action) { padding-bottom: 104px; }
 .checkout-step-action { position: fixed; z-index: 30; bottom: 0; left: 50%; transform: translateX(-50%); width: min(100%, 480px); padding: 12px 24px calc(12px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(transparent, #fbf4e6 20%); }
@@ -55,7 +55,7 @@
 .checkout-ticket .ticket-line { animation: none; }
 .checkout-ticket .ticket-head { align-items: center; }
 .ticket-count { color: #6a5640; font-size: 11px; white-space: nowrap; }
-.ticket-edit { min-height: 36px; padding: 0; border: 0; background: none; color: #8b2025; font-size: 11px !important; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.ticket-edit { min-height: 36px; padding: 0; border: 0; background: none; color: #8b2025; font-size: 15px !important; font-weight: 700; text-decoration: none; }
 .checkout-ticket .line-main .ticket-edit { margin-top: 4px; }
 .ticket-static-qty { min-width: 2ch; color: #6a5640; font-size: 12px; font-weight: 700; line-height: 36px; }
 .checkout-progress { display: flex; gap: 14px; padding: 12px 0 8px; margin: 0; list-style: none; }
@@ -78,7 +78,7 @@
 .checkout-line-info > p { color: var(--order-muted); font-size: 11px; line-height: 1.5; margin: 5px 0; overflow-wrap: anywhere; }
 .checkout-line-info .checkout-note { color: #6b6258; }
 .checkout-line-price { display: block; font-size: 11px; color: #e8d5b7; margin-top: 8px; }
-.checkout-line-info .text-action { font-size: 10px !important; }
+.checkout-line-info .text-action { font-size: 15px !important; }
 .checkout-quantity { display: flex; flex-direction: column-reverse; align-items: center; gap: 2px; }
 .checkout-quantity button { min-width: 44px; min-height: 44px; border: 1px solid #ffffff20; background: #ffffff06; border-radius: 50%; color: inherit; font-size: 20px; }
 .checkout-quantity > span { font-size: 12px; }
@@ -105,7 +105,7 @@
 .checkout-intro { color: var(--order-muted); font-size: 13px; line-height: 1.6; margin: 22px 0; }
 .checkout-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 12px; }
 .checkout-field { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px; }
-.field-colour, .field-car { grid-column: auto; }
+.field-colour { grid-column: 1 / -1; }
 .checkout-field > span { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px; font-size: 12px; }
 .checkout-field > span small { color: var(--order-muted); font-size: 10px; }
 .checkout-field input, .checkout-field textarea { color: #14110f; width: 100%; min-width: 0; background: #fff; border: 1px solid #14110f24; border-radius: 7px; padding: 14px 12px; font-size: 16px; }
@@ -318,3 +318,7 @@
 @keyframes car-brand-enter { from { transform: translateY(24px); opacity: .6; } to { transform: translateY(0); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .car-brand-dialog[open] { animation: none; } }
 .order-vehicle { margin: 10px 0; font-size: 13px; color: var(--order-muted); }
+
+.review-vehicle { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.review-vehicle .car-brand-logo { flex-shrink: 0; }
+.review-vehicle > span:last-child { font-size: 15px; }
