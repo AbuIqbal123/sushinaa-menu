@@ -218,20 +218,29 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
       origin = feed.scrollTop;
       demonstrating.current = true;
       feed.style.scrollSnapType = "none";
-      if (gestureRef.current) gestureRef.current.hidden = false;
+      if (gestureRef.current) {
+        gestureRef.current.style.transform = "translate(-50%, -50%) translateY(110px)";
+        gestureRef.current.style.opacity = "0";
+        gestureRef.current.hidden = false;
+      }
       const start = performance.now();
       const animate = (now: number) => {
-        const progress = Math.min(1, (now - start) / 1900);
-        // Two quick gestures, with a smaller second bounce. The hand and menu
-        // share one animation clock so the demonstration feels like a swipe.
-        const cycle = progress < .45 ? progress / .45 : progress < .55 ? 0 : (progress - .55) / .45;
-        const amplitude = progress < .45 ? .3 : .2;
-        const offset = feed.clientHeight * amplitude * Math.sin(Math.PI * cycle) ** 2;
-        feed.scrollTop = origin! + offset;
+        const progress = Math.min(1, (now - start) / 1600);
+        // Touch low, accelerate upward, then lift the finger away. Only the
+        // menu settles back; the hand never visibly travels downward.
+        const drag = Math.min(1, Math.max(0, (progress - .1) / .25)) ** 2;
+        const coast = Math.min(1, Math.max(0, (progress - .35) / .15));
+        const settle = Math.min(1, Math.max(0, (progress - .5) / .5));
+        const offset = progress < .35 ? .28 * drag
+          : progress < .5 ? .28 + .04 * (1 - (1 - coast) ** 3)
+          : .32 * (1 + Math.cos(Math.PI * settle)) / 2;
+        feed.scrollTop = origin! + feed.clientHeight * offset;
         const gesture = gestureRef.current;
         if (gesture) {
-          gesture.style.transform = `translate(-50%, -50%) translateY(${-offset * .45}px)`;
-          gesture.style.opacity = String(Math.min(1, progress * 12, (1 - progress) * 12));
+          const lift = Math.min(1, Math.max(0, (progress - .35) / .12));
+          gesture.style.transform = `translate(-50%, -50%) translateY(${110 - 220 * drag - 20 * lift}px)`;
+          gesture.style.opacity = String(Math.min(1, progress / .08) * (1 - lift));
+          if (progress >= .47) gesture.hidden = true;
         }
         if (progress < 1) frame = window.requestAnimationFrame(animate);
         else {

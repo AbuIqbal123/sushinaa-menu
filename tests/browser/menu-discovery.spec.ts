@@ -49,10 +49,18 @@ for (const lang of ['en', 'ar']) for (const width of [320, 375, 390, 430]) {
   });
 }
 
-test('opening peek shows the next dish, settles back and hints fade', async ({page}) => {
+test('opening flick moves the hand upward, then the menu settles and hints fade', async ({page}) => {
   await page.setViewportSize({width:390,height:844});
   await page.addInitScript(()=>{
     (window as unknown as {peek:number[]}).peek=[];
+    (window as unknown as {handY:number[]}).handY=[];
+    const recordHand = () => {
+      const hand = document.querySelector<HTMLElement>('.scroll-gesture');
+      if (hand && !hand.hidden && parseFloat(getComputedStyle(hand).opacity) > .2)
+        (window as unknown as {handY:number[]}).handY.push(hand.getBoundingClientRect().top);
+      requestAnimationFrame(recordHand);
+    };
+    requestAnimationFrame(recordHand);
     document.addEventListener('scroll',e=>{
       if((e.target as HTMLElement)?.classList?.contains('feed')) (window as unknown as {peek:number[]}).peek.push((e.target as HTMLElement).scrollTop);
     },true);
@@ -70,6 +78,10 @@ test('opening peek shows the next dish, settles back and hints fade', async ({pa
   await expect(page.locator('.category-discovery')).toHaveCount(0,{timeout:8000});
   await expect(page.locator('.swipe-hint')).toHaveCount(0);
   await expect(page.locator('.scroll-gesture')).toBeHidden();
+  const positions = await page.evaluate(()=>(window as unknown as {handY:number[]}).handY);
+  expect(positions.length).toBeGreaterThan(3);
+  expect(positions[0] - positions.at(-1)!).toBeGreaterThan(160);
+  for (let i=1;i<positions.length;i++) expect(positions[i]-positions[i-1]).toBeLessThanOrEqual(.5);
 });
 
 test('opening peek respects reduced motion and never interrupts interaction', async ({page})=>{
