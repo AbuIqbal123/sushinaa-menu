@@ -30,7 +30,7 @@ That address is the Sushinaa dev website. After an approved release, use the liv
 
 The separate profile makes the flag apply even when Chrome is already open.
 
-Open that profile once without `--kiosk-printing`. Print one ticket. Set margins to None, and turn headers and footers off. Then use the shortcut.
+Open that profile once without `--kiosk-printing`. Print one ticket. Choose 80mm roll paper in portrait orientation, set scale to 100%, set margins to None, and turn headers and footers off. Do not select A4, landscape, or “fit to page”. The site requests an 80mm page whose height follows the receipt content; the installed driver must also be set to the 80mm roll. Then use the shortcut.
 
 ## Daily use
 
@@ -39,3 +39,9 @@ Sign in. On the orders screen, turn on “Auto-print on this device”. Leave th
 Auto-print is stored on that browser only, and it starts off. Phones do not print unless someone turns it on there.
 
 The browser can tell that a ticket reached the print queue. It cannot tell whether paper came out.
+
+## Receipt layout and order sounds
+
+Manual print and reprint use the branded receipt layout, with the logo, branch, order number, car details, bilingual item headings, item choices/notes, totals and an order-reference barcode. Print frames wait for the logo and Arabic font before opening the dialog. Adjusted and voided items remain visible on amended receipts.
+
+Order sounds start enabled on a new browser. Click anywhere in the CMS once to allow browser audio; “Sound on” can then be clicked to mute it. A saved mute choice remains in effect after reopening the CMS. This is independent of printing.

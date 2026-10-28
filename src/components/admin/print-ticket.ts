@@ -7,7 +7,7 @@ function ticketDocument(html: string) {
     // The flight payload quotes fitTicket, so a contains-check would keep Next's bootstrap.
     if (!script.textContent?.startsWith('function fitTicket()')) script.remove();
   });
-  const number = doc.querySelector('.ticket-number')?.textContent?.trim();
+  const number = doc.querySelector('.ticket-number')?.getAttribute('data-order-number') || doc.querySelector('.ticket-number')?.textContent?.trim();
   doc.title = number ? `Order ${number}` : 'Ticket';
   return `<!doctype html>${doc.documentElement.outerHTML}`;
 }
@@ -24,7 +24,7 @@ export function printTicket(id: string, timeoutMs = PRINT_TIMEOUT_MS) {
       .then(async (response) => {
         if (!response.ok) throw new Error('ticket');
         const html = await response.text();
-        frame.onload = () => {
+        frame.onload = async () => {
           const win = frame.contentWindow;
           if (!win) {
             frame.remove();
@@ -47,7 +47,13 @@ export function printTicket(id: string, timeoutMs = PRINT_TIMEOUT_MS) {
           };
           win.addEventListener('afterprint', finish, { once: true });
           try { win.focus(); } catch { /* print still targets this frame */ }
-          win.print();
+          // Do not race the logo or Arabic font against the print dialog.
+          try {
+            await Promise.all([win.document.fonts.ready, ...Array.from(win.document.images).map(img => img.decode())]);
+            if (!finished) win.print();
+          } catch {
+            if (!finished) { finished = true; win.clearTimeout(timer); frame.remove(); reject(new Error('print-assets')); }
+          }
         };
         frame.srcdoc = ticketDocument(html);
       })

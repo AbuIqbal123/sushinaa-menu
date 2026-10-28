@@ -43,7 +43,7 @@ const when = new Date('2026-10-23T15:00:00+03:00');
 const dish = menu.dishes.find((item) => item.visible && item.available && item.kind.type === 'simple')!;
 const quoteInput = checkoutSchema.parse({
   branchId: 'down-town',
-  customer: { name: 'Test customer', phone: '97455551234', plate: 'Q123456', colour: 'silver', car: 'test car', instructions: 'gate note' },
+  customer: { name: 'Test customer', phone: '97455551234', brand: 'toyota', plate: 'Q123456', colour: 'silver', car: 'test car', instructions: 'gate note' },
   lines: [{ dishId: dish.id, selection: defaultSelection(dish), quantity: 1, note: 'line note', expectedUnitMinor: Math.round(unitPrice(dish, defaultSelection(dish)) * 100) }],
 });
 const snapshot: OrderSnapshot = quoteOrder(quoteInput, menu, when);
@@ -238,19 +238,12 @@ test('cron purge returns 503 on the live database host', () => {
   assert.equal(result.status, 0, result.stderr || String(result.error));
 });
 
-test('checkout for a branch not enabled for ordering is rejected', async () => {
-  const route = await import('../src/app/api/orders/route');
-  const response = await route.POST(new Request('http://localhost/api/orders', {
-    method: 'POST',
-    headers: { origin: 'http://localhost', host: 'localhost', 'content-type': 'application/json', 'idempotency-key': 'phase1-branch-key' },
-    body: JSON.stringify({
-      branchId: 'west-bay',
-      customer: { name: 'Test customer', phone: '97455551234', plate: 'Q123456', colour: '', car: '', instructions: '' },
-      lines: [{ dishId: dish.id, selection: {}, quantity: 1, note: '', expectedUnitMinor: 1 }],
-    }),
-  }));
-  assert.equal(response.status, 409);
-  assert.deepEqual(await response.json(), { code: 'BRANCH_UNAVAILABLE' });
+test('every published branch accepts customer orders', async () => {
+  const { orderingEnabled, ORDERING_BRANCHES } = await import('../src/ordering/config');
+  const { BRANCHES } = await import('../src/branches/branches');
+  assert.deepEqual([...ORDERING_BRANCHES], BRANCHES.map((branch) => branch.slug));
+  for (const branch of BRANCHES) assert.equal(orderingEnabled(branch.slug), true);
+  assert.equal(orderingEnabled('not-a-branch'), false);
 });
 
 test("branch user reading another branch's order by id gets 404", async () => {
@@ -506,7 +499,7 @@ test('ticket prints CAR PICKUP with the car details', async () => {
     car_plate: 'Q123456', car_colour: 'silver', car_model: 'test car',
   });
   assert.equal(model.fulfilment, 'CAR PICKUP');
-  assert.equal(model.car, 'Q123456 · silver · test car');
+  assert.equal(model.car, 'Q123456 · silver · Toyota · test car');
 });
 
 test('polling with a cursor for a deleted order returns the first page and auto-print rows', async () => {

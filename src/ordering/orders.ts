@@ -1,3 +1,4 @@
+import { carBrandName } from './car-brands';
 import type { Row } from '@libsql/client';
 import { db } from '@/cms/db';
 import { auditInsert, type AuditContext } from '@/cms/audit';
@@ -117,6 +118,7 @@ export async function detailOrder(scope: BranchScope, id: string, reveal: boolea
   if (reveal) await db.execute(auditInsert(ctx, { action: 'order.contact_viewed', entityType: 'order', entityId: id }));
   const history = (await db.execute({ sql: "SELECT at,diff,label FROM audit WHERE entity_type='order' AND entity_id=? AND action='order.status' ORDER BY at DESC, id DESC", args: [id] })).rows;
   const snapshot = JSON.parse(String(row.snapshot));
+  const brand = carBrandName(snapshot.customer?.brand);
   delete snapshot.customer;
   const { applyEdits, linesFromSnapshot } = await import('./edits');
   const { storedEdits } = await import('./order-edits');
@@ -124,7 +126,7 @@ export async function detailOrder(scope: BranchScope, id: string, reveal: boolea
   const meta = await orderEditMeta(id);
   return { ...summary(row), contactRevealed: reveal, snapshot, amendedAt: nullable(row.amended_at), originalTotalMinor: Number(snapshot.totalMinor ?? row.total_minor), currentLines: projected.lines, discounts: projected.discounts, edits: meta.edits, owedBackMinor: meta.owedBackMinor,
     customer: { name: text(row.customer_name), phone: reveal ? text(row.customer_phone) : maskPhone(row.customer_phone),
-      plate: reveal ? text(row.car_plate) : maskPlate(row.car_plate), colour: text(row.car_colour), car: text(row.car_model), instructions: text(row.instructions) },
+      plate: reveal ? text(row.car_plate) : maskPlate(row.car_plate), colour: text(row.car_colour), brand, car: text(row.car_model), instructions: text(row.instructions) },
     history: history.map(h => ({ at: String(h.at), ...JSON.parse(String(h.diff)).status, reason: nullable(h.label) })),
   };
 }

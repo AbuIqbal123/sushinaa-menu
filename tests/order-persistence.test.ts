@@ -8,7 +8,7 @@ test('concurrent retries create one pending order; changed body conflicts; anoth
   const dir = mkdtempSync(join(tmpdir(), 'sushinaa-orders-'));
   process.env.CMS_DATABASE_URL = `file:${join(dir, 'orders.db')}`;
   const { persistPendingOrder } = await import('../src/ordering/checkout/repository');
-  const snapshot: OrderSnapshot = { branchId: 'down-town', branchName: 'Down Town', collection: 'car', customer: { name: 'Test', phone: '97455551234', plate: 'Q001', colour: '', car: '', instructions: '' }, lines: [], totalMinor: 100, currency: 'QAR' };
+  const snapshot: OrderSnapshot = { branchId: 'down-town', branchName: 'Down Town', collection: 'car', customer: { name: 'Test', phone: '97455551234', brand: 'toyota', plate: 'Q001', colour: '', car: '', instructions: '' }, lines: [], totalMinor: 100, currency: 'QAR' };
   try {
     const orders = await Promise.all(Array.from({ length: 5 }, () => persistPendingOrder('session-a', 'key-one', 'hash-one', snapshot, 17)));
     assert.equal(new Set(orders.map(o => o.id)).size, 1);

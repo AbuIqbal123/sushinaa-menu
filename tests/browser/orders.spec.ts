@@ -17,6 +17,9 @@ async function basket(page: Page, lang: string, baseURL: string) {
   await page.locator('#collection-phone').fill(lang === 'ar' ? '٥٥٥٥١٢٣٤' : '55551234');
   await page.locator('#collection-plate').fill(lang === 'ar' ? '٠١٢٣' : '0123');
   await page.locator('.plate-series button').nth(1).click();
+  await page.locator('#collection-brand').click();
+  await page.locator('#car-brand-dialog input[type=search]').fill('Toyota');
+  await page.locator('[data-brand-id="toyota"]').click();
   await page.locator('.checkout-step-action button').click();
 }
 async function signIn(page: Page, origin: string) {
@@ -104,7 +107,7 @@ test('unread badge and sound preference follow new orders without reloading',asy
   await api.get('/api/orders');
   const menu=(await(await api.get('/api/menu')).json()).menu;
   const dish=menu.dishes.find((d:{kind:{type:string}})=>d.kind.type==='simple');
-  const response=await api.post('/api/orders',{headers:{Origin:baseURL!,'Idempotency-Key':crypto.randomUUID()},data:{branchId:'down-town',paymentMethod:'pay_at_pickup',customer:{name:'Test',phone:'55551234',plate:'Q123'},lines:[{dishId:dish.id,selection:{},quantity:1,note:'',expectedUnitMinor:dish.kind.priceQar*100}]}});
+  const response=await api.post('/api/orders',{headers:{Origin:baseURL!,'Idempotency-Key':crypto.randomUUID()},data:{branchId:'down-town',paymentMethod:'pay_at_pickup',customer:{brand:'toyota',name:'Test',phone:'55551234',plate:'Q123'},lines:[{dishId:dish.id,selection:{},quantity:1,note:'',expectedUnitMinor:dish.kind.priceQar*100}]}});
   expect(response.status()).toBe(201);
   await expect(page.locator('.staff-unread')).toBeVisible({timeout:25000});
   await page.getByRole('button',{name:/^Orders/}).click();await expect(page.locator('.staff-unread')).toHaveCount(0);

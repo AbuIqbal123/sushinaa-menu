@@ -21,9 +21,9 @@ function normalizeSearch(value: string) {
     .replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
 
-type OrderingFeedProps = { branch?: string; onPickup?: () => void; branchBar?: ReactNode };
+type OrderingFeedProps = { branch?: string; onPickup?: () => void; branchBar?: ReactNode; orderTracking?: ReactNode; inactive?: boolean };
 
-function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
+function FeedInner({ branch, onPickup, branchBar, orderTracking, inactive = false }: OrderingFeedProps) {
   const menu = useMenu();
   const { itemCount, totalQar } = useCart();
   const { lang, t } = useLocale();
@@ -44,7 +44,7 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
   const [showCategoryHint, setShowCategoryHint] = useState(true);
   const [pickedCategory, setPickedCategory] = useState("");
   useEffect(() => {
-    const timer = window.setTimeout(() => setShowCategoryHint(false), 3500);
+    const timer = window.setTimeout(() => setShowCategoryHint(false), 6500);
     return () => window.clearTimeout(timer);
   }, []);
   const searchButtonRef = useRef<HTMLButtonElement>(null);
@@ -58,6 +58,8 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
   const currentCategory = useRef<Section>(firstSection);
   const pendingJump = useRef<Section | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
+  const gestureRef = useRef<HTMLDivElement>(null);
+  const categoryHintRef = useRef<HTMLSpanElement>(null);
   const search = normalizeSearch(query);
   const searchNames = useMemo(
     () => new Map(menu.dishes.map((dish) => [dish.id, normalizeSearch(`${pickName(dish, "en")} ${pickName(dish, "ar")}`)])),
@@ -103,9 +105,11 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
 
   // A category jump scrolls on a later turn. Ignore the position until the latest one lands.
   const snapHold = useRef(0);
+  const demonstrating = useRef(false);
+  const demoSeen = useRef(false);
   const syncCategory = useCallback(() => {
     const feed = feedRef.current;
-    if (!feed || search || !dishes.length || !feed.clientHeight || snapHold.current > 0) return;
+    if (!feed || search || !dishes.length || !feed.clientHeight || snapHold.current > 0 || demonstrating.current) return;
     const visual = Math.round(feed.scrollTop / feed.clientHeight);
     const real = ((visual % dishes.length) + dishes.length) % dishes.length;
     setVisualIndex(visual);
@@ -118,7 +122,7 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
   const wrapLoop = useCallback(() => {
     const feed = feedRef.current;
     const n = dishes.length;
-    if (!feed || search || !n || !feed.clientHeight) return;
+    if (!feed || search || !n || !feed.clientHeight || demonstrating.current) return;
     const visual = Math.round(feed.scrollTop / feed.clientHeight);
     if (visual < n) feed.scrollTo({ top: (visual + n) * feed.clientHeight, behavior: "instant" });
     else if (visual >= n * 2) feed.scrollTo({ top: (visual - n) * feed.clientHeight, behavior: "instant" });
@@ -191,6 +195,98 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
     };
   }, [search, syncCategory, wrapLoop]);
 
+  // A same-list CMS refresh must not cancel the opening gesture on a slow phone.
+  const syncCategoryRef = useRef(syncCategory);
+  useLayoutEffect(() => { syncCategoryRef.current = syncCategory; }, [syncCategory]);
+
+  // A short peek reveals the next photo without skipping the first dish. Any
+  // customer input cancels it immediately; never pull someone back mid-swipe.
+  useEffect(() => {
+    const feed = feedRef.current;
+    if (!feed || !showCategoryHint || demoSeen.current || searchOpen || sheetOpen || diet !== "all" || dishes.length < 2) return;
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (motion.matches) {
+      const gesture = gestureRef.current;
+      if (gesture) {
+        gesture.hidden = false;
+        gesture.style.transform = "translate(-50%, -50%)";
+        gesture.style.opacity = "1";
+        const hand = gesture.querySelector<SVGElement>(".scroll-gesture-hand");
+        if (hand) hand.style.transform = "rotate(-30deg)";
+      }
+      const dismiss = () => { demoSeen.current = true; setShowCategoryHint(false); if (gesture) gesture.hidden = true; };
+      const events = ["pointerdown", "touchstart", "wheel", "keydown"] as const;
+      events.forEach(event => window.addEventListener(event, dismiss, { passive: true, capture: true }));
+      return () => {
+        if (gesture) gesture.hidden = true;
+        events.forEach(event => window.removeEventListener(event, dismiss, true));
+      };
+    }
+    let frame = 0;
+    let origin: number | null = null;
+    let stopped = false;
+    const stop = () => {
+      stopped = true;
+      window.clearTimeout(timer);
+      window.cancelAnimationFrame(frame);
+      demonstrating.current = false;
+      if (gestureRef.current) gestureRef.current.hidden = true;
+      feed.style.removeProperty("scroll-snap-type");
+    };
+    const timer = window.setTimeout(() => {
+      if (stopped) return;
+      demoSeen.current = true;
+      origin = feed.scrollTop;
+      demonstrating.current = true;
+      feed.style.scrollSnapType = "none";
+      if (gestureRef.current) {
+        gestureRef.current.style.transform = "translate(-50%, -50%) translate(-22px, 82px)";
+        gestureRef.current.style.opacity = "0";
+        gestureRef.current.hidden = false;
+      }
+      const start = performance.now();
+      const animate = (now: number) => {
+        const progress = Math.min(1, (now - start) / 6500);
+        // Sweep clockwise along an arc from eight to eleven o'clock. One
+        // timeline keeps the hand, scroll preview and category hint together.
+        const raw = Math.min(1, Math.max(0, (progress - .1) / .3));
+        const sweep = raw * raw * (3 - 2 * raw);
+        const angle = (240 + 90 * sweep) * Math.PI / 180;
+        const settle = Math.min(1, Math.max(0, (progress - .52) / .2));
+        const offset = .3 * sweep * (1 + Math.cos(Math.PI * settle)) / 2;
+        feed.scrollTop = origin! + feed.clientHeight * offset;
+        const opacity = Math.min(1, progress / .05, (1 - progress) / .22);
+        if (categoryHintRef.current) categoryHintRef.current.style.opacity = String(opacity);
+        const gesture = gestureRef.current;
+        if (gesture) {
+          gesture.style.transform = `translate(-50%, -50%) translate(${82 + 120 * Math.sin(angle)}px, ${22 - 120 * Math.cos(angle)}px)`;
+          gesture.style.opacity = String(opacity);
+          const hand = gesture.querySelector<SVGElement>(".scroll-gesture-hand");
+          if (hand) hand.style.transform = `rotate(${-120 + 90 * sweep}deg)`;
+        }
+        if (progress < 1) frame = window.requestAnimationFrame(animate);
+        else {
+          demonstrating.current = false;
+          if (gestureRef.current) gestureRef.current.hidden = true;
+          feed.style.removeProperty("scroll-snap-type");
+          syncCategoryRef.current();
+        }
+      };
+      frame = window.requestAnimationFrame(animate);
+    }, 0);
+    const interrupt = () => { demoSeen.current = true; setShowCategoryHint(false); stop(); };
+    const events = ["pointerdown", "touchstart", "wheel", "keydown"] as const;
+    events.forEach((event) => window.addEventListener(event, interrupt, { passive: true, capture: true }));
+    motion.addEventListener("change", interrupt);
+    return () => {
+      // A rerender/modal must not leave the menu partway through the demo.
+      if (demonstrating.current && origin !== null) feed.scrollTop = origin;
+      stop();
+      events.forEach((event) => window.removeEventListener(event, interrupt, true));
+      motion.removeEventListener("change", interrupt);
+    };
+  }, [diet, dishes.length, searchOpen, sheetOpen, showCategoryHint, listKey]);
+
   const measureSearch = useCallback(() => {
     const button = searchButtonRef.current;
     const header = button?.closest("header");
@@ -257,12 +353,15 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
   return (
     <div className={`shell${sheetOpen ? " is-sheet" : ""}${itemCount > 0 ? " has-order" : ""}`}>
       <header className={`chrome-header${searchOpen ? " search-open" : ""}`} inert={sheetOpen}>
-        <div className="brand-navigation">
-          {/* The logo and the branch name are one link back to the branch picker. */}
-          <Link href="/?pick=1" className="brand-mark" aria-label={`${t.brand}, ${branch}, change branch`} prefetch={false}>
-            <img src={menu.settings.logo} alt="" className="wordmark-img" width={46} height={44} />
-            <span className="branch-switch"><span className="branch-switch-name">{branch}</span><span aria-hidden="true">▾</span></span>
-          </Link>
+        <Link href="/?pick=1" className={`branch-switch${orderTracking ? " with-tracker" : ""}`} prefetch={false}>
+          <span className="branch-switch-name">{branch}</span><span aria-hidden="true">▾</span>
+        </Link>
+        {orderTracking}
+        {/* Brand and branch both lead back to the branch picker. */}
+        <Link href="/?pick=1" className="brand-mark" aria-label={`${t.brand}, ${branch}, ${lang === "ar" ? "تغيير الفرع" : "change branch"}`} prefetch={false}>
+          <img src={menu.settings.logo} alt="" className="wordmark-img" width={46} height={44} />
+        </Link>
+        <div className="category-navigation">
           <button ref={categoryButtonRef} type="button" className="cart-btn category-toggle"
             aria-label={`${t.category}: ${sectionName(category, lang)}`} title={sectionName(category, lang)}
             aria-haspopup="dialog" aria-expanded={categoriesOpen} aria-controls="category-overlay"
@@ -273,7 +372,7 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
             <span className="current-category">{sectionName(category, lang) || t.category}</span>
           </button>
           {showCategoryHint && !sheetOpen && !searchOpen && activeIndex === 0 ? (
-            <span className="category-discovery" aria-hidden="true">
+            <span ref={categoryHintRef} className="category-discovery" aria-hidden="true">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
                 <path d="M20 12H4m6-6-6 6 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -313,14 +412,7 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
         </div>
       </header>
       {branchBar ? <div className="order-branch-bar" inert={sheetOpen}>{branchBar}</div> : null}
-      <div className="filter-bar" aria-label={t.filters} inert={sheetOpen ? true : undefined}>
-        <div className="chip-row chip-row-diet" aria-label={t.dietary}>
-          {dietChips.map((chip) => <button key={chip.id} type="button"
-            className={`chip chip-diet ${diet === chip.id ? "chip-on" : ""}`} aria-pressed={diet === chip.id}
-            onClick={() => setDiet(chip.id)}>{t[chip.id]}</button>)}
-        </div>
-      </div>
-      <div ref={feedRef} id="main" className={`feed${search ? " feed-search" : ""}`} role={search ? "region" : "feed"}
+      <div ref={feedRef} id={inactive ? undefined : "main"} className={`feed${search ? " feed-search" : ""}`} role={search ? "region" : "feed"}
         aria-label={t.menuFeed} inert={sheetOpen ? true : undefined} style={{ overflowY: sheetOpen ? "hidden" : undefined }}>
         {dishes.length === 0 ? <div className="empty-filter"><p>{t.noMatch}</p>
           <button type="button" className="chip chip-on" onClick={clearFilters}>{t.clearFilters}</button></div>
@@ -350,19 +442,33 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
               active={item.copy === 1 && item.real === activeIndex}
               eager={close(delta) || (atSeam && (close(delta - n) || close(delta + n)))}
               inert={item.copy !== 1}
-              showHint={item.copy === 1 && item.real === 0 && n > 1} onOpen={setDetail} />;
+              onOpen={setDetail} />;
           })}
       </div>
+      <div ref={gestureRef} className="scroll-gesture" hidden aria-hidden="true">
+        <svg className="scroll-gesture-hand" width="64" height="80" viewBox="0 0 26 32" fill="currentColor">
+          <path d="M8 16V4a2 2 0 0 1 4 0v8a2 2 0 0 1 4 0v1a2 2 0 0 1 4 0v2a2 2 0 0 1 4 0v7c0 5-3 8-8 8h-2c-3 0-5-2-7-5l-5-7c-1.5-2.5 1-4.5 3-2l3 3Z" stroke="#3a241d" strokeWidth="1" strokeLinejoin="round" />
+          <path d="M12 12v6m4-5v6m4-4v5" stroke="#9d7663" strokeWidth=".8" strokeLinecap="round" />
+        </svg>
+      </div>
       {itemCount > 0 && !sheetOpen ? <button type="button" className="sticky-cta" onClick={() => setOpen(true)}>
-        {t.viewOrder} · {formatQar(totalQar, lang, menu.settings)}</button> : null}
+        <span>{t.viewOrder}</span><small>{formatQar(totalQar, lang, menu.settings)}</small></button> : null}
       <CategoryOverlay open={categoriesOpen} title={t.menu} label={t.category} closeLabel={t.close}
         logo={menu.settings.logo} brand={t.brand} value={category}
+        filters={<div className="category-filters" role="group" aria-label={t.filters}>
+          <p className="sr-only">{t.dietary}</p>
+          <div className="chip-row chip-row-diet" aria-label={t.dietary}>
+            {dietChips.map((chip) => <button key={chip.id} type="button"
+              className={`chip chip-diet ${diet === chip.id ? "chip-on" : ""}`} aria-pressed={diet === chip.id}
+              onClick={() => setDiet(chip.id)}>{t[chip.id]}</button>)}
+          </div>
+        </div>}
         options={menu.categories.map((c) => ({ id: c.id, label: sectionName(c.id, lang), disabled: !filledSections.has(c.id) }))}
         onClose={closeCategories} onChange={(section) => { jumpTo(section); setPickedCategory(sectionName(section, lang)); closeCategories(); }} />
       <div className="sr-only" aria-live="polite">{pickedCategory}</div>
       <div className="sr-only" aria-live="polite">{search ? t.searchResults(dishes.length) : ""}</div>
       {detail ? <DishDetailSheet key={`${detail.id}-${diet}`} dish={detail} diet={diet} ordering={Boolean(onPickup)} onClose={() => setDetail(null)} /> : null}
-      <CartSheet open={open} onClose={() => setOpen(false)} onPickup={onPickup} />
+      <CartSheet open={open} onClose={() => setOpen(false)} onPickup={onPickup ? () => { setOpen(false); onPickup(); } : undefined} />
     </div>
   );
 }

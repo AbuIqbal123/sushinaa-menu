@@ -54,6 +54,9 @@ Playwright runs the local server with a test-only clock during shared branch ope
 
 ## Parked
 
+- WhatsApp confirmations and ready notifications are on hold at the owner’s request. Before implementation, confirm the number’s Business Platform/API setup, approved bilingual templates and customer opt-in; send only from server-confirmed order/payment/status events. Do not activate messaging yet.
+- Confirmation call buttons currently use the general CMS contact number for all four branches, as approved by the owner; replace with direct branch numbers when supplied.
+
 - Real Sadad adapter and signed webhooks; outbound order delivery worker.
 - `TODO(owner)`: confirm the 90-day retention period and arrange scheduled purging before production ordering.
 - `TODO(ar)`: owner/native reviewer approval of the translated staff and privacy copy.

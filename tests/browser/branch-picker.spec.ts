@@ -43,7 +43,7 @@ test("tapping a piece opens that branch's menu and remembers it", async ({ page,
   await expect(page.locator("#main.feed, #main[role=feed]")).toBeVisible();
   await expect(page.locator(".slide").first()).toBeVisible();
   const mark = page.getByRole("link", { name: /Down Town, change branch/ });
-  await expect(mark.locator(".branch-switch")).toContainText("Down Town");
+  await expect(page.locator(".branch-switch")).toContainText("Down Town");
   const cookie = (await context.cookies()).find((c) => c.name === "sushina-branch");
   expect(cookie?.value).toBe("down-town");
   expect(cookie?.sameSite).toBe("Lax");
@@ -96,4 +96,26 @@ test("an unknown branch is a real 404 and other pages still work", async ({ page
   const contact = await page.goto("/contact");
   expect(contact?.status()).toBe(200);
   await expect(page.locator("h1")).toBeVisible();
+});
+
+for (const width of [320, 390]) test(`Arabic branch picker preserves layout and selection animation at ${width}px`, async ({page, context, baseURL}, info) => {
+  await page.setViewportSize({width, height: 667});
+  await context.addCookies([{name: 'sushina-lang', value: 'ar', url: baseURL!}]);
+  await page.goto('/?pick=1');
+  await expect(page.getByRole('heading', {name: 'اختر فرعك'})).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+  for (const [i, name] of ['داون تاون', 'الثمامة', 'الخليج الغربي', 'الخور'].entries()) {
+    await expect(rows(page).nth(i).locator('.bp-name')).toHaveText(name);
+    await expect(rows(page).nth(i).locator('.bp-hours')).toHaveText(/[٠-٩]+.*[صم]/);
+    await expect(rows(page).nth(i)).toBeInViewport({ratio: 1});
+  }
+  await page.screenshot({path: info.outputPath(`branches-ar-${width}.png`)});
+  await rows(page).first().click();
+  await page.waitForURL('**/down-town');
+  expect(await animated(page)).toBe(4);
+  await page.locator('.branch-switch').click();
+  await page.waitForURL('**/?pick=1');
+  await expect(page.getByRole('heading', {name: 'اختر فرعك'})).toBeVisible();
+  await page.locator('.lang-btn').click();
+  await expect(page.getByRole('heading', {name: 'Choose your branch'})).toBeVisible();
 });

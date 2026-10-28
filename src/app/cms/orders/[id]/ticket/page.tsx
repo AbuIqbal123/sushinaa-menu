@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
+import { getMenu } from '@/cms/repository';
 import { currentStaff } from '@/cms/auth';
 import { Ticket } from '@/components/order/Ticket';
 import { OrderError } from '@/ordering/http';
@@ -20,5 +21,6 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
     if (error instanceof OrderError && error.code === 'NOT_FOUND') notFound();
     throw error;
   }
-  return <Ticket model={model} />;
+  const { menu } = await getMenu();
+  return <Ticket model={model} logo={menu.settings.documentLogo || menu.settings.logo} />;
 }

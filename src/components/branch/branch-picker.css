@@ -100,3 +100,9 @@
   .bp-sheen, .bp-piece svg { animation: none; }
   .bp-info, .bp-pick, .bp-pick:hover .bp-piece { transition: none; }
 }
+
+.bp-top > div { flex: 1; min-width: 0; }
+.bp-top .lang-btn { flex-shrink: 0; padding-inline: 10px; font-size: 12px; }
+[dir="rtl"] .bp-top h1, [dir="rtl"] .bp-name { font-family: var(--font-arabic); letter-spacing: 0; line-height: 1.2; }
+[dir="rtl"] .bp-shell { font-family: var(--font-arabic); }
+[dir="rtl"] .bp-hours { font-size: 14px; }

@@ -27,7 +27,7 @@ const selection = defaultSelection(dish);
 const unit = Math.round(unitPrice(dish, selection) * 100);
 const snapshot = quoteOrder({
   branchId: 'down-town',
-  customer: { name: 'Test customer', phone: '97455551234', plate: 'Q123456', colour: 'silver', car: 'test car', instructions: '' },
+  customer: { name: 'Test customer', phone: '97455551234', brand: 'toyota', plate: 'Q123456', colour: 'silver', car: 'test car', instructions: '' },
   lines: [{ dishId: dish.id, selection, quantity: 1, note: '', expectedUnitMinor: unit }],
 }, menu, at);
 

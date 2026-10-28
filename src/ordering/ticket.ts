@@ -1,6 +1,8 @@
 import type { Row } from '@libsql/client';
 import type { Copy } from '@/i18n/copy';
-import { formatQar } from '@/lib/money';
+import { carBrandName } from './car-brands';
+import { BRANCHES } from '@/branches/branches';
+import { minorAmount, formatQar } from '@/lib/money';
 import { selectionLabel } from '@/ordering/price';
 import { nationalPhone } from '@/ordering/checkout/validation';
 import type { Selection } from '@/catalog/types';
@@ -11,6 +13,8 @@ const money = { currencyEn: 'QAR', currencyAr: 'ر.ق' };
 
 export type TicketLine = {
   name: string;
+  nameAr?: string;
+  amount?: string;
   quantity: number;
   note: string;
   total: string;
@@ -32,6 +36,11 @@ export type TicketModel = {
   payment: string;
   reprint: string | null;
   amended: boolean;
+  reference: string;
+  amountDue: string;
+  subtotal: string;
+  discount: string;
+  instructions: string;
 };
 
 type StoredLine = {
@@ -61,6 +70,12 @@ export function qatarTime(iso: string) {
   return `${pick('year')}-${pick('month')}-${pick('day')} ${pick('hour')}:${pick('minute')}`;
 }
 
+export function receiptReference(iso: string, branchId: string, number: string) {
+  const date = qatarTime(iso).slice(2, 10).replaceAll('-', '');
+  const branch = String(BRANCHES.findIndex(b => b.slug === branchId) + 1).padStart(2, '0');
+  return `${date}${branch}${number.padStart(6, '0')}`;
+}
+
 function price(minor: number) {
   return formatQar(minor / 100, 'en', money);
 }
@@ -80,6 +95,7 @@ export function ticketModel(row: Row, edits: ResolvedEdit[] = []): TicketModel {
     version?: number;
     branchName?: string;
     collection?: string;
+    customer?: { brand?: string } | null;
     lines?: StoredLine[];
     totalMinor?: number;
   };
@@ -92,6 +108,8 @@ export function ticketModel(row: Row, edits: ResolvedEdit[] = []): TicketModel {
     const gross = line.voided ? 0 : line.unitMinor * line.quantity;
     group.lines.push({
       name: line.voided ? `VOID ${line.name}` : line.name,
+      nameAr: line.nameAr !== line.name ? line.nameAr : '',
+      amount: minorAmount(gross),
       quantity: line.quantity,
       note: line.note || '',
       total: price(line.voided ? 0 : gross),
@@ -102,6 +120,7 @@ export function ticketModel(row: Row, edits: ResolvedEdit[] = []): TicketModel {
     if (discount) {
       group.lines.push({
         name: line.compliment ? 'Compliment' : 'Discount',
+        amount: minorAmount(-discount.amountMinor),
         quantity: 1,
         note: '',
         total: price(-discount.amountMinor),
@@ -114,10 +133,10 @@ export function ticketModel(row: Row, edits: ResolvedEdit[] = []): TicketModel {
   const orderDiscount = projected.discounts.find((item) => item.scope === 'order');
   if (orderDiscount) {
     const group = groups.get('Items') ?? { order: 1000, lines: [] };
-    group.lines.push({ name: 'Discount', quantity: 1, note: '', total: price(-orderDiscount.amountMinor), options: '', voided: false });
+    group.lines.push({ name: 'Discount', amount: minorAmount(-orderDiscount.amountMinor), quantity: 1, note: '', total: price(-orderDiscount.amountMinor), options: '', voided: false });
     groups.set('Items', group);
   }
-  const car = [row.car_plate, row.car_colour, row.car_model].filter((part) => typeof part === 'string' && part).join(' · ');
+  const car = [row.car_plate, row.car_colour, removed ? '' : carBrandName(snapshot.customer?.brand), row.car_model].filter((part) => typeof part === 'string' && part).join(' · ');
   const printCount = Number(row.print_count ?? 0);
   return {
     branchName: snapshot.branchName || 'Sushinaa',
@@ -135,5 +154,10 @@ export function ticketModel(row: Row, edits: ResolvedEdit[] = []): TicketModel {
     payment: `${row.paid_at ? 'Paid' : 'Unpaid'} · ${String(row.payment_method)}`,
     reprint: row.printed_at ? `Reprint ${printCount}` : null,
     amended: row.amended_at != null && row.amended_at !== '',
+    reference: receiptReference(String(row.created_at), String(row.branch_id), row.order_number == null ? '0' : String(row.order_number)),
+    amountDue: minorAmount(Number(row.total_minor)),
+    subtotal: minorAmount(projected.lines.filter(line => !line.voided).reduce((n, line) => n + line.unitMinor * line.quantity, 0)),
+    discount: minorAmount(projected.discounts.reduce((n, discount) => n + discount.amountMinor, 0)),
+    instructions: typeof row.instructions === 'string' ? row.instructions : '',
   };
 }

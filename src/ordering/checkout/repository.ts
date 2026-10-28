@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { OrderSnapshot } from './validation';
+import type { CustomerReceiptDetails } from '../contracts';
 import { CheckoutError } from './validation';
 import { db, initDb, databaseUrl } from '@/cms/db';
 import { assertOrderDatabaseAllowed } from '@/ordering/guard';
@@ -26,9 +27,24 @@ export function customerResult(row: Record<string, unknown>, reused = false) {
 export async function customerOrder(id: string, session: string | null) {
   await initOrders();
   if (!session) throw new OrderError('NOT_FOUND', 404);
-  const row = (await db.execute({ sql: 'SELECT id,status,payment_method,paid_at,total_minor,created_at,order_number FROM orders WHERE id=? AND session_hash=?', args: [id, hash(session)] })).rows[0];
+  const row = (await db.execute({ sql: 'SELECT id,status,payment_method,paid_at,total_minor,created_at,order_number,branch_id,snapshot FROM orders WHERE id=? AND session_hash=?', args: [id, hash(session)] })).rows[0];
   if (!row) throw new OrderError('NOT_FOUND', 404);
-  return customerResult(row);
+  const snapshot = JSON.parse(String(row.snapshot)) as Partial<OrderSnapshot>;
+  const { applyEdits, linesFromSnapshot } = await import('../edits');
+  const { storedEdits } = await import('../order-edits');
+  const projected = applyEdits(linesFromSnapshot(snapshot.lines ?? []), await storedEdits(id));
+  const lines: CustomerReceiptDetails['lines'] = projected.lines.filter(line => !line.voided).map(line => ({
+    id: line.id, name: line.name, nameAr: line.nameAr, quantity: line.quantity, note: line.note,
+    unitMinor: line.unitMinor, totalMinor: line.unitMinor * line.quantity, selection: line.selection,
+    kind: line.kind as CustomerReceiptDetails['lines'][number]['kind'],
+    freeDips: line.freeDips as CustomerReceiptDetails['lines'][number]['freeDips'],
+    extras: line.extras as CustomerReceiptDetails['lines'][number]['extras'],
+  }));
+  const details: CustomerReceiptDetails = { branchId: row.branch_id as CustomerReceiptDetails['branchId'],
+    customer: snapshot.customer ?? null, lines,
+    discountMinor: Math.max(0, lines.reduce((sum, line) => sum + line.totalMinor, 0) - Number(row.total_minor)),
+  };
+  return { ...customerResult(row), details };
 }
 export async function persistPendingOrder(session: string, key: string, requestHash: string, snapshot: OrderSnapshot, revision: number, method: PaymentMethod = 'mock') {
   await initOrders();
