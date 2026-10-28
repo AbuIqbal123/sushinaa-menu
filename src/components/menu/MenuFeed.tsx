@@ -58,6 +58,7 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
   const currentCategory = useRef<Section>(firstSection);
   const pendingJump = useRef<Section | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
+  const gestureRef = useRef<HTMLDivElement>(null);
   const search = normalizeSearch(query);
   const searchNames = useMemo(
     () => new Map(menu.dishes.map((dish) => [dish.id, normalizeSearch(`${pickName(dish, "en")} ${pickName(dish, "ar")}`)])),
@@ -208,6 +209,7 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
       window.clearTimeout(timer);
       window.cancelAnimationFrame(frame);
       demonstrating.current = false;
+      if (gestureRef.current) gestureRef.current.hidden = true;
       feed.style.removeProperty("scroll-snap-type");
     };
     const timer = window.setTimeout(() => {
@@ -216,16 +218,25 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
       origin = feed.scrollTop;
       demonstrating.current = true;
       feed.style.scrollSnapType = "none";
+      if (gestureRef.current) gestureRef.current.hidden = false;
       const start = performance.now();
       const animate = (now: number) => {
-        const progress = Math.min(1, (now - start) / 1500);
-        // Ease out, pause briefly at the peek, then settle back.
-        const phase = progress < .4 ? progress / .4 : progress < .6 ? 1 : (1 - progress) / .4;
-        const eased = (1 - Math.cos(Math.PI * phase)) / 2;
-        feed.scrollTop = origin! + feed.clientHeight * .3 * eased;
+        const progress = Math.min(1, (now - start) / 1900);
+        // Two quick gestures, with a smaller second bounce. The hand and menu
+        // share one animation clock so the demonstration feels like a swipe.
+        const cycle = progress < .45 ? progress / .45 : progress < .55 ? 0 : (progress - .55) / .45;
+        const amplitude = progress < .45 ? .3 : .2;
+        const offset = feed.clientHeight * amplitude * Math.sin(Math.PI * cycle) ** 2;
+        feed.scrollTop = origin! + offset;
+        const gesture = gestureRef.current;
+        if (gesture) {
+          gesture.style.transform = `translate(-50%, -50%) translateY(${-offset * .45}px)`;
+          gesture.style.opacity = String(Math.min(1, progress * 12, (1 - progress) * 12));
+        }
         if (progress < 1) frame = window.requestAnimationFrame(animate);
         else {
           demonstrating.current = false;
+          if (gestureRef.current) gestureRef.current.hidden = true;
           feed.style.removeProperty("scroll-snap-type");
           syncCategory();
         }
@@ -311,11 +322,13 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
   return (
     <div className={`shell${sheetOpen ? " is-sheet" : ""}${itemCount > 0 ? " has-order" : ""}`}>
       <header className={`chrome-header${searchOpen ? " search-open" : ""}`} inert={sheetOpen}>
+        <Link href="/?pick=1" className="branch-switch" prefetch={false}>
+          <span className="branch-switch-name">{branch}</span><span aria-hidden="true">▾</span>
+        </Link>
         <div className="brand-navigation">
-          {/* The logo and the branch name are one link back to the branch picker. */}
+          {/* Brand and branch both lead back to the branch picker. */}
           <Link href="/?pick=1" className="brand-mark" aria-label={`${t.brand}, ${branch}, change branch`} prefetch={false}>
             <img src={menu.settings.logo} alt="" className="wordmark-img" width={46} height={44} />
-            <span className="branch-switch"><span className="branch-switch-name">{branch}</span><span aria-hidden="true">▾</span></span>
           </Link>
           <div className="category-navigation">
             <button ref={categoryButtonRef} type="button" className="cart-btn category-toggle"
@@ -399,8 +412,17 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
               active={item.copy === 1 && item.real === activeIndex}
               eager={close(delta) || (atSeam && (close(delta - n) || close(delta + n)))}
               inert={item.copy !== 1}
-              showHint={showCategoryHint && !sheetOpen && !searchOpen && item.copy === 1 && item.real === 0 && n > 1} onOpen={setDetail} />;
+              onOpen={setDetail} />;
           })}
+      </div>
+      <div ref={gestureRef} className="scroll-gesture" hidden aria-hidden="true">
+        <svg className="scroll-gesture-trail" width="26" height="35" viewBox="0 0 26 35" fill="none">
+          <path d="m5 12 8-8 8 8M13 5v25" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <svg className="scroll-gesture-hand" width="64" height="80" viewBox="0 0 26 32" fill="currentColor">
+          <path d="M8 16V4a2 2 0 0 1 4 0v8a2 2 0 0 1 4 0v1a2 2 0 0 1 4 0v2a2 2 0 0 1 4 0v7c0 5-3 8-8 8h-2c-3 0-5-2-7-5l-5-7c-1.5-2.5 1-4.5 3-2l3 3Z" stroke="#3a241d" strokeWidth="1" strokeLinejoin="round" />
+          <path d="M12 12v6m4-5v6m4-4v5" stroke="#9d7663" strokeWidth=".8" strokeLinecap="round" />
+        </svg>
       </div>
       {itemCount > 0 && !sheetOpen ? <button type="button" className="sticky-cta" onClick={() => setOpen(true)}>
         {t.viewOrder} · {formatQar(totalQar, lang, menu.settings)}</button> : null}
