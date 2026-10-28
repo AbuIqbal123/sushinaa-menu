@@ -6,6 +6,7 @@ import { db, initDb, databaseUrl } from '@/cms/db';
 import { assertOrderDatabaseAllowed } from '@/ordering/guard';
 import type { PaymentMethod } from '@/ordering/status';
 import { OrderError } from '@/ordering/http';
+import { composeOrderNumber, orderSequence, qatarDay } from '@/ordering/order-number';
 export async function initOrders() {
   assertOrderDatabaseAllowed(databaseUrl);
   await initDb();
@@ -70,7 +71,14 @@ export async function persistPendingOrder(session: string, key: string, requestH
     if (Number(count.count) >= 10) throw new CheckoutError('LIMIT');
     const id = `SU-${randomUUID()}`;
     const now = new Date().toISOString();
-    const orderNumber = Number((await tx.execute({ sql: 'SELECT COALESCE(MAX(order_number), 0) + 1 AS n FROM orders WHERE branch_id=?', args: [snapshot.branchId] })).rows[0].n);
+    const day = qatarDay(new Date(now));
+    const latest = (await tx.execute({
+      sql: 'SELECT order_number FROM orders WHERE branch_id=? AND created_at>=? AND created_at<? AND order_number>=? ORDER BY order_number DESC LIMIT 1',
+      args: [snapshot.branchId, day.start.toISOString(), day.end.toISOString(), 100_000],
+    })).rows[0];
+    const sequence = latest ? orderSequence(Number(latest.order_number)) + 1 : 1;
+    if (sequence > 999) throw new CheckoutError('LIMIT');
+    const orderNumber = composeOrderNumber(snapshot.branchId, day.day, sequence);
     await tx.batch([
       { sql: 'INSERT INTO orders (id,session_hash,idempotency_key,request_hash,snapshot,branch_id,order_number,total_minor,currency,customer_name,customer_phone,car_plate,car_colour,car_model,instructions,created_at,updated_at,payment_method) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
         args: [id, sessionHash, key, requestHash, JSON.stringify({ version: 2, menuRevision: revision, ...snapshot }), snapshot.branchId, orderNumber, snapshot.totalMinor, snapshot.currency, snapshot.customer.name, snapshot.customer.phone, snapshot.customer.plate, snapshot.customer.colour, snapshot.customer.car, snapshot.customer.instructions, now, now, method] },

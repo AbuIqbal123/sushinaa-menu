@@ -3,6 +3,7 @@ import { carBrandName } from '@/ordering/car-brands';
 import { getMenu } from '@/cms/repository';
 import { nationalPhone } from '@/ordering/checkout/validation';
 import { receiptReference } from '@/ordering/ticket';
+import { formatOrderNumber } from '@/ordering/order-number';
 import { currentStaff } from '@/cms/auth';
 import { Receipt, type CustomerReceipt, type ReceiptAdjustment } from '@/components/order/Receipt';
 import { formatMinor, minorAmount } from '@/lib/money';
@@ -40,11 +41,13 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
       };
     };
     const copy = { pcs: 'pcs', dip: 'Dip', spicy: 'Spicy', regular: 'Regular' } as Copy;
-    const orderNumber = row.order_number == null ? '' : String(row.order_number);
+    const orderNumber = formatOrderNumber(row.order_number == null ? '' : Number(row.order_number));
     model = {
       branchName: snapshot.branchName || 'Sushinaa',
       orderLabel: orderNumber ? `Order ${orderNumber}` : `Order ${orderShortCode(String(row.id))}`,
-      car: [row.car_plate, row.car_colour, carBrandName(snapshot.customer?.brand), row.car_model].filter(Boolean).join(' · '),
+      car: row.car_plate ? String(row.car_plate) : '',
+      brand: carBrandName(snapshot.customer?.brand),
+      vehicle: [row.car_colour, row.car_model].filter(Boolean).join(' · '),
       customer: row.customer_name == null ? 'removed' : String(row.customer_name),
       phone: row.customer_phone == null ? 'removed' : nationalPhone(String(row.customer_phone)),
       reference: receiptReference(String(row.created_at), String(row.branch_id), orderNumber || '0'),
@@ -58,7 +61,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
           nameAr: line.nameAr,
           quantity: line.quantity,
           note: line.note,
-          qtyLine: `${line.quantity} x ${minorAmount(line.unitMinor)}`,
+          qtyLine: line.quantity > 1 ? minorAmount(line.unitMinor) : '',
           total: minorAmount(line.voided ? 0 : line.unitMinor * line.quantity),
           modifiers,
           voided: line.voided,

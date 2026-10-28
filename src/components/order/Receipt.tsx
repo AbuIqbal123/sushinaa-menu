@@ -1,4 +1,4 @@
-import { OrderBarcode, ThermalBrand, ThermalColumns, ThermalPaper } from './ThermalPaper';
+import { OrderBarcode, ThermalBrand, ThermalColumns, ThermalPaper, ThermalWho } from './ThermalPaper';
 
 export type ReceiptAdjustment = { label: string; amount: string; note: string };
 export type CustomerReceipt = {
@@ -7,6 +7,8 @@ export type CustomerReceipt = {
   when: string;
   amended: boolean;
   car: string;
+  brand: string;
+  vehicle: string;
   customer: string;
   phone: string;
   reference: string;
@@ -28,17 +30,12 @@ export function Receipt({ model, logo }: { model: CustomerReceipt; logo?: string
   return <ThermalPaper>
     {model.amended && <p className="ticket-banner">AMENDED · <span lang="ar">معدّل</span></p>}
     <ThermalBrand branchName={model.branchName} logo={logo} />
-    <section className="thermal-details">
-      {model.car && <p><strong>Car Number:</strong> {model.car}</p>}
-      <p className="ticket-number">{model.orderLabel}</p>
-      <p>{model.customer} · {model.phone}</p>
-      <p className="thermal-source"><span>Website order</span><span>CAR PICKUP</span></p>
-    </section>
+    <ThermalWho number={model.orderLabel.replace(/^Order\s+/, '')} customer={model.customer} phone={model.phone} car={model.car} brand={model.brand} vehicle={model.vehicle} fulfilment="CAR PICKUP" />
     <ThermalColumns />
     <ul>{model.lines.map((line, index) => <li key={index} className={`thermal-line${line.voided ? ' receipt-void' : ''}`}>
       <span>{line.quantity}</span><div><p className="thermal-line-name">{line.voided ? `VOID ${line.name}` : line.name}</p>
         {line.nameAr !== line.name && <p className="thermal-line-ar" lang="ar" dir="rtl">{line.nameAr}</p>}
-        <p className="thermal-options">{line.qtyLine}</p>
+        {line.qtyLine && <p className="thermal-options">{line.qtyLine}</p>}
         {line.modifiers && <p className="thermal-options">{line.modifiers}</p>}
         {line.note && <p className="thermal-note" dir="auto">{line.note}</p>}
         {line.adjustments.map((item, i) => <Adjustment key={i} item={item} />)}

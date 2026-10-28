@@ -6,6 +6,7 @@ import { strings } from '@/i18n/copy';
 import { useNotify } from './Notices';
 import { allowedTransitions, staffStatus, staffLabels, type OrderStatus } from '@/ordering/status';
 import { formatMinor } from '@/lib/money';
+import { formatOrderNumber } from '@/ordering/order-number';
 import { nationalPhone } from '@/ordering/checkout/validation';
 import { selectionLabel } from '@/ordering/price';
 import type { Dish } from '@/catalog/types';
@@ -109,7 +110,7 @@ export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; 
         <section className="kitchen-who staff-detail-head">
           <h3>{text('Who', 'من')}</h3>
           <dl className="kitchen-facts">
-            <div><dt>{text('Order', 'الطلب')}</dt><dd>{data.orderNumber ?? '—'}</dd></div>
+            <div><dt>{text('Order', 'الطلب')}</dt><dd>{data.orderNumber == null ? '—' : formatOrderNumber(data.orderNumber)}</dd></div>
             <div><dt>{text('Status', 'الحالة')}</dt><dd><span className={`staff-status status-${staffStatus(data.status)}`}>{staffLabels[staffStatus(data.status)][lang]}</span></dd></div>
             <div><dt>{text('Name', 'الاسم')}</dt><dd>{data.customer.name || '—'}</dd></div>
             <div><dt>{text('Phone', 'الجوال')}</dt><dd dir="ltr">{spacedPhone(data.customer.phone) || '—'}</dd></div>

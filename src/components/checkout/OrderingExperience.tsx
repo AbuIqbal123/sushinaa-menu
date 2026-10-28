@@ -11,6 +11,7 @@ import { BRANCHES as branches, type BranchId } from '@/branches/branches';
 import { branchStatus, qatarClock } from '@/branches/hours';
 import { customerSchema, digits, displayPhone, type Customer } from '@/ordering/checkout/validation';
 import { formatQar } from '@/lib/money';
+import { formatOrderNumber } from '@/ordering/order-number';
 import type { CustomerReceiptDetails } from '@/ordering/contracts';
 import { selectionLabel } from '@/ordering/price';
 import { pickName } from '@/i18n/localize';
@@ -163,7 +164,7 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
   const confirmed = receipt && (receipt.paymentStatus === 'paid' || receipt.paymentMethod === 'pay_at_pickup');
   const menuStage = branch ? <div key="menu-stage" className={`app-lock ordering-menu-stage${step !== 'menu' ? ' is-inactive' : ''}`} inert={step !== 'menu'} aria-hidden={step !== 'menu' ? true : undefined}><MenuFeed branch={branchName} inactive={step !== 'menu'} onPickup={() => go('details')}
     orderTracking={confirmed ? <button type="button" className="order-tracker" onClick={() => go('receipt')}>
-      {text('Track order', 'تتبّع الطلب')}{receipt.orderNumber != null && <span dir="ltr"> #{receipt.orderNumber}</span>}
+      {text('Track order', 'تتبّع الطلب')}{receipt.orderNumber != null && <span dir="ltr">#{formatOrderNumber(receipt.orderNumber)}</span>}
     </button> : undefined} /></div> : null;
   if (step === 'menu') return <>{menuStage}</>;
   const receiptCustomer = receipt?.details ? receipt.details.customer ?? emptyCustomer : customer;
@@ -185,15 +186,18 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
     <header className="ticket-head"><div><p className="ticket-kicker">{t.brand}</p><h2 className="ticket-title">{t.yourTicket}</h2></div>{canEditBasket ? <button type="button" className="ticket-edit" onClick={() => go('menu')}>{text('Edit items', 'تعديل الأصناف')}</button> : <span className="ticket-count">{count} {text(count === 1 ? 'item' : 'items', 'صنف')}</span>}</header>
     <p className="ticket-rule" aria-hidden="true" />
     <ul className="ticket-lines">{cart.lines.map(line => <li key={line.key} className="ticket-line">
-      <div className="line-main"><p className="line-name">{line.displayName}</p>{line.meta && <p className="line-meta">{line.meta}</p>}{line.qty > 1 && <p className="line-meta line-unit">{line.qty} × {ticketMoney(line.unitQar)}</p>}{line.note && <p className="line-note">{t.commentWord}: {line.note}</p>}{editable && <button type="button" className="ticket-edit" onClick={() => setEditing(line)}>{text('Edit choices & notes', 'تعديل الخيارات والملاحظات')}</button>}</div>
-      {editable ? <div className="line-qty"><button type="button" className="qty-btn" onClick={() => cart.dec(line.key)} aria-label={t.fewerOf(line.displayName)}>−</button><span className="qty-num">{line.qty}</span><button type="button" className="qty-btn" onClick={() => cart.inc(line.key)} disabled={line.qty >= 20} aria-label={t.moreOf(line.displayName)}>+</button></div> : <span className="ticket-static-qty" aria-label={text(`Quantity ${line.qty}`, `الكمية ${line.qty}`)}>×{line.qty}</span>}
+      <div className="line-main"><p className="line-name">{line.displayName}</p>{line.meta && <p className="line-meta">{line.meta}</p>}{line.qty > 1 && <p className="line-meta line-unit">{line.qty} <span className="qty-times" aria-hidden="true">×</span> {ticketMoney(line.unitQar)}</p>}{line.note && <p className="line-note">{t.commentWord}: {line.note}</p>}{editable && <button type="button" className="ticket-edit" onClick={() => setEditing(line)}>{text('Edit choices & notes', 'تعديل الخيارات والملاحظات')}</button>}</div>
+      {editable ? <div className="line-qty"><button type="button" className="qty-btn" onClick={() => cart.dec(line.key)} aria-label={t.fewerOf(line.displayName)}>−</button><span className="qty-num">{line.qty}</span><button type="button" className="qty-btn" onClick={() => cart.inc(line.key)} disabled={line.qty >= 20} aria-label={t.moreOf(line.displayName)}>+</button></div> : <span className="ticket-static-qty" dir="ltr" aria-label={text(`Quantity ${line.qty}`, `الكمية ${line.qty}`)}><span className="qty-times" aria-hidden="true">×</span>{line.qty}</span>}
       <p className="line-total">{ticketMoney(line.lineTotal)}</p>
     </li>)}</ul>
     <div className="ticket-sum"><span>{t.total}</span><strong>{serverMinor != null ? money(serverMinor) : ticketMoney(cart.totalQar)}</strong></div>
   </section>; }
   const receiptBody = (editable: boolean, serverMinor?: number) => <>
-    <section className="review-details">{editable && <div className="review-section-title"><button type="button" className="text-action" onClick={() => go('details')}>{text('Edit', 'تعديل')}</button></div>}<strong>{customer.name}</strong><p dir="ltr" className="review-phone">{displayPhone(customer.phone)}</p><QatarPlate plate={customer.plate} /><p className="review-vehicle"><CarBrandLogo brand={findCarBrand(customer.brand)} /><span>{[customer.colour, carBrandName(customer.brand, lang)].filter(Boolean).join(' · ')}</span></p>{customer.instructions && <p className="checkout-note">{customer.instructions}</p>}</section>
     {ticket(false, editable, serverMinor)}
+    <details className="customer-fold review-details">
+      <summary><span>{text('Your details', 'بياناتك')}</span>{editable && <button type="button" className="text-action" onClick={event => { event.preventDefault(); event.stopPropagation(); go('details'); }}>{text('Edit', 'تعديل')}</button>}</summary>
+      <div className="customer-fold-body"><p className="order-who"><strong>{customer.name}</strong><span dir="ltr" className="review-phone">{displayPhone(customer.phone)}</span></p><div className="vehicle-pair"><QatarPlate plate={customer.plate} /><p className="review-vehicle"><CarBrandLogo brand={findCarBrand(customer.brand)} /><span>{[customer.colour, carBrandName(customer.brand, lang)].filter(Boolean).join(' · ')}</span></p></div>{customer.instructions && <p className="checkout-note">{customer.instructions}</p>}</div>
+    </details>
   </>;
   if (step === 'payment' && receipt && receipt.paymentMethod === 'mock') return <>{menuStage}<MockSadadGateway amount={money(receipt.totalMinor)} lang={lang} onBack={() => go('review')} onComplete={() => go('receipt')} onPay={async () => {
     const response = await fetch(`/api/orders/${receipt.id}/mock-pay`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
@@ -209,7 +213,7 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
         {step !== 'receipt' && <div className="checkout-navigation"><button type="button" className="text-action" disabled={busy} onClick={() => go(step === 'details' ? 'menu' : step === 'review' ? 'details' : 'review')}><span className="back-arrow" aria-hidden="true">←</span> {text('Back', 'رجوع')}</button>{(['details', 'review'] as Step[]).includes(step) && <span aria-label={text(`Step ${['details', 'review'].indexOf(step) + 1} of 2`, `الخطوة ${['details', 'review'].indexOf(step) + 1} من ٢`)}>{['details', 'review'].indexOf(step) + 1} / 2</span>}</div>}
         <main id="main" className="checkout-main checkout-step" data-motion={motion} key={step}>
           <h1 ref={heading} tabIndex={-1}>{title}</h1>
-          {step === 'details' && <p className="checkout-branch">{text('Pickup', 'استلام')} · <strong>{branchName}</strong></p>}
+          {(step === 'details' || step === 'review') && <p className="checkout-branch">{text('Pickup', 'استلام')} · <strong>{branchName}</strong></p>}
           {step !== 'payment' && step !== 'receipt' && closedNotice}
           {step !== 'receipt' && cart.unavailableCount > 0 && <div className="checkout-notice" role="alert"><strong>{text('Your basket needs an update', 'تحتاج سلتك إلى تحديث')}</strong><p>{text(`${cart.unavailableCount} serving(s) or their choices are no longer available. Remove them before continuing.`, `${cart.unavailableCount} حصة أو خياراتها لم تعد متوفرة. احذفها قبل المتابعة.`)}</p><button type="button" className="text-action" onClick={cart.discardUnavailable}>{text('Remove unavailable selections', 'حذف الخيارات غير المتوفرة')}</button></div>}
           {step === 'details' && <>
@@ -239,22 +243,34 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
             <div className="checkout-step-action"><button type="button" className="checkout-primary" disabled={busy || !canPlace || !count || cart.unavailableCount > 0} onClick={checkout}>{busy ? text('Checking…', 'جارٍ التحقق…') : paymentMethod === 'pay_at_pickup' ? text('Place order · pay at pickup', 'تأكيد الطلب · الدفع عند الاستلام') : text('Continue to payment', 'المتابعة إلى الدفع')}<Forward /></button></div>
           </>}
           {step === 'receipt' && receipt && <div data-order-id={receipt.id}>
-            <p className="order-confirmed" role="status">{receipt.paymentMethod === 'mock' ? text('Payment confirmed', 'تم تأكيد الدفع') : text('Order received', 'تم استلام الطلب')}</p>
-            {receipt.orderNumber != null && <p className="order-number" dir="ltr"><span>{text('Order number', 'رقم الطلب')}</span>{receipt.orderNumber}</p>}
+            <header className="order-status">
+              <p className="order-confirmed" role="status">{receipt.paymentMethod === 'mock' ? text('Payment confirmed', 'تم تأكيد الدفع') : text('Order received', 'تم استلام الطلب')}</p>
+              {receipt.orderNumber != null && <p className="order-number" dir="ltr"><span>{text('Order number', 'رقم الطلب')}</span>{formatOrderNumber(receipt.orderNumber)}</p>}
+            </header>
             <OrderProgress status={receipt.status} lang={lang} />
-            <div className="confirmation-branch"><p className="checkout-branch">{text('Pickup', 'استلام')} · <strong>{receiptBranchName}</strong></p>
-              <a className="branch-call" href={`tel:+${menu.settings.whatsappE164}`} aria-label={text(`Call ${receiptBranchName} branch`, `اتصل بفرع ${receiptBranchName}`)}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 3 3 5-2 2c1.3 2.7 3.3 4.7 6 6l2-2 5 3v3c0 1-1 2-2 2C9.6 21.4 2.6 14.4 2 5c0-1 1-2 2-2h3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                {text('Call', 'اتصال')}
-              </a></div>
-            {receiptBranch && <DirectionsLink branchName={receiptBranchName} href={receiptBranch.mapsUrl} text={text} />}
-            <p className="order-who"><strong>{receiptCustomer.name}</strong><span dir="ltr">{displayPhone(receiptCustomer.phone)}</span></p>
-            {/^[QTR]\d{3,6}$/.test(receiptCustomer.plate) && <QatarPlate plate={receiptCustomer.plate} />}
-            {receiptCustomer.brand && <p className="order-vehicle review-vehicle"><CarBrandLogo brand={findCarBrand(receiptCustomer.brand)} /><span>{[receiptCustomer.colour, carBrandName(receiptCustomer.brand, lang)].filter(Boolean).join(' · ')}</span></p>}
-            <ul className="order-summary">{receiptLines.map(line => <li key={line.key}><span><b>{line.displayName}</b>{line.meta && <small>{line.meta}</small>}{line.note && <small>{line.note}</small>}</span><span>×{line.qty}</span><span dir="ltr">{ticketMoney(line.lineTotal)}</span></li>)}</ul>
+            <section className="order-pickup">
+              <div className="confirmation-branch"><p className="checkout-branch">{text('Pickup', 'استلام')} · <strong>{receiptBranchName}</strong></p>
+                <a className="branch-call" href={`tel:+${menu.settings.whatsappE164}`} aria-label={text(`Call ${receiptBranchName} branch`, `اتصل بفرع ${receiptBranchName}`)}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 3 3 5-2 2c1.3 2.7 3.3 4.7 6 6l2-2 5 3v3c0 1-1 2-2 2C9.6 21.4 2.6 14.4 2 5c0-1 1-2 2-2h3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  {text('Call', 'اتصال')}
+                </a></div>
+              {receiptBranch && <DirectionsLink branchName={receiptBranchName} href={receiptBranch.mapsUrl} text={text} />}
+            </section>
+            <h2 className="order-items-title">{text('Your order', 'طلبك')}</h2>
+            <ul className="order-summary">{receiptLines.map(line => <li key={line.key}><span><b>{line.displayName}</b>{line.meta && <small>{line.meta}</small>}{line.note && <small>{line.note}</small>}</span><span className="order-qty" dir="ltr"><span className="qty-times" aria-hidden="true">×</span>{line.qty}</span><span dir="ltr">{ticketMoney(line.lineTotal)}</span></li>)}</ul>
             {(receipt.details?.discountMinor ?? 0) > 0 && <p className="order-discount"><span>{text('Discounts', 'الخصومات')}</span><span dir="ltr">−{money(receipt.details!.discountMinor)}</span></p>}
             <p className="order-total"><span>{t.total}</span><strong dir="ltr">{money(receipt.totalMinor)}</strong></p>
-            <button type="button" className="checkout-primary" onClick={() => go('menu')}>{text('Back to menu', 'العودة للقائمة')}<Forward /></button>
+            <details className="customer-fold order-collection">
+              <summary><span>{text('Your details', 'بياناتك')}</span></summary>
+              <div className="customer-fold-body">
+                <p className="order-who"><strong>{receiptCustomer.name}</strong><span dir="ltr">{displayPhone(receiptCustomer.phone)}</span></p>
+                <div className="vehicle-pair">
+                  {/^[QTR]\d{3,6}$/.test(receiptCustomer.plate) && <QatarPlate plate={receiptCustomer.plate} />}
+                  {receiptCustomer.brand && <p className="order-vehicle review-vehicle"><CarBrandLogo brand={findCarBrand(receiptCustomer.brand)} /><span>{[receiptCustomer.colour, carBrandName(receiptCustomer.brand, lang)].filter(Boolean).join(' · ')}</span></p>}
+                </div>
+              </div>
+            </details>
+            <button type="button" className="checkout-primary" onClick={() => go('menu')}>{text('Back to menu', 'العودة للقائمة')}<span className="back-arrow" aria-hidden="true">←</span></button>
           </div>}
           {error && <div className="checkout-error" role="alert"><p>{error}</p><button className="text-action" type="button" onClick={() => { go('menu'); router.refresh(); }}>{text('Refresh menu', 'تحديث القائمة')}</button></div>}
         </main>

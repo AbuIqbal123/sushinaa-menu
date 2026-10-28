@@ -324,7 +324,9 @@ test('80mm tickets for a short order, a long order and a reprint', async ({ page
   await savePdf(short, 'ticket-short');
   const long = await openTicket(page.context(), baseURL!, longId);
   await expect(long.locator('.ticket-sheet')).toContainText('Spicy mayo');
-  await expect(long.locator('.ticket-sheet h2')).toHaveCount(3);
+  await expect(long.locator('.thermal-category')).toHaveCount(0);
+  await expect(long.locator('.ticket-sheet')).toContainText('Website order');
+  await expect(long.locator('.ticket-sheet')).toContainText('CAR PICKUP');
   await savePdf(long, 'ticket-long');
   const claim = await page.request.post(`/api/staff/orders/${longId}/print`, {
     headers: { Origin: baseURL!, 'content-type': 'application/json' },

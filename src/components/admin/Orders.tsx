@@ -9,6 +9,7 @@ import { OrderDetail } from './OrderDetail';
 import type { Role } from '@/cms/permissions';
 import type { MenuData } from '@/cms/schema';
 import { createOrderPoller } from './order-poller';
+import { formatOrderNumber } from '@/ordering/order-number';
 
 type List = { rows: OrderSummary[]; more: boolean; newCount: number; unprintedCount?: number };
 function orderFilter(value: string) {
@@ -143,7 +144,7 @@ export function Orders({ active, onUnread, role, menu }: { active: boolean; onUn
           <th>{text('Total', 'الإجمالي')}</th>
         </tr></thead>
         <tbody>{data.rows.map(row => { const b = BRANCHES.find(item => item.slug === row.branchId); return <tr key={row.id} data-order-id={row.id} onClick={() => setDetail(row.id)}>
-          <td dir="ltr">{row.orderNumber ?? '—'}</td>
+          <td dir="ltr">{row.orderNumber == null ? '—' : formatOrderNumber(row.orderNumber)}</td>
           {!singleBranch && <td>{b?.name}</td>}
           <td className="staff-customer">{row.name}</td>
           <td dir="ltr">{nationalPhone(row.phone) || '—'}</td>

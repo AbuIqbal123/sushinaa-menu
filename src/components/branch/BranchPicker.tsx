@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type MouseEvent } from "react";
-import { BRANCHES, BRANCH_COOKIE, type Branch } from "@/branches/branches";
+import { BRANCHES, type Branch } from "@/branches/branches";
 import { accessibleName, branchStatus, qatarClock } from "@/branches/hours";
 import { useMenu } from "@/cms/context";
 import { LangButton, useLocale } from "@/i18n/locale";
@@ -26,11 +26,6 @@ function subscribeToMinutes(onChange: () => void) {
 }
 const currentMinute = () => Math.floor(Date.now() / 60_000);
 const noMinuteOnServer = () => null;
-
-// Read by src/proxy.ts, so the next visit to "/" opens this branch.
-function rememberBranch(slug: string) {
-  document.cookie = `${BRANCH_COOKIE}=${slug};path=/;max-age=31536000;SameSite=Lax`;
-}
 
 export function BranchPicker() {
   const { settings } = useMenu();
@@ -56,7 +51,6 @@ export function BranchPicker() {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     if (picked) return;
-    rememberBranch(branch.slug);
     const href = `/${branch.slug}`;
     const shell = shellRef.current;
     const chop = chopRef.current;
