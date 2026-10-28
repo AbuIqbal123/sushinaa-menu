@@ -202,7 +202,7 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
     setReceipt(current => ({ ...current, ...result }));
     cart.clear(); attempt.current = null;
   }} /></>;
-  return <>{menuStage}<div className="ordering-page" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+  return <>{menuStage}<div className="ordering-page" data-step={step} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
     <div className="ordering-content" inert={Boolean(editing)}>
       <header className="ordering-header"><button type="button" className="ordering-logo" onClick={() => go('menu')} aria-label={text('Back to the menu', 'العودة إلى القائمة')}><Image src={menu.settings.logo} width={59} height={55} alt={t.brand} unoptimized /></button><LangButton /></header>
       <>
