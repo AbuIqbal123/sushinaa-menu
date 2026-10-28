@@ -30,7 +30,11 @@ test('every supplied choice has a unique identifier, bilingual labels and a loca
 });
 test('thermal tickets preserve the selected brand and model while historical orders remain readable', () => {
   const row = { length:0, id:'SU-00000000-0000-0000-0000-000000000001', branch_id:'down-town', created_at:'2026-10-28T12:00:00Z', customer_name:'Preview', customer_phone:'97455551234', car_plate:'Q123456', car_colour:'White', car_model:'Camry', total_minor:100, payment_method:'mock', paid_at:'2026-10-28T12:00:00Z', snapshot:JSON.stringify({customer,lines:[]}) };
-  assert.equal(ticketModel(row).car,'Q123456 · White · Toyota · Camry');
-  assert.equal(ticketModel({...row,snapshot:JSON.stringify({lines:[]})}).car,'Q123456 · White · Camry');
+  assert.equal(ticketModel(row).car,'Q123456');
+  assert.equal(ticketModel(row).brand,'Toyota');
+  assert.equal(ticketModel(row).vehicle,'White · Camry');
+  assert.equal(ticketModel({...row,snapshot:JSON.stringify({lines:[]})}).car,'Q123456');
+  assert.equal(ticketModel({...row,snapshot:JSON.stringify({lines:[]})}).brand,'');
+  assert.equal(ticketModel({...row,snapshot:JSON.stringify({lines:[]})}).vehicle,'White · Camry');
   assert.equal(carBrandName('removed-brand'),'');
 });

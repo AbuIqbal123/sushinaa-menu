@@ -10,6 +10,7 @@ import { orderQuery } from '../src/ordering/contracts';
 import { checkoutSchema, quoteOrder, type OrderSnapshot } from '../src/ordering/checkout/validation';
 import { defaultSelection, unitPrice } from '../src/ordering/price';
 import { LIVE_DATABASE_HOST } from '../src/lib/deploy-env';
+import { composeOrderNumber, formatOrderNumber, qatarDay } from '../src/ordering/order-number';
 import { formatQar } from '../src/lib/money';
 import type { listOrders, detailOrder, transitionOrder } from '../src/ordering/orders';
 import type { claimPrint, confirmPrint } from '../src/ordering/printing';
@@ -166,13 +167,25 @@ test('every order line stores its dish category id and name (snapshot v2)', asyn
   assert.equal(legacy.groups[0].name, 'Items');
 });
 
+test('guest order number is branch, Qatar day, and a daily sequence', () => {
+  assert.equal(composeOrderNumber('down-town', '05', 1), 105001);
+  assert.equal(formatOrderNumber(105001), '0105001');
+  assert.equal(formatOrderNumber(305012), '0305012');
+  assert.equal(formatOrderNumber(4), '4');
+  assert.equal(qatarDay(new Date('2026-10-06T00:10:00+03:00')).day, '06');
+  assert.equal(qatarDay(new Date('2026-10-05T23:30:00+03:00')).day, '05');
+});
+
 test('order numbers are unique per branch under 20 concurrent checkouts and never change', async () => {
   const created = await Promise.all(Array.from({ length: 20 }, () => place()));
   const numbers = created.map((order) => order.orderNumber);
   assert.equal(new Set(numbers).size, 20);
-  assert.ok(numbers.every((number) => typeof number === 'number' && number > 0));
+  const day = qatarDay(new Date(String((await row(created[0].id)).created_at))).day;
+  assert.ok(numbers.every((number) => formatOrderNumber(number).startsWith(`01${day}`)));
   const other = await place('west-bay');
-  assert.equal(other.orderNumber, 1);
+  const otherDay = qatarDay(new Date(String((await row(other.id)).created_at))).day;
+  assert.equal(other.orderNumber, composeOrderNumber('west-bay', otherDay, 1));
+  assert.equal(formatOrderNumber(other.orderNumber), `03${otherDay}001`);
   const sample = created[0];
   const before = (await row(sample.id)).order_number;
   await orders.transitionOrder(admin, sample.id, { expected: 'placed', to: 'accepted' }, ctx);
@@ -499,7 +512,9 @@ test('ticket prints CAR PICKUP with the car details', async () => {
     car_plate: 'Q123456', car_colour: 'silver', car_model: 'test car',
   });
   assert.equal(model.fulfilment, 'CAR PICKUP');
-  assert.equal(model.car, 'Q123456 · silver · Toyota · test car');
+  assert.equal(model.car, 'Q123456');
+  assert.equal(model.brand, 'Toyota');
+  assert.equal(model.vehicle, 'silver · test car');
 });
 
 test('polling with a cursor for a deleted order returns the first page and auto-print rows', async () => {

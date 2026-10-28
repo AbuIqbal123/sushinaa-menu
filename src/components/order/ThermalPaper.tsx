@@ -11,14 +11,18 @@ body:has(.ticket-sheet) > .skip-link { display: none !important; }
 .ticket-sheet p, .ticket-sheet h1, .ticket-sheet h2 { margin: 0; }
 .ticket-sheet [lang="ar"] { font-family: var(--font-arabic), Tahoma, Arial, sans-serif; font-weight: 500; }
 .ticket-sheet ul { list-style: none; margin: 0; padding: 0; }
-.thermal-brand { text-align: center; margin-bottom: 3mm; }
+.thermal-brand { text-align: center; margin-bottom: 1.5mm; }
 .thermal-logo { display: block; width: 38mm; height: 36.5mm; object-fit: contain; margin: 0 auto 2mm; filter: grayscale(1) contrast(4); }
 .ticket-sheet .thermal-brand h1 { font-size: 15pt; font-weight: 500; line-height: 1.2; }
-.thermal-branch { margin-top: 1mm !important; font-size: 10pt; }
-.thermal-details { margin: 2mm 0; }
-.thermal-details > p { margin: 1mm 0; }
-.ticket-sheet .ticket-number { font-size: 14pt; font-weight: 700; }
-.thermal-source { display: flex; justify-content: space-between; gap: 2mm; font-size: 10pt; }
+.thermal-branch { margin-top: 0.3mm !important; font-size: 10pt; }
+.thermal-who { margin: 0.5mm 0 1.5mm; text-align: center; }
+.thermal-customer { text-align: left; }
+.thermal-who-row { display: flex; justify-content: space-between; align-items: baseline; gap: 3mm; width: 100%; }
+.thermal-customer > p { margin: 0.2mm 0; }
+.thermal-car { overflow-wrap: normal; word-break: normal; }
+.thermal-source { display: flex; justify-content: space-between; align-items: baseline; gap: 4mm; margin: 1mm 0 0; font-size: 10pt; text-align: left; }
+.ticket-number-label { margin: 0; font-size: 8.5pt; font-weight: 700; letter-spacing: .03em; line-height: 1.2; }
+.ticket-sheet .ticket-number { font-size: 32pt; font-weight: 700; line-height: 0.95; margin: 0.2mm 0 1mm; letter-spacing: .02em; }
 .thermal-rule, .ticket-sheet .receipt-rule { border: 0; border-top: 1px dashed #000; margin: 2.5mm 0; }
 .thermal-columns, .thermal-line { display: grid; grid-template-columns: 9mm minmax(0,1fr) 18mm; gap: 2mm; align-items: start; }
 .thermal-columns { padding: 1mm 0; font-size: 9.5pt; border-block: 1px dashed #000; margin: 2mm 0; }
@@ -62,6 +66,29 @@ export function ThermalBrand({ branchName, logo = '/brand/logo.svg' }: { branchN
     <img className="thermal-logo" src={logo} alt="Sushinaa" width="144" height="138" />
     <h1>Sushinaa Restaurant</h1><p className="thermal-branch">{branchName}</p>
   </header>;
+}
+export function ThermalWho({ number, numberAttr, customer, phone, car, brand, vehicle, fulfilment, note }: {
+  number: string;
+  numberAttr?: string;
+  customer: string;
+  phone: string;
+  car: string;
+  brand: string;
+  vehicle: string;
+  fulfilment: string;
+  note?: string;
+}) {
+  return <section className="thermal-who">
+    <p className="ticket-number-label">Order number · <span lang="ar">رقم الطلب</span></p>
+    <p className="ticket-number" data-order-number={numberAttr}>{number}</p>
+    <div className="thermal-customer">
+      <p className="thermal-who-row"><span>{customer}</span><span dir="ltr">{phone}</span></p>
+      {(car || brand) && <p className="thermal-who-row thermal-car"><strong>Car Number:{car ? ` ${car}` : ''}</strong>{brand && <span>{brand}</span>}</p>}
+      {vehicle && <p className="thermal-car">{vehicle}</p>}
+      {note && <p className="thermal-note" dir="auto">{note}</p>}
+    </div>
+    <p className="thermal-source"><span>Website order</span><span>{fulfilment}</span></p>
+  </section>;
 }
 export function ThermalColumns() {
   return <div className="thermal-columns"><div><span lang="ar">الكمية</span>Qty</div><div><span lang="ar">الاسم</span>Name</div><div><span lang="ar">المجموع</span>Amount</div></div>;

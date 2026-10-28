@@ -72,8 +72,8 @@ export const DishSlide = memo(function DishSlide({
             fill
             sizes="(max-width: 430px) 100vw, 430px"
             preload={active}
-            loading={active ? undefined : "eager"}
-            fetchPriority={active ? undefined : "high"}
+            loading="eager"
+            fetchPriority={active ? "high" : "low"}
             unoptimized
             draggable={false}
             className="dish-photo"

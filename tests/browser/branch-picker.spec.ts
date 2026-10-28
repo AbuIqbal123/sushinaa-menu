@@ -35,7 +35,7 @@ test("the picker shows four branches with hours and status, without scrolling", 
   expect(scroll).toBeLessThanOrEqual(0);
 });
 
-test("tapping a piece opens that branch's menu and remembers it", async ({ page, context }) => {
+test("tapping a piece opens that branch's menu, and the menu link asks again", async ({ page }) => {
   await page.goto("/");
   await rows(page).first().click();
   await page.waitForURL("**/down-town");
@@ -44,30 +44,31 @@ test("tapping a piece opens that branch's menu and remembers it", async ({ page,
   await expect(page.locator(".slide").first()).toBeVisible();
   const mark = page.getByRole("link", { name: /Down Town, change branch/ });
   await expect(page.locator(".branch-switch")).toContainText("Down Town");
-  const cookie = (await context.cookies()).find((c) => c.name === "sushina-branch");
-  expect(cookie?.value).toBe("down-town");
-  expect(cookie?.sameSite).toBe("Lax");
-  expect(cookie!.expires * 1000 - Date.now()).toBeGreaterThan(360 * 24 * 3600 * 1000);
 
-  // The switch always shows the picker, even with a remembered branch.
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Choose your branch" })).toBeVisible();
+
+  // The switch always shows the picker.
+  await page.goto("/down-town");
   await mark.click();
   await page.waitForURL("**/?pick=1");
   await expect(rows(page)).toHaveCount(4);
 });
 
-test("a remembered branch skips the picker with a server redirect", async ({ page, context, baseURL, request }) => {
+test("an old branch cookie does not skip the picker", async ({ page, context, baseURL, request }) => {
   await context.addCookies([{ name: "sushina-branch", value: "west-bay", url: baseURL! }]);
   const res = await request.get("/", { maxRedirects: 0, headers: { cookie: "sushina-branch=west-bay" } });
-  expect(res.status()).toBe(307);
-  expect(res.headers().location).toMatch(/\/west-bay$/);
+  expect(res.status()).toBe(200);
+  expect(res.headers().location ?? "").toBe("");
   await page.goto("/");
-  await expect(page).toHaveURL(/\/west-bay$/);
-  await expect(page.locator(".branch-switch")).toContainText("West Bay");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(rows(page)).toHaveCount(4);
   await page.goto("/?pick=1");
   await expect(rows(page)).toHaveCount(4);
 });
 
-test("an unknown remembered branch is ignored", async ({ page, context, baseURL }) => {
+test("an unknown branch cookie is ignored", async ({ page, context, baseURL }) => {
   await context.addCookies([{ name: "sushina-branch", value: "../admin", url: baseURL! }]);
   await page.goto("/");
   await expect(page).toHaveURL(/\/$/);

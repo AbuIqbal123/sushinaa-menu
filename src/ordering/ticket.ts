@@ -2,6 +2,7 @@ import type { Row } from '@libsql/client';
 import type { Copy } from '@/i18n/copy';
 import { carBrandName } from './car-brands';
 import { BRANCHES } from '@/branches/branches';
+import { formatOrderNumber } from '@/ordering/order-number';
 import { minorAmount, formatQar } from '@/lib/money';
 import { selectionLabel } from '@/ordering/price';
 import { nationalPhone } from '@/ordering/checkout/validation';
@@ -29,6 +30,8 @@ export type TicketModel = {
   placed: string;
   fulfilment: string;
   car: string;
+  brand: string;
+  vehicle: string;
   customer: string;
   phone: string;
   groups: TicketGroup[];
@@ -72,7 +75,7 @@ export function qatarTime(iso: string) {
 
 export function receiptReference(iso: string, branchId: string, number: string) {
   const date = qatarTime(iso).slice(2, 10).replaceAll('-', '');
-  const branch = String(BRANCHES.findIndex(b => b.slug === branchId) + 1).padStart(2, '0');
+  const branch = BRANCHES.find(b => b.slug === branchId)?.code ?? String(BRANCHES.findIndex(b => b.slug === branchId) + 1).padStart(2, '0');
   return `${date}${branch}${number.padStart(6, '0')}`;
 }
 
@@ -136,15 +139,19 @@ export function ticketModel(row: Row, edits: ResolvedEdit[] = []): TicketModel {
     group.lines.push({ name: 'Discount', amount: minorAmount(-orderDiscount.amountMinor), quantity: 1, note: '', total: price(-orderDiscount.amountMinor), options: '', voided: false });
     groups.set('Items', group);
   }
-  const car = [row.car_plate, row.car_colour, removed ? '' : carBrandName(snapshot.customer?.brand), row.car_model].filter((part) => typeof part === 'string' && part).join(' · ');
+  const car = typeof row.car_plate === 'string' ? row.car_plate : '';
+  const brand = removed ? '' : carBrandName(snapshot.customer?.brand);
+  const vehicle = [row.car_colour, row.car_model].filter((part) => typeof part === 'string' && part).join(' · ');
   const printCount = Number(row.print_count ?? 0);
   return {
     branchName: snapshot.branchName || 'Sushinaa',
-    orderNumber: row.order_number == null ? '' : String(row.order_number),
+    orderNumber: formatOrderNumber(row.order_number == null ? '' : Number(row.order_number)),
     id: String(row.id),
     placed: qatarTime(String(row.created_at)),
     fulfilment: 'CAR PICKUP',
     car,
+    brand,
+    vehicle,
     customer: removed ? 'removed' : (typeof row.customer_name === 'string' && row.customer_name ? row.customer_name : 'removed'),
     phone: removed ? 'removed' : nationalPhone(String(row.customer_phone ?? '')),
     groups: [...groups.entries()]

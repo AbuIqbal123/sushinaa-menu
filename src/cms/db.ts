@@ -65,6 +65,11 @@ async function ensureOrderColumns() {
   if (alters.length) await db.batch(alters, "write");
   const creates = [...ORDER_NUMBER_SQL, ...PRINT_SQL, ...EDIT_SQL].filter((sql) => sql.startsWith("CREATE"));
   if (creates.length) await db.batch(creates, "write");
+  // XXYYABC repeats on the same day next month, so the guest number cannot stay unique forever.
+  await db.batch([
+    "DROP INDEX IF EXISTS orders_branch_number",
+    "CREATE INDEX orders_branch_number ON orders(branch_id, order_number)",
+  ], "write");
 }
 
 export function initDb() {
