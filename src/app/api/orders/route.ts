@@ -1,7 +1,7 @@
 import { readMenu } from '@/cms/repository';
 import { auditContext } from '@/cms/audit';
 import { checkoutSchema, quoteOrder } from '@/ordering/checkout/validation';
-import { hash, existingOrder, persistPendingOrder } from '@/ordering/checkout/repository';
+import { hash, existingOrder, persistPendingOrder, customerOrder } from '@/ordering/checkout/repository';
 import { orderingEnabled } from '@/ordering/config';
 import { reply, failure, provider, writeAccess, jsonBody, OrderError } from '@/ordering/http';
 import { orderSession } from '@/ordering/session';
@@ -29,10 +29,10 @@ export async function POST(request: Request) {
     if (method === 'mock' && paymentProvider !== 'mock') throw new OrderError('INVALID_PAYMENT', 400);
     const requestHash = hash(JSON.stringify({ ...parsed, paymentMethod: method }));
     const previous = await existingOrder(session, key, requestHash);
-    if (previous) return reply(previous);
+    if (previous) return reply({ ...await customerOrder(previous.id, session), reused: true });
     const { menu, revision } = await readMenu();
     const snapshot = quoteOrder(parsed, menu, new Date(), { allowClosed: method === 'mock' });
     const order = await persistPendingOrder(session, key, requestHash, snapshot, revision, method);
-    return reply(order, order.reused ? 200 : 201);
+    return reply({ ...await customerOrder(order.id, session), reused: order.reused }, order.reused ? 200 : 201);
   } catch (error) { return failure(error); }
 }

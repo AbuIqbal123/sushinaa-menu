@@ -322,3 +322,5 @@
 .review-vehicle { display: flex; align-items: center; gap: 10px; min-height: 44px; }
 .review-vehicle .car-brand-logo { flex-shrink: 0; }
 .review-vehicle > span:last-child { font-size: 15px; }
+
+.order-discount { display: flex; justify-content: space-between; gap: 12px; color: #6b6258; font-size: 14px; margin: 12px 0; }

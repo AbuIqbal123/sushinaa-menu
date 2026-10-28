@@ -85,7 +85,10 @@ test('stale status update returns 409 and writes no audit row',async()=>{
 });
 test('customer A cannot read customer B\'s order',async()=>{
   const a=randomUUID();const order=await repository.persistPendingOrder(a,randomUUID(),'same',snapshot,1);
-  assert.equal((await repository.customerOrder(order.id,a)).id,order.id);
+  const own = await repository.customerOrder(order.id,a);
+  assert.equal(own.id,order.id); assert.equal(own.details.customer?.name, snapshot.customer.name);
+  assert.equal(own.details.branchId,'down-town');
+  assert.equal('session_hash' in own,false); assert.equal('request_hash' in own,false);
   await rejected(repository.customerOrder(order.id,'other'),'NOT_FOUND');await rejected(repository.customerOrder(order.id,null),'NOT_FOUND');
 });
 test('error responses contain no stack trace or SQL',async()=>{

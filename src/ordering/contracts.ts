@@ -30,3 +30,17 @@ export type OrderDetailData = OrderSummary & { customer: { name: string; phone: 
   discounts: { scope: 'line' | 'order'; lineId: string | null; amountMinor: number }[];
   edits: { kind: string; lineId: string | null; reasonCode: string; note: string | null }[];
   owedBackMinor: number; };
+
+/** Session-authorized customer receipt; excludes staff notes and internal audit data. */
+export type CustomerReceiptDetails = {
+  branchId: BranchId;
+  customer: OrderSnapshot['customer'] | null;
+  lines: (Pick<OrderSnapshot['lines'][number], 'name' | 'nameAr' | 'quantity' | 'note' | 'unitMinor' | 'selection'> & {
+    id: string;
+    totalMinor: number;
+    kind?: OrderSnapshot['lines'][number]['kind'];
+    freeDips?: OrderSnapshot['lines'][number]['freeDips'];
+    extras?: OrderSnapshot['lines'][number]['extras'];
+  })[];
+  discountMinor: number;
+};

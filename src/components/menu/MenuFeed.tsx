@@ -21,9 +21,9 @@ function normalizeSearch(value: string) {
     .replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
 
-type OrderingFeedProps = { branch?: string; onPickup?: () => void; branchBar?: ReactNode };
+type OrderingFeedProps = { branch?: string; onPickup?: () => void; branchBar?: ReactNode; orderTracking?: ReactNode };
 
-function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
+function FeedInner({ branch, onPickup, branchBar, orderTracking }: OrderingFeedProps) {
   const menu = useMenu();
   const { itemCount, totalQar } = useCart();
   const { lang, t } = useLocale();
@@ -353,9 +353,10 @@ function FeedInner({ branch, onPickup, branchBar }: OrderingFeedProps) {
   return (
     <div className={`shell${sheetOpen ? " is-sheet" : ""}${itemCount > 0 ? " has-order" : ""}`}>
       <header className={`chrome-header${searchOpen ? " search-open" : ""}`} inert={sheetOpen}>
-        <Link href="/?pick=1" className="branch-switch" prefetch={false}>
+        <Link href="/?pick=1" className={`branch-switch${orderTracking ? " with-tracker" : ""}`} prefetch={false}>
           <span className="branch-switch-name">{branch}</span><span aria-hidden="true">▾</span>
         </Link>
+        {orderTracking}
         {/* Brand and branch both lead back to the branch picker. */}
         <Link href="/?pick=1" className="brand-mark" aria-label={`${t.brand}, ${branch}, change branch`} prefetch={false}>
           <img src={menu.settings.logo} alt="" className="wordmark-img" width={46} height={44} />

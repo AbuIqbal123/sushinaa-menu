@@ -1612,3 +1612,12 @@ button {
 /* Keep the expanding field aligned with its larger search button. */
 .chrome-header .header-search, .chrome-header .header-search-field { width: 48px; height: 48px; }
 .chrome-header .header-search-field input { padding-inline-end: 48px; }
+
+.branch-switch.with-tracker { max-width: calc(100% - 134px); }
+.order-tracker { grid-area: branch; justify-self: end; align-self: center; pointer-events: auto;
+  display: flex; align-items: center; gap: 3px; min-height: 36px; padding: 4px 10px;
+  border: 1px solid rgba(243,228,196,.55); border-radius: 18px; background: rgba(20,17,15,.8);
+  color: #fff3d9; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+}
+[dir="rtl"] .order-tracker { font-family: var(--font-arabic); }
+.order-tracker:focus-visible { outline: 2px solid #f3e4c4; outline-offset: 3px; }
