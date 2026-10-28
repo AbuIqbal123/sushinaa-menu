@@ -27,7 +27,7 @@ for(const lang of ['en','ar']) test(`mandatory branded car picker completes chec
   const dialog=page.getByRole('dialog'); await expect(dialog).toBeVisible();
   await expect(dialog).toHaveAttribute('dir',lang === 'ar' ? 'rtl' : 'ltr');
   await expect(dialog.locator('.car-brand-option')).toHaveCount(98);
-  await expect(dialog.locator('[data-brand-id="audi"] .car-brand-logo > span')).toHaveCSS('background-image',/reference-1.jpg/);
+  await expect(dialog.locator('[data-brand-id="audi"] .car-brand-logo > span')).toHaveCSS('background-image',/reference-1.webp/);
   await expect(dialog).toHaveCSS('opacity','1');
   await page.screenshot({path:info.outputPath(`brand-picker-${lang}.png`)});
   const search=dialog.getByRole('searchbox');
