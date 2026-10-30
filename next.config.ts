@@ -9,7 +9,7 @@ const csp = [
   "img-src 'self' data: blob:",
   "font-src 'self'",
   "connect-src 'self' https://vitals.vercel-insights.com https://va.vercel-scripts.com",
-  "frame-ancestors 'self' https://abuiqbal.com https://*.abuiqbal.com http://localhost:3000 https://*.vercel.app",
+  "frame-ancestors 'self' https://abuiqbal.com https://*.abuiqbal.com http://localhost:3000 http://127.0.0.1:3000",
   "base-uri 'self'",
   "form-action 'self'",
   // Safari upgrades http://localhost assets to https when this is set, so the
