@@ -9,7 +9,7 @@ const csp = [
   "img-src 'self' data: blob:",
   "font-src 'self'",
   "connect-src 'self' https://vitals.vercel-insights.com https://va.vercel-scripts.com",
-  "frame-ancestors 'none'",
+  "frame-ancestors 'self' https://abuiqbal.com https://*.abuiqbal.com http://localhost:3000 https://*.vercel.app",
   "base-uri 'self'",
   "form-action 'self'",
   // Safari upgrades http://localhost assets to https when this is set, so the
@@ -20,7 +20,6 @@ const csp = [
 const securityHeaders = [
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
   { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
     key: "Permissions-Policy",
