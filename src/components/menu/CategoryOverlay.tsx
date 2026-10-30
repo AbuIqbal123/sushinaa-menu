@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 export type PickerOption = { id: string; label: string; disabled: boolean };
 
-export function CategoryOverlay({ open, title, label, closeLabel, logo, brand, options, value, onChange, onClose }: {
+export function CategoryOverlay({ open, title, label, closeLabel, logo, brand, options, value, filters, onChange, onClose }: {
   open: boolean;
   title: string;
   label: string;
@@ -13,6 +13,7 @@ export function CategoryOverlay({ open, title, label, closeLabel, logo, brand, o
   brand: string;
   options: PickerOption[];
   value: string;
+  filters: ReactNode;
   onChange: (id: string) => void;
   onClose: () => void;
 }) {
@@ -33,17 +34,15 @@ export function CategoryOverlay({ open, title, label, closeLabel, logo, brand, o
       onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <div className="category-overlay-content">
         <header className="category-overlay-header">
-          <img src={logo} alt={brand} width={46} height={44} className="wordmark-img" />
+          <img src={logo} alt={brand} width={38} height={36} className="wordmark-img" />
+          <h2 id="category-overlay-title">{title}</h2>
           <button type="button" className="category-close cart-btn" aria-label={closeLabel} onClick={onClose}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
           </button>
         </header>
-        <div className="category-overlay-intro">
-          <p>{label}</p>
-          <h2 id="category-overlay-title">{title}</h2>
-        </div>
+        {filters}
         <nav className="category-grid" aria-label={label}>
           {options.map((option, index) => (
             <button key={option.id} type="button" className="category-tile" disabled={option.disabled}

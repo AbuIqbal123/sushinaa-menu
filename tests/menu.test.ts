@@ -50,10 +50,19 @@ test("all 74 original dishes, nested options, prices, descriptions and images ar
   walk(seed.dishes);
 });
 test("English and Arabic wording and interpolations preserve existing copy", () => {
-  assert.deepEqual(
-    seed.copy,
-    JSON.parse(readFileSync("tests/fixtures/original-copy.json", "utf8")),
-  );
+  const originalCopy = JSON.parse(readFileSync("tests/fixtures/original-copy.json", "utf8"));
+  const orderLabels = {
+    en: { addToOrder: "Add to cart", viewOrder: "View order", yourTicket: "Your order", closeTicket: "Close order" },
+    ar: { addToOrder: "أضف إلى السلة", viewOrder: "عرض الطلب", yourTicket: "طلبك", closeTicket: "إغلاق الطلب" },
+  };
+  for (const lang of ["en", "ar"] as const) {
+    assert.deepEqual(seed.copy[lang], { ...originalCopy[lang], ...orderLabels[lang] });
+    const upgraded = strings(lang, originalCopy);
+    for (const [key, value] of Object.entries(orderLabels[lang])) assert.equal(upgraded[key as keyof typeof upgraded], value);
+    const custom = structuredClone(originalCopy);
+    custom[lang].yourTicket = "Custom title";
+    assert.equal(strings(lang, custom).yourTicket, "Custom title");
+  }
   for (const lang of ["en", "ar"] as const) {
     const t = strings(lang, seed.copy);
     assert.ok(!t.openDetails("Dish").includes("{0}"));

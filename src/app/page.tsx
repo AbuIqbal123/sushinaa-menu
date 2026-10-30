@@ -1,20 +1,13 @@
-import { getMenu } from "@/cms/repository";
-import { MenuProvider } from "@/cms/context";
-import { publicMenu } from "@/cms/schema";
-import { MenuFeed } from "@/components/menu/MenuFeed";
+import { BranchPicker } from "@/components/branch/BranchPicker";
+import { requestLang } from "@/i18n/request-lang";
 import { pageMeta } from "@/lib/page-meta";
 
-export function generateMetadata() {
-  return pageMeta((t) => t.menu, (t) => t.menuBlurb, "");
+// Every visit to the menu link starts here. A branch address such as /al-thumama still opens that branch.
+export async function generateMetadata() {
+  const lang = await requestLang();
+  return pageMeta((t) => `${lang === "ar" ? "اختر فرعك" : "Choose your branch"} · ${t.brand}`, (t) => t.menuBlurb, "");
 }
 
-export default async function Home() {
-  const { menu } = await getMenu();
-  return (
-    <div className="app-lock">
-      <MenuProvider menu={publicMenu(menu)}>
-        <MenuFeed />
-      </MenuProvider>
-    </div>
-  );
+export default function Home() {
+  return <BranchPicker />;
 }

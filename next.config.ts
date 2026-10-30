@@ -1,12 +1,17 @@
 import type { NextConfig } from "next";
+import { isProductionDeployment } from "./src/lib/deploy-env";
 
 const isDev = process.env.NODE_ENV !== "production";
+// Explicitly allow HTTP for a built local phone preview. Hosted deployments
+// always retain HTTPS enforcement, even if this local flag is set by mistake.
+const localHttpPreview = process.env.SUSHINAA_LOCAL_HTTP_PREVIEW === "1"
+  && !process.env.VERCEL && !process.env.VERCEL_ENV;
 
 const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://va.vercel-scripts.com`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
+  "img-src 'self' data: blob: https://tiles.openfreemap.org",
   "font-src 'self'",
   "connect-src 'self' https://vitals.vercel-insights.com https://va.vercel-scripts.com",
   "frame-ancestors 'self' https://abuiqbal.com https://*.abuiqbal.com http://localhost:3000 http://127.0.0.1:3000",
@@ -14,10 +19,13 @@ const csp = [
   "form-action 'self'",
   // Safari upgrades http://localhost assets to https when this is set, so the
   // dev menu loses its stylesheet and photos. Production stays on HTTPS.
-  ...(isDev ? [] : ["upgrade-insecure-requests"]),
+  ...(isDev || localHttpPreview ? [] : ["upgrade-insecure-requests"]),
 ].join("; ");
 
 const securityHeaders = [
+  ...(isProductionDeployment()
+    ? []
+    : [{ key: "X-Robots-Tag", value: "noindex, nofollow" }]),
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -81,6 +89,10 @@ const nextConfig: NextConfig = {
       {
         source: "/brand/:path*",
         headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
+      {
+        source: "/cms/orders/:id/ticket",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
       },
     ];
   },

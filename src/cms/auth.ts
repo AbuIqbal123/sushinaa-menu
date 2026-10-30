@@ -1,10 +1,22 @@
 import { cookies } from "next/headers";
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
-import { db, initDb } from "./db";
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
+import { databaseUrl, db, initDb } from "./db";
+import { orderDatabaseAllowed } from "@/ordering/guard";
 import type { InStatement } from "@libsql/client";
 import { auditInsert, type AuditContext } from "./audit";
+import { hashPassword, verifyPassword } from "./passwords";
+import type { Role } from "./permissions";
+import { scopeFor, type BranchScope } from "@/ordering/scope";
 const COOKIE = "sushinaa-admin";
-const digest = (s: string) => createHash("sha256").update(s).digest("hex");
+export const tokenHash = (s: string) => createHash("sha256").update(s).digest("hex");
+const digest = tokenHash;
+
+export type StaffPrincipal = {
+  userId: string;
+  username: string;
+  role: Role;
+  branchScope: BranchScope;
+};
 // Replace this adapter when moving to a real identity provider.
 // Fails closed: with no configured credentials nobody can sign in.
 export function validCredentials(username: string, password: string) {
@@ -21,33 +33,152 @@ export function validCredentials(username: string, password: string) {
 export function adminName() {
   return process.env.CMS_ADMIN_USERNAME ?? null;
 }
-export async function authenticated() {
-  const token = (await cookies()).get(COOKIE)?.value;
-  if (!token) return false;
-  await initDb();
-  const r = await db.execute({
-    sql: "SELECT token FROM sessions WHERE token=? AND expires>?",
-    args: [digest(token), Date.now()],
+async function upsertEnvAdmin() {
+  const username = adminName();
+  const password = process.env.CMS_ADMIN_PASSWORD;
+  if (!username || !password) return;
+  const passwordHash = await hashPassword(password);
+  const now = new Date().toISOString();
+  const existing = (
+    await db.execute({ sql: "SELECT id FROM staff_users WHERE username=?", args: [username] })
+  ).rows[0];
+  if (!existing) {
+    await db.execute({
+      sql: `INSERT INTO staff_users (id,username,password_hash,role,branch_id,auth_version,disabled_at,created_at,updated_at)
+        VALUES (?,?,?,'admin',NULL,1,NULL,?,?)`,
+      args: [`US-${randomUUID()}`, username, passwordHash, now, now],
+    });
+    return;
+  }
+  await db.execute({
+    sql: "UPDATE staff_users SET password_hash=?, role='admin', branch_id=NULL, disabled_at=NULL, updated_at=? WHERE id=?",
+    args: [passwordHash, now, String(existing.id)],
   });
-  return r.rows.length > 0;
+}
+
+export function guardedSessionSql() {
+  return [
+    "DELETE FROM sessions WHERE expires<=?",
+    "DELETE FROM sessions WHERE token=?",
+    "INSERT INTO sessions(token,expires) VALUES (?,?)",
+  ];
+}
+
+export async function staffPasswordMatches(username: string, password: string) {
+  if (!orderDatabaseAllowed(databaseUrl)) return false;
+  await initDb();
+  const row = (
+    await db.execute({
+      sql: "SELECT password_hash, disabled_at FROM staff_users WHERE username=?",
+      args: [username],
+    })
+  ).rows[0];
+  if (!row || row.disabled_at) {
+    await verifyPassword(password, "scrypt$00$00");
+    return false;
+  }
+  return verifyPassword(password, String(row.password_hash));
+}
+
+export async function staffFromToken(token: string | undefined): Promise<StaffPrincipal | null> {
+  if (!token) return null;
+  await initDb();
+  const row = (
+    await db.execute({
+      sql: `SELECT u.id, u.username, u.role, u.branch_id
+        FROM staff_sessions s
+        JOIN staff_users u ON u.id = s.user_id AND u.auth_version = s.auth_version
+        WHERE s.token_hash=? AND s.expires>? AND u.disabled_at IS NULL`,
+      args: [digest(token), Date.now()],
+    })
+  ).rows[0];
+  if (!row) return null;
+  const role: Role = row.role === "admin" ? "admin" : "branch_staff";
+  return {
+    userId: String(row.id),
+    username: String(row.username),
+    role,
+    branchScope: scopeFor(role, row.branch_id == null ? null : String(row.branch_id)),
+  };
+}
+
+export async function currentStaff() {
+  const token = (await cookies()).get(COOKIE)?.value;
+  if (!token) return null;
+  if (!orderDatabaseAllowed(databaseUrl)) {
+    await initDb();
+    const row = await db.execute({
+      sql: "SELECT token FROM sessions WHERE token=? AND expires>?",
+      args: [digest(token), Date.now()],
+    });
+    if (!row.rows.length) return null;
+    return {
+      userId: "env-admin",
+      username: adminName() ?? "admin",
+      role: "admin" as const,
+      branchScope: { kind: "all" as const },
+    };
+  }
+  return staffFromToken(token);
+}
+
+export async function authenticated() {
+  return (await currentStaff()) !== null;
 }
 /** Starts a fresh session; any session this browser already had is ended. */
-export async function login(audit: AuditContext, also: InStatement[] = []) {
+export async function login(audit: AuditContext, also: InStatement[] = [], username?: string) {
   await initDb();
+  if (!orderDatabaseAllowed(databaseUrl)) {
+    const jar = await cookies();
+    const previous = jar.get(COOKIE)?.value;
+    const token = randomBytes(32).toString("hex");
+    const maxAge = 60 * 60 * 8;
+    const now = Date.now();
+    const [clearExpired, clearPrevious, insertSession] = guardedSessionSql();
+    await db.batch(
+      [
+        ...also,
+        { sql: clearExpired, args: [now] },
+        ...(previous ? [{ sql: clearPrevious, args: [digest(previous)] }] : []),
+        { sql: insertSession, args: [digest(token), now + maxAge * 1000] },
+        auditInsert(audit, { action: "session.sign_in", entityType: "session" }),
+      ],
+      "write",
+    );
+    jar.set(COOKIE, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge,
+    });
+    return;
+  }
+  const name = username ?? adminName();
+  if (!name) throw new Error("Sign-in is not configured");
+  if (name === adminName()) await upsertEnvAdmin();
+  const user = (
+    await db.execute({
+      sql: "SELECT id, auth_version, disabled_at FROM staff_users WHERE username=?",
+      args: [name],
+    })
+  ).rows[0];
+  if (!user || user.disabled_at) throw new Error("Sign-in failed");
   const jar = await cookies();
   const previous = jar.get(COOKIE)?.value;
   const token = randomBytes(32).toString("hex");
   const maxAge = 60 * 60 * 8;
+  const now = Date.now();
   await db.batch(
     [
       ...also,
-      { sql: "DELETE FROM sessions WHERE expires<=?", args: [Date.now()] },
+      { sql: "DELETE FROM staff_sessions WHERE expires<=?", args: [now] },
       ...(previous
-        ? [{ sql: "DELETE FROM sessions WHERE token=?", args: [digest(previous)] }]
+        ? [{ sql: "DELETE FROM staff_sessions WHERE token_hash=?", args: [digest(previous)] }]
         : []),
       {
-        sql: "INSERT INTO sessions(token,expires) VALUES (?,?)",
-        args: [digest(token), Date.now() + maxAge * 1000],
+        sql: "INSERT INTO staff_sessions (token_hash,user_id,auth_version,expires,created_at) VALUES (?,?,?,?,?)",
+        args: [digest(token), String(user.id), Number(user.auth_version), now + maxAge * 1000, new Date(now).toISOString()],
       },
       auditInsert(audit, { action: "session.sign_in", entityType: "session" }),
     ],
@@ -67,9 +198,12 @@ export async function logout(audit: AuditContext | null) {
   const token = jar.get(COOKIE)?.value;
   if (token) {
     await initDb();
+    const sql = orderDatabaseAllowed(databaseUrl)
+      ? "DELETE FROM staff_sessions WHERE token_hash=?"
+      : "DELETE FROM sessions WHERE token=?";
     await db.batch(
       [
-        { sql: "DELETE FROM sessions WHERE token=?", args: [digest(token)] },
+        { sql, args: [digest(token)] },
         ...(audit
           ? [auditInsert(audit, { action: "session.sign_out", entityType: "session" })]
           : []),

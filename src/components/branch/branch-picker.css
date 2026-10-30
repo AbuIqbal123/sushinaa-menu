@@ -1,0 +1,108 @@
+/* Branch picker: one wooden board, one nigiri per branch. Matches the approved v1 demo. */
+.bp-shell {
+  --bp-pad: 20px;
+  position: relative; width: 100%; max-width: 430px; height: 100svh; height: 100dvh; margin: 0 auto;
+  overflow: hidden; background: #14110f; display: flex; flex-direction: column;
+}
+.bp-top {
+  display: flex; align-items: center; gap: 14px; flex: 0 0 auto;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) var(--bp-pad) 12px;
+}
+.bp-top img { height: 52px; width: auto; display: block; filter: drop-shadow(0 1px 8px rgba(20,17,15,.9)); }
+.bp-top h1 {
+  margin: 0; font-family: var(--font-display), var(--font-sans); font-weight: 700; font-size: 26px;
+  line-height: 1.1; letter-spacing: -0.02em; color: #f3e4c4;
+}
+.bp-top p { margin: 4px 0 0; font-size: 14px; line-height: 1.35; color: #c4a36a; }
+
+.bp-shell > nav { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.bp-board {
+  position: relative; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
+  list-style: none; margin: 8px var(--bp-pad) calc(20px + env(safe-area-inset-bottom, 0px)); padding: 6px 0;
+  border-radius: 18px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='120' viewBox='0 0 400 120'%3E%3Cg fill='none' stroke='%23000' stroke-opacity='.13' stroke-width='1.2'%3E%3Cpath d='M0 12 C80 6 160 20 240 12 S360 4 400 12'/%3E%3Cpath d='M0 38 C90 30 170 46 250 38 S350 30 400 38'/%3E%3Cpath d='M0 63 C70 58 150 70 230 62 S340 56 400 63'/%3E%3Cpath d='M0 90 C100 84 180 98 260 90 S360 82 400 90'/%3E%3Cpath d='M0 110 C80 104 170 116 250 110 S350 104 400 110'/%3E%3C/g%3E%3Cg fill='none' stroke='%23f3e4c4' stroke-opacity='.05' stroke-width='1'%3E%3Cpath d='M0 25 C80 19 160 33 240 25 S360 17 400 25'/%3E%3Cpath d='M0 76 C90 70 170 84 250 76 S350 68 400 76'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 400px 120px,
+    linear-gradient(180deg, #6a4930 0%, #5b3e28 50%, #523723 100%);
+  box-shadow: 0 1px 0 rgba(243,228,196,.12) inset, 0 -2px 0 rgba(0,0,0,.25) inset, 0 18px 40px rgba(0,0,0,.45);
+}
+.bp-row { position: relative; flex: 1 1 0; display: flex; }
+.bp-row + .bp-row::before { /* groove between pieces */
+  content: ""; position: absolute; inset-inline: 18px; top: 0; height: 2px;
+  background: linear-gradient(180deg, rgba(0,0,0,.32) 0 1px, rgba(243,228,196,.08) 1px 2px);
+}
+.bp-pick {
+  flex: 1; display: grid; grid-template-columns: 150px 1fr; align-items: center; column-gap: 16px;
+  margin: 0; padding: 0 18px; text-align: start; text-decoration: none; color: inherit; cursor: pointer;
+  min-height: 44px; border-radius: 14px; touch-action: manipulation;
+}
+.bp-pick:focus-visible { outline: 2px solid #f3e4c4; outline-offset: 3px; }
+.bp-piece { position: relative; width: 150px; height: 90px; will-change: transform; }
+.bp-piece svg { width: 100%; height: 100%; display: block; overflow: visible; }
+/* Idle: a soft glint runs down the board, one piece after another. */
+.bp-sheen { opacity: .28; animation: bp-glint 4.8s ease-in-out infinite; animation-delay: calc(var(--i) * 1.2s); }
+@keyframes bp-glint { 0%, 30%, 100% { opacity: .28; } 12% { opacity: .85; } }
+.bp-piece svg { animation: bp-settle 4.8s ease-in-out infinite; animation-delay: calc(var(--i) * 1.2s); transform-origin: 50% 90%; }
+@keyframes bp-settle { 0%, 30%, 100% { transform: none; } 12% { transform: translate3d(0, -2px, 0); } }
+
+.bp-info { display: flex; flex-direction: column; gap: 8px; min-width: 0; transition: opacity 240ms var(--ease-out); }
+.bp-name {
+  font-family: var(--font-display), var(--font-sans); font-weight: 700; font-size: 26px; line-height: 1;
+  letter-spacing: -0.02em; color: #f3e4c4; text-shadow: 0 1px 2px rgba(0,0,0,.35);
+}
+/* Hours and status render after mount; their line boxes are reserved so nothing shifts. */
+.bp-hours { min-height: 1.2em; font-size: 15px; font-weight: 500; line-height: 1.2; color: rgba(243,228,196,.86); white-space: nowrap; }
+.bp-status {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 13px;
+  font-size: 13px; font-weight: 700; line-height: 1; white-space: nowrap;
+}
+.bp-status:not(:empty)::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: 0 0 7px; }
+.bp-status.is-open { color: #a8e6b2; }
+.bp-status.is-soon { color: #ffd27a; }
+.bp-status.is-closed { color: rgba(243,228,196,.62); }
+.bp-status.is-closed::before { background: transparent; box-shadow: inset 0 0 0 1.5px currentColor; }
+.bp-pick.is-closed .bp-piece { opacity: .62; filter: saturate(.45); }
+.bp-pick.is-closed .bp-name { color: rgba(243,228,196,.75); }
+@media (hover: hover) { .bp-pick:hover .bp-piece { transform: translate3d(0, -3px, 0); transition: transform 200ms var(--ease-out); } }
+
+.bp-board.is-picking .bp-row:not(.is-picked) .bp-pick { opacity: .3; transition: opacity 260ms var(--ease-out); }
+.bp-board.is-picking .is-picked .bp-info { opacity: 0; }
+/* The lifted piece may rise over the header: rows stack in the shell, not the board. */
+.bp-board.is-picking .bp-row.is-picked { z-index: 10; }
+.bp-board.is-picking .bp-row::before { opacity: .4; }
+
+/* Chopsticks: red lacquer with gold bands, from the brand palette. */
+.bp-chop { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 20; pointer-events: none; opacity: 0; will-change: transform; }
+.bp-arm { position: absolute; left: 0; top: 0; transform: rotate(-38deg); transform-origin: 0 0; }
+[dir="rtl"] .bp-arm { transform: scaleX(-1) rotate(-38deg); }
+.bp-stick {
+  position: absolute; left: 0; top: -5px; width: 300px; height: 10px; transform-origin: 100% 50%;
+  clip-path: polygon(0 32%, 100% 0, 100% 100%, 0 68%);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.35) 0 18%, rgba(255,255,255,0) 40%, rgba(0,0,0,.25) 100%),
+    linear-gradient(90deg, #e9d6ad 0 9%, #b8161f 9% 74%, #c4a36a 74% 77%, #d52029 77% 92%, #c4a36a 92% 95%, #d52029 95%);
+  filter: drop-shadow(0 6px 6px rgba(0,0,0,.35));
+  will-change: transform;
+}
+
+/* Narrow phones: a smaller piece so the name and hours keep one line each. */
+@media (max-width: 360px) {
+  .bp-shell { --bp-pad: 14px; }
+  .bp-top { gap: 12px; }
+  .bp-top img { height: 44px; }
+  .bp-top h1 { font-size: 23px; }
+  .bp-top p { font-size: 13px; }
+  .bp-pick { grid-template-columns: 112px 1fr; column-gap: 12px; padding: 0 12px; }
+  .bp-piece { width: 112px; height: 67px; }
+  .bp-name { font-size: 22px; }
+  .bp-hours { font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bp-sheen, .bp-piece svg { animation: none; }
+  .bp-info, .bp-pick, .bp-pick:hover .bp-piece { transition: none; }
+}
+
+.bp-top > div { flex: 1; min-width: 0; }
+.bp-top .lang-btn { flex-shrink: 0; padding-inline: 10px; font-size: 12px; }
+[dir="rtl"] .bp-top h1, [dir="rtl"] .bp-name { font-family: var(--font-arabic); letter-spacing: 0; line-height: 1.2; }
+[dir="rtl"] .bp-shell { font-family: var(--font-arabic); }
+[dir="rtl"] .bp-hours { font-size: 14px; }

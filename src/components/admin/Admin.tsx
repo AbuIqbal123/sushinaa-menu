@@ -1,4 +1,5 @@
 "use client";
+import { useLocale } from "@/i18n/locale";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -13,19 +14,28 @@ import { CategoryEditor } from "./CategoryEditor";
 import { CategoryList } from "./CategoryList";
 import { MenuList } from "./MenuList";
 import { Dashboard } from "./Dashboard";
+import { Orders } from "./Orders";
+import { StaffPanel } from "./StaffPanel";
 import { Activity } from "./Activity";
+import type { Role } from "@/cms/permissions";
 import { confirmDiscard } from "./Fields";
 import { useNotify } from "./Notices";
-export function Admin({ initial }: { initial: MenuSnapshot }) {
+export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) {
+  const { lang } = useLocale();
+  const [unreadOrders, setUnreadOrders] = useState(0);
   const [snapshot, setSnapshot] = useState(initial);
   const params = useSearchParams();
   // A filtered menu link (?category=&show=&q=) opens straight on the Menu.
+  const sections = role === "admin"
+    ? ["Dashboard", "Orders", "Menu", "Categories", "Users", "Settings", "Activity"]
+    : ["Orders"];
   const [section, setSection] = useState(() =>
-    ["category", "show", "q"].some((k) => params.has(k)) ? "Menu" : "Dashboard",
+    role !== "admin" ? "Orders" : ["category", "show", "q"].some((k) => params.has(k)) ? "Menu" : "Dashboard",
   );
   const [item, setItem] = useState<CmsDish | null>(null);
   const [category, setCategory] = useState<Category | null>(null);
   const [busy, setBusy] = useState(false);
+  const [creatingUser, setCreatingUser] = useState(false);
   const notify = useNotify();
   const { menu } = snapshot;
   const categories = [...menu.categories].sort((a, b) => a.order - b.order);
@@ -98,7 +108,7 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
     <>
       <aside className="admin-sidebar">
         <div className="admin-brand">{menu.settings.name}</div>
-        {["Dashboard", "Menu", "Categories", "Settings", "Activity"].map((s) => (
+        {sections.map((s) => (
           <button
             key={s}
             className={section === s ? "active" : ""}
@@ -106,9 +116,10 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
             onClick={() => {
               if (s === section || !confirmDiscard()) return;
               setSection(s);
+              setCreatingUser(false);
             }}
           >
-            {s}
+            {s === "Users" && lang === "ar" ? "المستخدمون" : s}{s === "Orders" && unreadOrders > 0 && <span className="staff-unread">{unreadOrders}</span>}
           </button>
         ))}
         <a className="bottom" href="/" target="_blank" rel="noreferrer">
@@ -135,7 +146,7 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
       <div className="admin-main">
         <main className="admin-content">
           <div className="admin-heading">
-            <h1>{section === "Menu" ? "Your menu" : section}</h1>
+            <h1>{section === "Menu" ? "Your menu" : section === "Orders" ? "Orders" : section === "Users" && lang === "ar" ? "المستخدمون" : section}</h1>
             {section === "Menu" && (
               <button className="primary" onClick={() => newItem()}>
                 Add item
@@ -156,6 +167,11 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
                 }
               >
                 Add category
+              </button>
+            )}
+            {section === "Users" && role === "admin" && (
+              <button className="primary" type="button" onClick={() => setCreatingUser(true)}>
+                {lang === "ar" ? "إنشاء مستخدم جديد" : "Create new user"}
               </button>
             )}
           </div>
@@ -184,8 +200,10 @@ export function Admin({ initial }: { initial: MenuSnapshot }) {
               onChange={run}
             />
           )}
+          <Orders active={section === "Orders"} onUnread={setUnreadOrders} role={role} menu={menu} />
+          {section === "Users" && role === "admin" && <StaffPanel creating={creatingUser} onCreating={setCreatingUser} />}
           {section === "Activity" && <Activity />}
-          {section === "Settings" && (
+          {section === "Settings" && role === "admin" && (
             <SettingsEditor key={snapshot.revision} menu={menu} onSave={save} />
           )}
         </main>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type CSSProperties, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import Link from "next/link";
 import { useCart } from "@/ordering/cart";
 import { useLocale } from "@/i18n/locale";
@@ -11,15 +11,20 @@ import { useSheetDismiss } from "@/lib/sheet-dismiss";
 type Props = {
   open: boolean;
   onClose: () => void;
+  onPickup?: () => void;
 };
 
-export function CartSheet({ open, onClose }: Props) {
-  const { lines, totalQar, inc, dec, clear } = useCart();
+export function CartSheet({ open, onClose, onPickup }: Props) {
+  const { lines, totalQar, inc, dec, clear, unavailableCount } = useCart();
   const { lang, t } = useLocale();
   const { settings } = useMenu();
   const closeRef = useRef<HTMLButtonElement>(null);
+  const driveTimer = useRef<number | null>(null);
+  const [driving, setDriving] = useState(false);
   const { sheetRef, backdropRef, trackPointer, movePointer, endPointer, requestClose } =
     useSheetDismiss(open, onClose);
+
+  useEffect(() => () => { if (driveTimer.current) window.clearTimeout(driveTimer.current); }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -133,7 +138,20 @@ export function CartSheet({ open, onClose }: Props) {
               <strong>{formatQar(totalQar, lang, settings)}</strong>
             </div>
 
-            <p className="view-only-notice">{t.viewOnlyNotice}</p>
+            {onPickup ? (
+              <button type="button" className={`checkout-primary ticket-pickup${driving ? " is-driving" : ""}`} disabled={unavailableCount > 0} onClick={() => {
+                if (driving) return;
+                const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+                if (reduce) { onPickup(); return; }
+                setDriving(true);
+                driveTimer.current = window.setTimeout(() => { onPickup(); setDriving(false); }, 760);
+              }}>
+                <span className="pickup-label">{lang === "ar" ? "اطلب للاستلام" : "Order for pickup"}</span>
+                <span className="pickup-car" aria-hidden="true"><LandCruiser /></span>
+              </button>
+            ) : (
+              <p className="view-only-notice">{t.viewOnlyNotice}</p>
+            )}
 
             <p className="ticket-legal">
               <Link href="/privacy">{t.privacy}</Link>
@@ -151,4 +169,20 @@ export function CartSheet({ open, onClose }: Props) {
       </div>
     </div>
   );
+}
+
+function LandCruiser() {
+  return <svg className="land-cruiser" viewBox="0 0 108 54" width="112" height="52">
+    <ellipse cx="54" cy="50" rx="42" ry="2" fill="#4a1512" opacity=".4" />
+    <path fill="#f7f4ee" d="M6 46V32h6l10-18h40l12 14h26v18H6Z" />
+    <path fill="#8a1538" d="M6 38h92v3.2H6Z" />
+    <path fill="#1b1714" d="M26 18h26v14H24V20c0-1.1.9-2 2-2Zm30 0h24l8 14H56V18Z" />
+    <circle cx="30" cy="46" r="7.4" fill="#171412" />
+    <circle cx="30" cy="46" r="2.7" fill="#e7e1d6" />
+    <circle cx="82" cy="46" r="7.4" fill="#171412" />
+    <circle cx="82" cy="46" r="2.7" fill="#e7e1d6" />
+    <rect x="58" y="32" width="15" height="6" rx="1" fill="#fff" stroke="#8a1538" strokeWidth=".8" />
+    <path fill="#8a1538" d="M63.2 33.1h4.4v3.8h-4.4z" />
+    <rect x="96" y="30" width="6" height="3.2" rx="1" fill="#f3e2a2" />
+  </svg>;
 }

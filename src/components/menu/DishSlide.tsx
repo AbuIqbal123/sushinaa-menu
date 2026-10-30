@@ -17,7 +17,6 @@ type Props = {
   active?: boolean;
   eager?: boolean;
   marked?: boolean;
-  showHint?: boolean;
   inert?: boolean;
   onOpen: (dish: Dish) => void;
 };
@@ -28,7 +27,6 @@ export const DishSlide = memo(function DishSlide({
   active = false,
   eager = false,
   marked = false,
-  showHint = false,
   inert = false,
   onOpen,
 }: Props) {
@@ -74,8 +72,8 @@ export const DishSlide = memo(function DishSlide({
             fill
             sizes="(max-width: 430px) 100vw, 430px"
             preload={active}
-            loading={active ? undefined : "eager"}
-            fetchPriority={active ? undefined : "high"}
+            loading="eager"
+            fetchPriority={active ? "high" : "low"}
             unoptimized
             draggable={false}
             className="dish-photo"
@@ -85,13 +83,6 @@ export const DishSlide = memo(function DishSlide({
           <div className="dish-photo-ph" aria-hidden="true" />
         )}
         <div className="scrim" />
-
-        {showHint ? (
-          <p className="swipe-hint" aria-hidden="true">
-            {t.swipeUp}
-            <span className="swipe-chevron">⌃</span>
-          </p>
-        ) : null}
 
         <div className="slide-copy">
           <p
