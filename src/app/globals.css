@@ -1641,3 +1641,10 @@ button {
   .category-tile { min-height: 48px; padding-block: 6px; }
   .category-tile-name { font-size: 14px; }
 }
+
+.order-tracker.is-preparing { background: #6e4018; border-color: #e5ba7a; color: #fff1dc; }
+.order-tracker.is-ready { background: #285a3c; border-color: #a7d5ae; color: #fff; box-shadow: 0 2px 12px #0003; }
+
+.order-tracker-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.order-tracker-number { flex-shrink: 0; }
+@media (max-width: 360px) { .order-tracker-number { display: none; } }

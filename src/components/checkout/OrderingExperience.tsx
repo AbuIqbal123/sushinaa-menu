@@ -19,7 +19,7 @@ import type { PaymentStatus } from '@/ordering/checkout/payment';
 import { MockSadadGateway } from './MockSadadGateway';
 import { CarBrandPicker, CarBrandLogo } from './CarBrandPicker';
 import { carBrandName, findCarBrand } from '@/ordering/car-brands';
-import { OrderProgress } from './OrderProgress';
+import { OrderProgress, orderPhase, orderTrackingLabel } from './OrderProgress';
 
 const emptyCustomer: Customer = { name: '', phone: '', plate: 'Q', brand: '', colour: '', car: '', instructions: '' };
 type Step = 'menu' | 'details' | 'review' | 'payment' | 'receipt';
@@ -163,8 +163,8 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
   const branchName = branch ? text(branch.name, branch.nameAr) : '';
   const confirmed = receipt && (receipt.paymentStatus === 'paid' || receipt.paymentMethod === 'pay_at_pickup');
   const menuStage = branch ? <div key="menu-stage" className={`app-lock ordering-menu-stage${step !== 'menu' ? ' is-inactive' : ''}`} inert={step !== 'menu'} aria-hidden={step !== 'menu' ? true : undefined}><MenuFeed branch={branchName} inactive={step !== 'menu'} onPickup={() => go('details')}
-    orderTracking={confirmed ? <button type="button" className="order-tracker" onClick={() => go('receipt')}>
-      {text('Track order', 'تتبّع الطلب')}{receipt.orderNumber != null && <span dir="ltr">#{formatOrderNumber(receipt.orderNumber)}</span>}
+    orderTracking={confirmed ? <button type="button" className={`order-tracker is-${orderPhase(receipt.status)}`} aria-live="polite" onClick={() => go('receipt')}>
+      <span className="order-tracker-label">{orderTrackingLabel(receipt.status, lang)}</span>{receipt.orderNumber != null && <span className="order-tracker-number" dir="ltr">#{formatOrderNumber(receipt.orderNumber)}</span>}
     </button> : undefined} /></div> : null;
   if (step === 'menu') return <>{menuStage}</>;
   const receiptCustomer = receipt?.details ? receipt.details.customer ?? emptyCustomer : customer;
