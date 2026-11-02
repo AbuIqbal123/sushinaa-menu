@@ -1,8 +1,8 @@
-// The four branches. Hard-coded until branch details move into the CMS.
+// Stable branch identities and default details for menus saved before branch editing.
 // Hours are minutes from midnight of the opening day. A close above 1440
 // runs past midnight into the next day. Day index: 0 = Sunday … 6 = Saturday.
 
-export type Session = { open: number; close: number };
+export type Session = { open: number; close: number; closed?: boolean };
 export type WeekHours = readonly Session[];
 export type Nigiri = "salmon" | "tuna" | "ebi" | "tamago";
 export type BranchId = 'down-town' | 'al-thumama' | 'west-bay' | 'al-khor';
@@ -38,4 +38,9 @@ export const BRANCHES: readonly Branch[] = [
 
 export function findBranch(slug: string | undefined): Branch | undefined {
   return BRANCHES.find((b) => b.slug === slug);
+}
+
+/** Merge published names/contact/hours with stable URLs, map locations and order codes. */
+export function configuredBranches(settings?: readonly Pick<Branch, 'slug' | 'name' | 'nameAr' | 'phone' | 'hours'>[]): Branch[] {
+  return BRANCHES.map(branch => ({ ...branch, ...settings?.find(row => row.slug === branch.slug) }));
 }

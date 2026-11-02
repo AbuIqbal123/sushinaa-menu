@@ -7,7 +7,7 @@ import { DishDetailSheet } from '@/components/menu/DishDetailSheet';
 import { CartProvider, useCart, type CartLine } from '@/ordering/cart';
 import { useMenu } from '@/cms/context';
 import { LangButton, useLocale, useSetSheetOpen } from '@/i18n/locale';
-import { BRANCHES as branches, type BranchId } from '@/branches/branches';
+import { configuredBranches, type BranchId } from '@/branches/branches';
 import { branchStatus, qatarClock } from '@/branches/hours';
 import { customerSchema, digits, displayPhone, type Customer } from '@/ordering/checkout/validation';
 import { formatQar } from '@/lib/money';
@@ -33,6 +33,7 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
   const [paymentMethod, setPaymentMethod] = useState<'mock' | 'pay_at_pickup'>('mock');
   const text = (en: string, ar: string) => lang === 'ar' ? ar : en;
   const menu = useMenu();
+  const branches = configuredBranches(menu.branches);
   const router = useRouter();
   const cart = useCart();
   const [step, setStep] = useState<Step>('menu');

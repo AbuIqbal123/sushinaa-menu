@@ -9,6 +9,7 @@ import {
   type Category,
 } from "@/cms/schema";
 import { ItemEditor } from "./ItemEditor";
+import { BranchEditor } from "./BranchEditor";
 import { SettingsEditor } from "./SettingsEditor";
 import { CategoryEditor } from "./CategoryEditor";
 import { CategoryList } from "./CategoryList";
@@ -27,7 +28,7 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
   const params = useSearchParams();
   // A filtered menu link (?category=&show=&q=) opens straight on the Menu.
   const sections = role === "admin"
-    ? ["Dashboard", "Orders", "Menu", "Categories", "Users", "Settings", "Activity"]
+    ? ["Dashboard", "Orders", "Menu", "Categories", "Branches", "Users", "Settings", "Activity"]
     : ["Orders"];
   const [section, setSection] = useState(() =>
     role !== "admin" ? "Orders" : ["category", "show", "q"].some((k) => params.has(k)) ? "Menu" : "Dashboard",
@@ -119,7 +120,7 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
               setCreatingUser(false);
             }}
           >
-            {s === "Users" && lang === "ar" ? "المستخدمون" : s}{s === "Orders" && unreadOrders > 0 && <span className="staff-unread">{unreadOrders}</span>}
+            {s === "Branches" && lang === "ar" ? "الفروع" : s === "Users" && lang === "ar" ? "المستخدمون" : s}{s === "Orders" && unreadOrders > 0 && <span className="staff-unread">{unreadOrders}</span>}
           </button>
         ))}
         <a className="bottom" href="/" target="_blank" rel="noreferrer">
@@ -146,7 +147,7 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
       <div className="admin-main">
         <main className="admin-content">
           <div className="admin-heading">
-            <h1>{section === "Menu" ? "Your menu" : section === "Orders" ? "Orders" : section === "Users" && lang === "ar" ? "المستخدمون" : section}</h1>
+            <h1>{section === "Menu" ? "Your menu" : section === "Orders" ? "Orders" : section === "Users" && lang === "ar" ? "المستخدمون" : section === "Branches" && lang === "ar" ? "الفروع" : section}</h1>
             {section === "Menu" && (
               <button className="primary" onClick={() => newItem()}>
                 Add item
@@ -201,7 +202,8 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
             />
           )}
           <Orders active={section === "Orders"} onUnread={setUnreadOrders} role={role} menu={menu} />
-          {section === "Users" && role === "admin" && <StaffPanel creating={creatingUser} onCreating={setCreatingUser} />}
+          {section === "Users" && role === "admin" && <StaffPanel menu={menu} creating={creatingUser} onCreating={setCreatingUser} />}
+          {section === "Branches" && role === "admin" && <BranchEditor menu={menu} onSave={save} />}
           {section === "Activity" && <Activity />}
           {section === "Settings" && role === "admin" && (
             <SettingsEditor key={snapshot.revision} menu={menu} onSave={save} />

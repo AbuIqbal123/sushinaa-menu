@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { BRANCHES, type BranchId } from '@/branches/branches';
+import { configuredBranches, type BranchId } from '@/branches/branches';
+import type { MenuData } from '@/cms/schema';
 import { useLocale } from '@/i18n/locale';
 import { useModal } from './Fields';
 import { useNotify } from './Notices';
@@ -8,8 +9,9 @@ import { useNotify } from './Notices';
 type StaffRow = { id: string; username: string; role: string; branchId: string | null; disabled: boolean };
 type StaffRole = 'admin' | 'branch_staff';
 
-export function StaffPanel({ creating, onCreating }: { creating: boolean; onCreating: (open: boolean) => void }) {
+export function StaffPanel({ menu, creating, onCreating }: { menu: MenuData; creating: boolean; onCreating: (open: boolean) => void }) {
   const { lang } = useLocale();
+  const branches = configuredBranches(menu.branches);
   const text = (en: string, ar: string) => (lang === 'ar' ? ar : en);
   const notify = useNotify();
   const [rows, setRows] = useState<StaffRow[]>([]);
@@ -101,7 +103,7 @@ export function StaffPanel({ creating, onCreating }: { creating: boolean; onCrea
 
   const branchName = (id: string | null) => {
     if (!id) return text('All branches', 'كل الفروع');
-    const branch = BRANCHES.find((item) => item.slug === id);
+    const branch = branches.find((item) => item.slug === id);
     return branch ? (lang === 'ar' ? branch.nameAr : branch.name) : id;
   };
   const message = error === 'conflict'
@@ -160,7 +162,7 @@ export function StaffPanel({ creating, onCreating }: { creating: boolean; onCrea
           {role === 'branch_staff' && (
             <label>{text('Branch', 'الفرع')}
               <select name="branchId" value={branchId} onChange={(event) => setBranchId(event.target.value as BranchId)}>
-                {BRANCHES.map((branch) => <option key={branch.slug} value={branch.slug}>{lang === 'ar' ? branch.nameAr : branch.name}</option>)}
+                {branches.map((branch) => <option key={branch.slug} value={branch.slug}>{lang === 'ar' ? branch.nameAr : branch.name}</option>)}
               </select>
             </label>
           )}
@@ -183,7 +185,7 @@ export function StaffPanel({ creating, onCreating }: { creating: boolean; onCrea
           {editRole === 'branch_staff' && (
             <label>{text('Branch', 'الفرع')}
               <select name="branchId" aria-label={text('Change branch', 'تغيير الفرع')} value={editBranch} onChange={(event) => setEditBranch(event.target.value as BranchId)}>
-                {BRANCHES.map((branch) => <option key={branch.slug} value={branch.slug}>{lang === 'ar' ? branch.nameAr : branch.name}</option>)}
+                {branches.map((branch) => <option key={branch.slug} value={branch.slug}>{lang === 'ar' ? branch.nameAr : branch.name}</option>)}
               </select>
             </label>
           )}

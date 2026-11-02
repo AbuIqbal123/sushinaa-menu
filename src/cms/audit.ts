@@ -92,6 +92,7 @@ export function menuChanges(before: MenuData, after: MenuData): AuditEntry[] {
     // The editor stamps updatedAt on every save; it is not a change in itself.
     ...entityChanges("item", before.dishes, after.dishes, ["updatedAt"]),
     ...entityChanges("filter", before.filters, after.filters),
+    ...entityChanges("branch", before.branches.map(b=>({...b,id:b.slug})), after.branches.map(b=>({...b,id:b.slug}))),
   ];
   const prefixed = (lang: "en" | "ar") => Object.fromEntries(
     Object.entries(fieldDiff(before.copy[lang], after.copy[lang])).map(([k, v]) => [`${lang}.${k}`, v]),

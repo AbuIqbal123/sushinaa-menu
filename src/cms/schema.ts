@@ -1,3 +1,4 @@
+import { branchListSchema, defaultBranchSettings } from "@/branches/schema";
 import { z } from "zod";
 const text = z.string().max(10000);
 const name = z.string().trim().min(1, "Name is required").max(200);
@@ -366,6 +367,7 @@ export function normalizeStoredMenu(raw: unknown): unknown {
 export const menuSchema = z
   .object({
     schemaVersion: z.literal(1),
+    branches: branchListSchema.default(defaultBranchSettings),
     categories: z
       .array(categorySchema)
       .max(100)

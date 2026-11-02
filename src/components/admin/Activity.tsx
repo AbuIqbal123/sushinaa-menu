@@ -20,11 +20,14 @@ const AREAS = [
   ["sessions", "Sign-ins"],
   ["items", "Items"],
   ["categories", "Categories"],
+  ["branches", "Branches"],
   ["settings", "Settings"],
   ["media", "Photos"],
   ["orders", "Orders"],
 ] as const;
 const FIELDS: Record<string, string> = {
+  phone: "phone number",
+  hours: "opening hours",
   name: "name",
   nameAr: "Arabic name",
   description: "description",
@@ -51,6 +54,7 @@ const FIELDS: Record<string, string> = {
 const field = (key: string) =>
   FIELDS[key] ?? key.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase();
 const noun: Record<string, string> = {
+  branch: "branch",
   item: "item",
   category: "category",
   filter: "filter",

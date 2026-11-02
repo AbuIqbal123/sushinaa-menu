@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type MouseEvent } from "react";
-import { BRANCHES, type Branch } from "@/branches/branches";
+import { configuredBranches, type Branch } from "@/branches/branches";
 import { accessibleName, branchStatus, qatarClock } from "@/branches/hours";
 import { useMenu } from "@/cms/context";
 import { LangButton, useLocale } from "@/i18n/locale";
@@ -28,7 +28,8 @@ const currentMinute = () => Math.floor(Date.now() / 60_000);
 const noMinuteOnServer = () => null;
 
 export function BranchPicker() {
-  const { settings } = useMenu();
+  const { settings, branches: branchSettings } = useMenu();
+  const branches = configuredBranches(branchSettings);
   const { t, lang } = useLocale();
   const ar = lang === "ar";
   const router = useRouter();
@@ -105,7 +106,7 @@ export function BranchPicker() {
       </header>
       <nav aria-label={ar ? "الفروع" : "Branches"}>
         <ul className={`bp-board${picked ? " is-picking" : ""}`}>
-          {BRANCHES.map((branch, i) => {
+          {branches.map((branch, i) => {
             const status = clock && branchStatus(branch.hours, clock, lang);
             const tone = !status ? "" : !status.open ? "closed" : status.soon ? "soon" : "open";
             return (
