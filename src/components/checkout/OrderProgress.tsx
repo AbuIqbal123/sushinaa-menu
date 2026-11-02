@@ -32,7 +32,7 @@ export function OrderProgress({ status, lang }: { status: string; lang: Lang }) 
   return <section key={phase} className={`order-progress is-${phase}`} data-status={status} aria-live="polite" aria-atomic="true">
     <div className="order-progress-heading"><span className="order-progress-symbol" aria-hidden="true">
       <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-        {phase === 'ready' || phase === 'collected' ? <path d="m7 16 6 6L25 9"/> : phase === 'cancelled' ? <path d="m9 9 14 14M23 9 9 23"/> : phase === 'preparing' ? <><path d="M5 18h22c-1 7-5 10-11 10S6 25 5 18ZM4 18h24"/><g className="order-steam"><path d="M11 12c-4-4 3-4 0-8M20 12c-4-4 3-4 0-8"/></g></> : <><circle cx="16" cy="16" r="11"/><path d="M16 9v7l5 3"/></>}
+        {phase === 'ready' || phase === 'collected' ? <path className="order-check" pathLength={1} d="m7 16 6 6L25 9"/> : phase === 'cancelled' ? <path d="m9 9 14 14M23 9 9 23"/> : phase === 'preparing' ? <><path d="M5 18h22c-1 7-5 10-11 10S6 25 5 18ZM4 18h24"/><g className="order-steam"><path d="M11 12c-4-4 3-4 0-8M20 12c-4-4 3-4 0-8"/></g></> : <><circle cx="16" cy="16" r="11"/><path d="M16 9v7l5 3"/></>}
       </svg>
     </span><h2>{title}</h2></div>
     <p>{description}</p>
