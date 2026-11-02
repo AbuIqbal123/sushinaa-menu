@@ -7,11 +7,9 @@ const focus: Record<string, { x: number; y: number }> = table.focus;
 type Photo = { image?: string; optionsImage?: string };
 
 /**
- * Moves seeded photos onto their approved 9:16 card crops, keeping the
- * original as the full photo, and gives originals without a crop the focal
- * point of their best crop. Only values that still equal the seeded original
- * change, so admin edits are left alone and a second run changes nothing.
- * Returns the ids of the dishes it changed.
+ * Uses the approved portraits for untouched seeded photos, retaining full originals.
+ * Existing seeded crops are upgraded only when their full-photo pairing is unchanged.
+ * Custom CMS images/options photos are preserved. Repeated reads are idempotent.
  */
 export function withCardPhotos(input: MenuData): {
   menu: MenuData;
@@ -24,9 +22,14 @@ export function withCardPhotos(input: MenuData): {
     if (dish.kind.type === "roll")
       photos.push(...dish.kind.proteins, ...(dish.kind.style?.options ?? []));
     for (const photo of photos) {
-      const card = photo.image && cards[photo.image];
-      if (!card || photo.optionsImage) continue;
-      photo.optionsImage = photo.image;
+      const original = photo.optionsImage ?? photo.image;
+      const card = original && cards[original];
+      if (!card) continue;
+      const untouchedOriginal = photo.image === original && !photo.optionsImage;
+      const untouchedCrop = photo.optionsImage === original
+        && photo.image === card.replace("/portrait/", "/card/");
+      if (!untouchedOriginal && !untouchedCrop) continue;
+      photo.optionsImage = original;
       photo.image = card;
       changed.add(dish.id);
     }

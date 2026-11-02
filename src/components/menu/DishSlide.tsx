@@ -41,13 +41,14 @@ export const DishSlide = memo(function DishSlide({
   const photo = imageFor(dish, sel);
   const title = pickName(dish, lang);
   const description = dishDescription(dish, lang);
+  const portrait = photo.startsWith("/dishes/portrait/");
   const patterned = photo.startsWith("/brand/");
   const showPhoto = eager || patterned;
   const hint = hintFor(dish, sel, t);
 
   return (
     <article
-      className={`slide${active ? " is-active" : ""}${eager ? " is-near" : ""}`}
+      className={`slide${portrait ? " slide-portrait" : ""}${active ? " is-active" : ""}${eager ? " is-near" : ""}`}
       id={marked ? `dish-${dish.id}` : undefined}
       data-section={dish.section}
       inert={inert}

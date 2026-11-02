@@ -34,11 +34,11 @@ test("the seed is the original menu with card photos applied, and applying again
   assert.deepEqual(withCardPhotos(seed).changed, []);
   assert.ok(menuSchema.safeParse(seed).success);
   const dishes = seed.dishes;
-  assert.equal(dishes.filter((d) => d.image.startsWith("/dishes/card/")).length, 74);
+  assert.equal(dishes.filter((d) => d.image.startsWith("/dishes/portrait/")).length, 74);
   assert.equal(dishes.filter((d) => d.imageFocus).length, 0);
-  // Cropped photos fill the card; only uncropped originals carry a focal point.
+  // Approved portraits show the full composition without a focal-point crop.
   for (const d of dishes)
-    assert.ok(!(d.imageFocus && d.image.startsWith("/dishes/card/")), d.id);
+    assert.ok(!(d.imageFocus && d.image.startsWith("/dishes/portrait/")), d.id);
 });
 test("photos an admin has changed are left alone", () => {
   const before = unswapped(seed);
@@ -64,4 +64,31 @@ test("every card photo and original ships, and the image list matches public/", 
     assert.ok(shipped.includes(original), original);
     assert.ok(shipped.includes(card), card);
   }
+});
+
+test("existing seeded crops upgrade to portraits without changing full originals", () => {
+  const legacy = structuredClone(seed);
+  for (const dish of legacy.dishes) {
+    const photos: { image?: string; optionsImage?: string }[] = [dish];
+    if (dish.kind.type === "roll") photos.push(...dish.kind.proteins, ...(dish.kind.style?.options ?? []));
+    for (const photo of photos) if (photo.image) photo.image = photo.image.replace("/portrait/", "/card/");
+  }
+  const before = structuredClone(legacy);
+  const upgraded = withCardPhotos(legacy);
+  assert.deepEqual(upgraded.menu, seed);
+  assert.equal(upgraded.changed.length, 74);
+  assert.deepEqual(withCardPhotos(upgraded.menu).changed, []);
+  assert.deepEqual(legacy, before, "stored input remains untouched");
+});
+
+test("custom photos paired with seeded originals are not replaced by portraits", () => {
+  const custom = structuredClone(seed);
+  const dish = custom.dishes.find(d => d.id === "sushinaa-burger")!;
+  dish.image = "/api/media/custom-card.webp";
+  const roll = custom.dishes.find(d => d.id === "mario-roll")!;
+  if (roll.kind.type !== "roll") throw new Error("Expected roll");
+  roll.kind.proteins[0].image = "/api/media/custom-protein.webp";
+  const original = structuredClone(custom);
+  assert.deepEqual(withCardPhotos(custom).menu, original);
+  assert.deepEqual(withCardPhotos(custom).changed, []);
 });
