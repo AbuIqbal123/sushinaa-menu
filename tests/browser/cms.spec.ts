@@ -313,7 +313,7 @@ test("admin controls edit, reorder and delete content and options", async ({
       expect(changed.kind.extras[1].priceQar).toBe(6);
       expect(changed.kind.extras[1].name).toBe("Spicy mayo");
     }
-    expect(changed.image).toBe("/dishes/card/sushinaa-burger.webp");
+    expect(changed.image).toBe("/dishes/portrait/sushinaa-burger.webp");
     const mario = page.locator(".admin-row").filter({
       has: page.locator("strong", { hasText: /^Mario roll$/ }),
     });
@@ -329,7 +329,7 @@ test("admin controls edit, reorder and delete content and options", async ({
     const roll = (await saved()).menu.dishes.find(
       (d) => d.id === "mario-roll",
     )!;
-    expect(roll.image).toBe("/dishes/card/mario-roll-chicken.webp");
+    expect(roll.image).toBe("/dishes/portrait/mario-roll-chicken.webp");
     expect(roll.optionsImage).toBe("/dishes/mario-roll-chicken.jpg");
     if (roll.kind.type === "roll") {
       expect(roll.kind.proteins[0].image).toBeUndefined();
@@ -625,7 +625,7 @@ test("card focal point and options photo round-trip to the public menu", async (
     const burger = saved.menu.dishes.find((d) => d.id === "sushinaa-burger")!;
     expect(burger.imageFocus).toEqual({ x: 60, y: 51 });
     expect(burger.optionsImage).toMatch(/^\/api\/media\//);
-    expect(burger.image).toBe("/dishes/card/sushinaa-burger.webp");
+    expect(burger.image).toBe("/dishes/portrait/sushinaa-burger.webp");
     await page.goto("/down-town");
     const card = page.locator("#dish-sushinaa-burger img.dish-photo");
     await expect(card).toHaveCSS("object-position", "60% 51%");

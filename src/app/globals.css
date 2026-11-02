@@ -1648,3 +1648,17 @@ button {
 .order-tracker-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .order-tracker-number { flex-shrink: 0; }
 @media (max-width: 360px) { .order-tracker-number { display: none; } }
+
+/* Approved portrait photography retains the whole composition on any screen. */
+.slide-portrait { background: #ded8d2; }
+.slide.slide-portrait .dish-photo {
+  object-fit: contain;
+  object-position: center !important;
+  transform: none;
+}
+.slide-portrait .scrim {
+  background: linear-gradient(to bottom,
+    rgba(20,17,15,.88) 0%, rgba(20,17,15,.18) 16%,
+    transparent 36%, rgba(20,17,15,.2) 55%,
+    rgba(20,17,15,.85) 78%, #14110f 100%);
+}

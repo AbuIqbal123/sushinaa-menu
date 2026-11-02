@@ -122,7 +122,7 @@
       "section": "New",
       "description": "Sushi burger with shrimp, crab stick, avocado, cucumber and spicy mayo, finished with furikake and sweet soy sauce.",
       "descriptionAr": "برجر سوشي مع الروبيان، أصابع السلطعون، الأفوكادو، الخيار والمايونيز الحار، مزين بالفوريكاكي وصلصة الصويا الحلوة.",
-      "image": "/dishes/card/sushinaa-burger.webp",
+      "image": "/dishes/portrait/sushinaa-burger.webp",
       "tags": [
         "seafood"
       ],
@@ -176,7 +176,7 @@
       "section": "New",
       "description": "Crispy calamari rings seasoned with garlic and paprika, served with spicy mayo and lemon garlic mayo.",
       "descriptionAr": "حلقات كاليماري مقرمشة متبلة بالثوم والبابريكا، تقدم مع المايونيز الحار ومايونيز الثوم والليمون.",
-      "image": "/dishes/card/crispy-calamari.webp",
+      "image": "/dishes/portrait/crispy-calamari.webp",
       "tags": [
         "seafood"
       ],
@@ -212,7 +212,7 @@
       "section": "New",
       "description": "Chicken-filled gyoza with cabbage, spring onion, garlic and ginger, seasoned with soy and oyster sauce. Served with your choice of 2 sauces.",
       "descriptionAr": "جيوزا محشوة بالدجاج، الملفوف، البصل الأخضر، الثوم والزنجبيل، متبلة بصلصة الصويا وصلصة المحار، تقدم مع اختيارك من صوصين.",
-      "image": "/dishes/card/gyoza-chicken.webp",
+      "image": "/dishes/portrait/gyoza-chicken.webp",
       "tags": [],
       "kind": {
         "type": "addons",
@@ -277,7 +277,7 @@
       "section": "New",
       "description": "Beef-filled gyoza with cabbage, red onion, ginger and garlic, seasoned with soy sauce and sesame oil. Served with your choice of 2 sauces.",
       "descriptionAr": "جيوزا محشوة باللحم البقري، الملفوف، البصل الأحمر، الزنجبيل والثوم، متبلة بصلصة الصويا وزيت السمسم، تقدم مع اختيارك من صوصين.",
-      "image": "/dishes/card/gyoza-beef.webp",
+      "image": "/dishes/portrait/gyoza-beef.webp",
       "tags": [],
       "kind": {
         "type": "addons",
@@ -342,7 +342,7 @@
       "section": "New",
       "description": "Shrimp-filled gyoza with spring onion, seasoned with soy sauce and black pepper for a light, savory flavor. Served with your choice of 2 sauces.",
       "descriptionAr": "جيوزا محشوة بالروبيان والبصل الأخضر، متبلة بصلصة الصويا والفلفل الأسود لنكهة خفيفة ولذيذة، تقدم مع اختيارك من صوصين.",
-      "image": "/dishes/card/gyoza-shrimp.webp",
+      "image": "/dishes/portrait/gyoza-shrimp.webp",
       "tags": [
         "seafood"
       ],
@@ -409,7 +409,7 @@
       "section": "New",
       "description": "Seafood-filled gyoza with fresh shrimp, crab stick, spring onion and red onion, blended with egg, ginger and garlic for a rich seafood flavor. Served with your choice of 2 sauces.",
       "descriptionAr": "جيوزا محشوة بالروبيان الطازج، أصابع السلطعون، البصل الأخضر والبصل الأحمر، مع البيض والزنجبيل والثوم لنكهة بحرية غنية، تقدم مع اختيارك من صوصين.",
-      "image": "/dishes/card/gyoza-seafood.webp",
+      "image": "/dishes/portrait/gyoza-seafood.webp",
       "tags": [
         "seafood"
       ],
@@ -476,7 +476,7 @@
       "section": "Starters",
       "description": "Five pieces, served with sweet chili sauce.",
       "descriptionAr": "خمس حبات يقدم مع صوص السويت تشيلي",
-      "image": "/dishes/card/shrimp-kunafa.webp",
+      "image": "/dishes/portrait/shrimp-kunafa.webp",
       "tags": [
         "seafood"
       ],
@@ -498,7 +498,7 @@
       "section": "Starters",
       "description": "Five pieces, with a sauce of your choice.",
       "descriptionAr": "خمس حبات مع صوص من اختيارك",
-      "image": "/dishes/card/shrimp-tempura.webp",
+      "image": "/dishes/portrait/shrimp-tempura.webp",
       "tags": [
         "seafood"
       ],
@@ -565,7 +565,7 @@
       "section": "Starters",
       "description": "Crispy shrimp with the sauce of your choice. Price follows the sauce.",
       "descriptionAr": "قطع روبيان مع صوص من اختيارك",
-      "image": "/dishes/card/shrimp.webp",
+      "image": "/dishes/portrait/shrimp.webp",
       "tags": [
         "seafood"
       ],
@@ -608,7 +608,7 @@
       "section": "Starters",
       "description": "Crispy chicken with the sauce of your choice. Price follows the sauce.",
       "descriptionAr": "قطع دجاج مع صوص من اختيارك",
-      "image": "/dishes/card/chicken.webp",
+      "image": "/dishes/portrait/chicken.webp",
       "tags": [],
       "kind": {
         "type": "sauce-price",
@@ -649,7 +649,7 @@
       "section": "Starters",
       "description": "Six pieces. Crab, mayonnaise, caviar, breadcrumbs.",
       "descriptionAr": "ست حبات. سلطعون، مايونيز، كفيار",
-      "image": "/dishes/card/crispy-rice-crab.webp",
+      "image": "/dishes/portrait/crispy-rice-crab.webp",
       "tags": [
         "seafood"
       ],
@@ -672,7 +672,7 @@
       "section": "Starters",
       "description": "Five pieces. Crab, cream cheese, spring onion.",
       "descriptionAr": "خمس حبات. سلطعون، جبنة، بصل أخضر",
-      "image": "/dishes/card/crab-rangoon.webp",
+      "image": "/dishes/portrait/crab-rangoon.webp",
       "tags": [
         "seafood"
       ],
@@ -740,7 +740,7 @@
       "section": "Starters",
       "description": "Boiled edamame with rock salt.",
       "descriptionAr": "فول الصويا يقدم مع الملح الصخري",
-      "image": "/dishes/card/salt-edamame.webp",
+      "image": "/dishes/portrait/salt-edamame.webp",
       "tags": [
         "veg"
       ],
@@ -762,7 +762,7 @@
       "section": "Starters",
       "description": "Edamame with spicy sauce, garlic, and soy.",
       "descriptionAr": "يحتوي على صوص حار، ثوم، صويا",
-      "image": "/dishes/card/spicy-edamame.webp",
+      "image": "/dishes/portrait/spicy-edamame.webp",
       "tags": [
         "veg",
         "spicy"
@@ -784,7 +784,7 @@
       "nameAr": "أرز مقلي بالدجاج",
       "section": "Fried rice",
       "description": "Chicken, rice, soy sauce, yellow pepper, green pepper, red pepper, mushroom, carrot, black pepper.",
-      "image": "/dishes/card/chicken-fried-rice.webp",
+      "image": "/dishes/portrait/chicken-fried-rice.webp",
       "tags": [],
       "kind": {
         "type": "simple",
@@ -804,7 +804,7 @@
       "nameAr": "أرز مقلي باللحم",
       "section": "Fried rice",
       "description": "Beef, rice, soy sauce, yellow pepper, green pepper, red pepper, mushroom, carrot, black pepper.",
-      "image": "/dishes/card/beef-fried-rice.webp",
+      "image": "/dishes/portrait/beef-fried-rice.webp",
       "tags": [],
       "kind": {
         "type": "simple",
@@ -824,7 +824,7 @@
       "nameAr": "أرز مقلي بالجمبري",
       "section": "Fried rice",
       "description": "Shrimp, rice, soy sauce, yellow pepper, green pepper, red pepper, mushroom, carrot, black pepper.",
-      "image": "/dishes/card/shrimp-fried-rice.webp",
+      "image": "/dishes/portrait/shrimp-fried-rice.webp",
       "tags": [
         "seafood"
       ],
@@ -846,7 +846,7 @@
       "nameAr": "أرز مقلي بالخضار",
       "section": "Fried rice",
       "description": "Rice, soy sauce, yellow pepper, green pepper, red pepper, mushroom, carrot, black pepper.",
-      "image": "/dishes/card/vegi-fried-rice.webp",
+      "image": "/dishes/portrait/vegi-fried-rice.webp",
       "tags": [
         "veg"
       ],
@@ -868,7 +868,7 @@
       "nameAr": "بوك بول خضار",
       "section": "Poke bowls",
       "description": "Rice, cucumber, edamame, avocado, mango, white cabbage, red cabbage, breadcrumbs, nori. Crispy potato on the side.",
-      "image": "/dishes/card/vegi-poke-bowl.webp",
+      "image": "/dishes/portrait/vegi-poke-bowl.webp",
       "tags": [
         "veg"
       ],
@@ -890,7 +890,7 @@
       "nameAr": "بوك بول دجاج",
       "section": "Poke bowls",
       "description": "Crispy chicken with sauce, rice, cucumber, corn, avocado, white cabbage, red cabbage, nori. Crispy potato on the side.",
-      "image": "/dishes/card/chicken-poke-bowl.webp",
+      "image": "/dishes/portrait/chicken-poke-bowl.webp",
       "tags": [],
       "kind": {
         "type": "simple",
@@ -910,7 +910,7 @@
       "nameAr": "بوك بول روبيان",
       "section": "Poke bowls",
       "description": "Crispy shrimp with sauce, rice, cucumber, edamame, avocado, crab, mayonnaise, caviar, corn, nori. Crispy potato on the side.",
-      "image": "/dishes/card/shrimp-poke-bowl.webp",
+      "image": "/dishes/portrait/shrimp-poke-bowl.webp",
       "tags": [
         "seafood"
       ],
@@ -933,7 +933,7 @@
       "section": "Deal box",
       "description": "One starter and one sushi type (6 pieces). Shrimp only.",
       "descriptionAr": "مقبلات ونوع سوشي (٦ حبات). روبيان فقط.",
-      "image": "/dishes/card/shrimp-deal-box.webp",
+      "image": "/dishes/portrait/shrimp-deal-box.webp",
       "tags": [
         "seafood"
       ],
@@ -1002,7 +1002,7 @@
       "section": "Deal box",
       "description": "One starter and one sushi type (6 pieces). Chicken only.",
       "descriptionAr": "مقبلات ونوع سوشي (٦ حبات). دجاج فقط.",
-      "image": "/dishes/card/chicken-deal-box.webp",
+      "image": "/dishes/portrait/chicken-deal-box.webp",
       "tags": [],
       "kind": {
         "type": "deal-box",
@@ -1059,7 +1059,7 @@
       "section": "Deal box",
       "description": "One starter and one sushi type (6 pieces). Seafood only.",
       "descriptionAr": "مقبلات ونوع سوشي (٦ حبات). بحري فقط.",
-      "image": "/dishes/card/seafood-deal-box.webp",
+      "image": "/dishes/portrait/seafood-deal-box.webp",
       "tags": [
         "seafood"
       ],
@@ -1116,7 +1116,7 @@
       "section": "Deal box",
       "description": "One starter and one sushi type (6 pieces). Vegetarian only.",
       "descriptionAr": "مقبلات ونوع سوشي (٦ حبات). خضار فقط.",
-      "image": "/dishes/card/vegi-deal-box.webp",
+      "image": "/dishes/portrait/vegi-deal-box.webp",
       "tags": [
         "veg"
       ],
@@ -1176,7 +1176,7 @@
       "nameAr": "سلطة مانجو حارة",
       "section": "Salads",
       "description": "Crab sticks, mango, cucumber, lettuce, black sesame, crispy wonton, spicy sauce.",
-      "image": "/dishes/card/spicy-mango-salad.webp",
+      "image": "/dishes/portrait/spicy-mango-salad.webp",
       "tags": [
         "seafood",
         "spicy"
@@ -1199,7 +1199,7 @@
       "nameAr": "سلطة كراب مقرمشة",
       "section": "Salads",
       "description": "Crab, lettuce, caviar, nori, breadcrumbs, mayonnaise, cucumber.",
-      "image": "/dishes/card/crunchy-crab-salad.webp",
+      "image": "/dishes/portrait/crunchy-crab-salad.webp",
       "tags": [
         "seafood"
       ],
@@ -1230,7 +1230,7 @@
       "nameAr": "دجاج بصلصة العسل",
       "section": "Mains",
       "description": "Honey chicken, rice, avocado, sesame, spring onion.",
-      "image": "/dishes/card/glazed-honey-chicken.webp",
+      "image": "/dishes/portrait/glazed-honey-chicken.webp",
       "tags": [],
       "kind": {
         "type": "simple",
@@ -1270,7 +1270,7 @@
       "nameAr": "سلمون بصلصة العسل",
       "section": "Mains",
       "description": "Honey salmon, rice, avocado, sesame, spring onion.",
-      "image": "/dishes/card/glazed-honey-salmon.webp",
+      "image": "/dishes/portrait/glazed-honey-salmon.webp",
       "tags": [
         "seafood"
       ],
@@ -1313,7 +1313,7 @@
       "section": "Sushina rolls",
       "description": "Mango, carrot, avocado, cherry, cucumber. Choose your protein.",
       "descriptionAr": "مانجو، جزر، أفوكادو، كرز، خيار",
-      "image": "/dishes/card/mario-roll-chicken.webp",
+      "image": "/dishes/portrait/mario-roll-chicken.webp",
       "tags": [],
       "kind": {
         "type": "roll",
@@ -1322,7 +1322,7 @@
             "id": "chicken",
             "name": "Chicken",
             "nameAr": "دجاج",
-            "image": "/dishes/card/mario-roll-chicken.webp",
+            "image": "/dishes/portrait/mario-roll-chicken.webp",
             "prices": {
               "4": 32,
               "6": 48,
@@ -1336,7 +1336,7 @@
             "id": "shrimp",
             "name": "Shrimp",
             "nameAr": "روبيان",
-            "image": "/dishes/card/mario-roll-shrimp.webp",
+            "image": "/dishes/portrait/mario-roll-shrimp.webp",
             "seafood": true,
             "prices": {
               "4": 32,
@@ -1351,7 +1351,7 @@
             "id": "vegi",
             "name": "Veggie",
             "nameAr": "خضار",
-            "image": "/dishes/card/mario-roll-vegi.webp",
+            "image": "/dishes/portrait/mario-roll-vegi.webp",
             "veg": true,
             "prices": {
               "4": 32,
@@ -1377,7 +1377,7 @@
       "nameAr": "رول سيريل كيلر",
       "section": "Sushina rolls",
       "description": "Shrimp, crab, lettuce, two sauces, crisps.",
-      "image": "/dishes/card/cereal-killer-roll.webp",
+      "image": "/dishes/portrait/cereal-killer-roll.webp",
       "tags": [
         "seafood"
       ],
@@ -1414,7 +1414,7 @@
       "section": "Sushina rolls",
       "description": "Mozzarella, special sauce, soy sauce. Chicken, shrimp, or salmon — price follows the protein.",
       "descriptionAr": "جبنة موزاريلا وصوص خاص. اختار الدجاج أو الروبيان أو السلمون",
-      "image": "/dishes/card/tiger-roll-chicken.webp",
+      "image": "/dishes/portrait/tiger-roll-chicken.webp",
       "tags": [],
       "kind": {
         "type": "roll",
@@ -1423,7 +1423,7 @@
             "id": "chicken",
             "name": "Chicken",
             "nameAr": "دجاج",
-            "image": "/dishes/card/tiger-roll-chicken.webp",
+            "image": "/dishes/portrait/tiger-roll-chicken.webp",
             "prices": {
               "4": 32,
               "6": 48,
@@ -1435,7 +1435,7 @@
             "id": "shrimp",
             "name": "Shrimp",
             "nameAr": "روبيان",
-            "image": "/dishes/card/tiger-roll-shrimp.webp",
+            "image": "/dishes/portrait/tiger-roll-shrimp.webp",
             "seafood": true,
             "prices": {
               "4": 34,
@@ -1448,7 +1448,7 @@
             "id": "salmon",
             "name": "Salmon",
             "nameAr": "سلمون",
-            "image": "/dishes/card/tiger-roll-salmon.webp",
+            "image": "/dishes/portrait/tiger-roll-salmon.webp",
             "seafood": true,
             "prices": {
               "4": 36,
@@ -1472,7 +1472,7 @@
       "nameAr": "رول دجاج مايونيز",
       "section": "Sushina rolls",
       "description": "Chicken, carrot, mayonnaise.",
-      "image": "/dishes/card/chicken-mayo-roll.webp",
+      "image": "/dishes/portrait/chicken-mayo-roll.webp",
       "tags": [],
       "kind": {
         "type": "roll",
@@ -1505,7 +1505,7 @@
       "nameAr": "رول فيلادلفيا",
       "section": "Sushina rolls",
       "description": "Smoked salmon, cheese, cucumber.",
-      "image": "/dishes/card/philadelphia-roll.webp",
+      "image": "/dishes/portrait/philadelphia-roll.webp",
       "tags": [
         "seafood"
       ],
@@ -1541,7 +1541,7 @@
       "nameAr": "رول فيوجن كراب",
       "section": "Sushina rolls",
       "description": "Flaming hot chips powder, mayonnaise, crab sticks, rice, nori, soy sauce.",
-      "image": "/dishes/card/fusion-roll.webp",
+      "image": "/dishes/portrait/fusion-roll.webp",
       "tags": [
         "seafood",
         "spicy"
@@ -1578,7 +1578,7 @@
       "nameAr": "رول سالمون كريزي",
       "section": "Sushina rolls",
       "description": "Salmon cooked in spicy sauce, caviar.",
-      "image": "/dishes/card/crazy-salmon-roll.webp",
+      "image": "/dishes/portrait/crazy-salmon-roll.webp",
       "tags": [
         "seafood",
         "spicy"
@@ -1616,7 +1616,7 @@
       "nameAr": "رول فولكانيك شرمب",
       "section": "Sushina rolls",
       "description": "Shrimp, cucumber, flakes.",
-      "image": "/dishes/card/volcanic-shrimp-roll.webp",
+      "image": "/dishes/portrait/volcanic-shrimp-roll.webp",
       "tags": [
         "seafood"
       ],
@@ -1652,7 +1652,7 @@
       "nameAr": "رول تشبس عمان",
       "section": "Sushina rolls",
       "description": "Chicken, cheese, cucumber, spicy sauce.",
-      "image": "/dishes/card/chips-oman-roll.webp",
+      "image": "/dishes/portrait/chips-oman-roll.webp",
       "tags": [
         "spicy"
       ],
@@ -1688,7 +1688,7 @@
       "nameAr": "رول سلطة",
       "section": "Sushina rolls",
       "description": "Crab, lettuce, caviar, breadcrumbs, mayonnaise, cucumber.",
-      "image": "/dishes/card/salad-roll.webp",
+      "image": "/dishes/portrait/salad-roll.webp",
       "tags": [
         "seafood"
       ],
@@ -1724,7 +1724,7 @@
       "nameAr": "رول شرمب ديناميت",
       "section": "Sushina rolls",
       "description": "Shrimp, dynamite sauce.",
-      "image": "/dishes/card/shrimp-dynamite-roll.webp",
+      "image": "/dishes/portrait/shrimp-dynamite-roll.webp",
       "tags": [
         "seafood",
         "spicy"
@@ -1762,7 +1762,7 @@
       "nameAr": "رول تمبورا كاليفورنيا",
       "section": "Sushina rolls",
       "description": "Tempura, cucumber, avocado, mayonnaise. Choose sesame, orange caviar, or none.",
-      "image": "/dishes/card/tempura-california-roll.webp",
+      "image": "/dishes/portrait/tempura-california-roll.webp",
       "tags": [
         "seafood"
       ],
@@ -1820,7 +1820,7 @@
       "nameAr": "رول كراب كاليفورنيا",
       "section": "Sushina rolls",
       "description": "Crab, cucumber, avocado, mayonnaise. Choose sesame, orange caviar, or none.",
-      "image": "/dishes/card/crab-california-roll.webp",
+      "image": "/dishes/portrait/crab-california-roll.webp",
       "tags": [
         "seafood"
       ],
@@ -1878,7 +1878,7 @@
       "nameAr": "شرمب مايونيز ميكس",
       "section": "Sushina rolls",
       "description": "Shrimp, mayo, spring onion, soy sauce.",
-      "image": "/dishes/card/shrimp-mayo-mixture.webp",
+      "image": "/dishes/portrait/shrimp-mayo-mixture.webp",
       "tags": [
         "seafood"
       ],
@@ -1914,7 +1914,7 @@
       "nameAr": "رول إتش بي إيه دجاج",
       "section": "Sushina rolls",
       "description": "Chicken, dynamite sauce.",
-      "image": "/dishes/card/hba-chicken-roll.webp",
+      "image": "/dishes/portrait/hba-chicken-roll.webp",
       "tags": [
         "spicy"
       ],
@@ -1950,7 +1950,7 @@
       "nameAr": "رول كرسبي كراستيشن",
       "section": "Sushina rolls",
       "description": "Shrimp, crab, three sauces.",
-      "image": "/dishes/card/crustacean-crispy-roll.webp",
+      "image": "/dishes/portrait/crustacean-crispy-roll.webp",
       "tags": [
         "seafood"
       ],
@@ -1986,7 +1986,7 @@
       "nameAr": "بلو",
       "section": "Sushina rolls",
       "description": "Crab, shrimp, caviar, Sushinaa sauce.",
-      "image": "/dishes/card/blue.webp",
+      "image": "/dishes/portrait/blue.webp",
       "tags": [
         "seafood"
       ],
@@ -2022,7 +2022,7 @@
       "nameAr": "رول سي إس سي",
       "section": "Sushina rolls",
       "description": "Crab, shrimp, caviar, mayo.",
-      "image": "/dishes/card/csc-roll.webp",
+      "image": "/dishes/portrait/csc-roll.webp",
       "tags": [
         "seafood"
       ],
@@ -2058,7 +2058,7 @@
       "nameAr": "رول فليمين هوت",
       "section": "Sushina rolls",
       "description": "Fried protein, cheese, Cheetos (hot). Shrimp costs more than chicken.",
-      "image": "/dishes/card/flamin-roll-chicken.webp",
+      "image": "/dishes/portrait/flamin-roll-chicken.webp",
       "tags": [
         "spicy"
       ],
@@ -2069,7 +2069,7 @@
             "id": "chicken",
             "name": "Chicken",
             "nameAr": "دجاج",
-            "image": "/dishes/card/flamin-roll-chicken.webp",
+            "image": "/dishes/portrait/flamin-roll-chicken.webp",
             "spicy": true,
             "prices": {
               "4": 28,
@@ -2084,7 +2084,7 @@
             "id": "shrimp",
             "name": "Shrimp",
             "nameAr": "روبيان",
-            "image": "/dishes/card/flamin-roll-shrimp.webp",
+            "image": "/dishes/portrait/flamin-roll-shrimp.webp",
             "seafood": true,
             "spicy": true,
             "prices": {
@@ -2112,7 +2112,7 @@
       "nameAr": "رول خس",
       "section": "Sushina rolls",
       "description": "Avocado, carrot, lettuce, mayo. Add chicken and the price steps up.",
-      "image": "/dishes/card/lettuce-roll.webp",
+      "image": "/dishes/portrait/lettuce-roll.webp",
       "tags": [
         "veg"
       ],
@@ -2123,7 +2123,7 @@
             "id": "vegi",
             "name": "Veggie",
             "nameAr": "خضار",
-            "image": "/dishes/card/lettuce-roll.webp",
+            "image": "/dishes/portrait/lettuce-roll.webp",
             "veg": true,
             "prices": {
               "4": 28,
@@ -2138,7 +2138,7 @@
             "id": "chicken",
             "name": "Chicken",
             "nameAr": "دجاج",
-            "image": "/dishes/card/chicken-lettuce-roll.webp",
+            "image": "/dishes/portrait/chicken-lettuce-roll.webp",
             "prices": {
               "4": 32,
               "6": 48,
@@ -2164,7 +2164,7 @@
       "nameAr": "رول أكتوبر",
       "section": "Sushina rolls",
       "description": "Sweet n spicy sauce, avocado. Shrimp is a little more than chicken.",
-      "image": "/dishes/card/october-roll-chicken.webp",
+      "image": "/dishes/portrait/october-roll-chicken.webp",
       "tags": [
         "spicy"
       ],
@@ -2175,7 +2175,7 @@
             "id": "chicken",
             "name": "Chicken",
             "nameAr": "دجاج",
-            "image": "/dishes/card/october-roll-chicken.webp",
+            "image": "/dishes/portrait/october-roll-chicken.webp",
             "spicy": true,
             "prices": {
               "4": 34,
@@ -2190,7 +2190,7 @@
             "id": "shrimp",
             "name": "Shrimp",
             "nameAr": "روبيان",
-            "image": "/dishes/card/october-roll-shrimp.webp",
+            "image": "/dishes/portrait/october-roll-shrimp.webp",
             "seafood": true,
             "spicy": true,
             "prices": {
@@ -2218,7 +2218,7 @@
       "nameAr": "رول فاير كرنش شرمب",
       "section": "Sushina rolls",
       "description": "Shrimp, spicy sauce, spring onion, sesame, mayonnaise, crispy.",
-      "image": "/dishes/card/fire-crush-roll.webp",
+      "image": "/dishes/portrait/fire-crush-roll.webp",
       "tags": [
         "seafood",
         "spicy"
@@ -2256,7 +2256,7 @@
       "nameAr": "رول كلاسيك تشيري",
       "section": "Sushina rolls",
       "description": "Cream cheese, avocado, roasted sesame, mayonnaise, dried cherry tomato. Shrimp or chicken breast.",
-      "image": "/dishes/card/classic-cherry-roll-chicken.webp",
+      "image": "/dishes/portrait/classic-cherry-roll-chicken.webp",
       "tags": [],
       "kind": {
         "type": "roll",
@@ -2265,7 +2265,7 @@
             "id": "chicken",
             "name": "Chicken",
             "nameAr": "دجاج",
-            "image": "/dishes/card/classic-cherry-roll-chicken.webp",
+            "image": "/dishes/portrait/classic-cherry-roll-chicken.webp",
             "prices": {
               "4": 34,
               "6": 51,
@@ -2279,7 +2279,7 @@
             "id": "shrimp",
             "name": "Shrimp",
             "nameAr": "روبيان",
-            "image": "/dishes/card/classic-cherry-roll-shrimp.webp",
+            "image": "/dishes/portrait/classic-cherry-roll-shrimp.webp",
             "seafood": true,
             "prices": {
               "4": 36,
@@ -2306,7 +2306,7 @@
       "nameAr": "رول كرانشي كراب",
       "section": "Sushina rolls",
       "description": "Crab, tempura shrimp, three sauces, flakes, spring onion.",
-      "image": "/dishes/card/crunchy-crab-roll.webp",
+      "image": "/dishes/portrait/crunchy-crab-roll.webp",
       "tags": [
         "seafood"
       ],
@@ -2342,7 +2342,7 @@
       "nameAr": "رول جواك",
       "section": "Sushina rolls",
       "description": "Rice, nori, crispy shrimp, cheddar, cucumber, avocado, nacho chips.",
-      "image": "/dishes/card/guac-roll.webp",
+      "image": "/dishes/portrait/guac-roll.webp",
       "tags": [
         "seafood"
       ],
@@ -2378,7 +2378,7 @@
       "nameAr": "رول الروبيان المقلي",
       "section": "Sushina rolls",
       "description": "Shrimp, spicy sauce, mayonnaise, crispy.",
-      "image": "/dishes/card/fried-shrimp-roll.webp",
+      "image": "/dishes/portrait/fried-shrimp-roll.webp",
       "tags": [
         "seafood",
         "spicy"
@@ -2415,7 +2415,7 @@
       "nameAr": "بوريتو سوشي",
       "section": "Sushi burrito",
       "description": "Crab, caviar, shrimp tempura, lettuce, sesame, chips, two sauces.",
-      "image": "/dishes/card/agr-sushi-burrito.webp",
+      "image": "/dishes/portrait/agr-sushi-burrito.webp",
       "tags": [
         "seafood"
       ],
@@ -2462,7 +2462,7 @@
       "nameAr": "رول تمبورا",
       "section": "Sushinaa maki",
       "description": "Shrimp tempura. Choose cheese, mayo, or spicy mayo.",
-      "image": "/dishes/card/tempura-roll.webp",
+      "image": "/dishes/portrait/tempura-roll.webp",
       "tags": [
         "seafood"
       ],
@@ -2521,7 +2521,7 @@
       "nameAr": "رول الجبن",
       "section": "Sushinaa maki",
       "description": "Cheese. Vegetarian.",
-      "image": "/dishes/card/cheese-maki.webp",
+      "image": "/dishes/portrait/cheese-maki.webp",
       "tags": [
         "veg"
       ],
@@ -2575,7 +2575,7 @@
       "nameAr": "رول الجزر",
       "section": "Sushinaa maki",
       "description": "Carrot. Vegetarian. Choose cheese, mayo, or spicy mayo.",
-      "image": "/dishes/card/carrot-maki.webp",
+      "image": "/dishes/portrait/carrot-maki.webp",
       "tags": [
         "veg"
       ],
@@ -2634,7 +2634,7 @@
       "nameAr": "رول الأفوكادو",
       "section": "Sushinaa maki",
       "description": "Avocado. Vegetarian. Choose cheese, mayo, or spicy mayo.",
-      "image": "/dishes/card/avocado-roll.webp",
+      "image": "/dishes/portrait/avocado-roll.webp",
       "tags": [
         "veg"
       ],
@@ -2693,7 +2693,7 @@
       "nameAr": "رول الخيار",
       "section": "Sushinaa maki",
       "description": "Cucumber. Vegetarian. Choose cheese, mayo, or spicy mayo.",
-      "image": "/dishes/card/cucumber-maki.webp",
+      "image": "/dishes/portrait/cucumber-maki.webp",
       "tags": [
         "veg"
       ],
@@ -2752,7 +2752,7 @@
       "nameAr": "رول كراب ستيكس",
       "section": "Sushinaa maki",
       "description": "Crab sticks and mayo. Regular, spicy, or crispy.",
-      "image": "/dishes/card/crabsticks-roll.webp",
+      "image": "/dishes/portrait/crabsticks-roll.webp",
       "tags": [
         "seafood"
       ],
@@ -2780,7 +2780,7 @@
             {
               "id": "regular",
               "name": "Regular",
-              "image": "/dishes/card/crabsticks-roll.webp",
+              "image": "/dishes/portrait/crabsticks-roll.webp",
               "nameAr": "عادي",
               "optionsImage": "/dishes/crabsticks-roll.jpg"
             },
@@ -2788,14 +2788,14 @@
               "id": "spicy",
               "name": "Spicy",
               "spicy": true,
-              "image": "/dishes/card/crabsticks-roll.webp",
+              "image": "/dishes/portrait/crabsticks-roll.webp",
               "nameAr": "حار",
               "optionsImage": "/dishes/crabsticks-roll.jpg"
             },
             {
               "id": "crispy",
               "name": "Crispy",
-              "image": "/dishes/card/crabsticks-roll-crispy.webp",
+              "image": "/dishes/portrait/crabsticks-roll-crispy.webp",
               "nameAr": "مقرمش",
               "optionsImage": "/dishes/crabsticks-roll-crispy.jpg"
             }
@@ -2817,7 +2817,7 @@
       "nameAr": "سوشي خضار",
       "section": "Sushinaa maki",
       "description": "Bell pepper, carrot, lettuce, avocado, cucumber, rice, nori. Regular, or choose crispy.",
-      "image": "/dishes/card/vegi-roll.webp",
+      "image": "/dishes/portrait/vegi-roll.webp",
       "tags": [
         "veg"
       ],
@@ -2870,7 +2870,7 @@
       "nameAr": "نودلز دجاج",
       "section": "Noodles",
       "description": "Chicken breast, bell pepper, carrot, red cabbage, onion, garlic, sauce. Spicy optional.",
-      "image": "/dishes/card/chicken-noodles.webp",
+      "image": "/dishes/portrait/chicken-noodles.webp",
       "tags": [],
       "kind": {
         "type": "addons",
@@ -2935,7 +2935,7 @@
       "nameAr": "نودلز روبيان",
       "section": "Noodles",
       "description": "Shrimp, bell pepper, carrot, red cabbage, onion, garlic, sauce. Spicy optional.",
-      "image": "/dishes/card/shrimp-noodles.webp",
+      "image": "/dishes/portrait/shrimp-noodles.webp",
       "tags": [
         "seafood"
       ],
@@ -3002,7 +3002,7 @@
       "nameAr": "نودلز لحم بقري",
       "section": "Noodles",
       "description": "Beef, bell pepper, carrot, red cabbage, onion, garlic, sauce. Spicy optional.",
-      "image": "/dishes/card/beef-noodles.webp",
+      "image": "/dishes/portrait/beef-noodles.webp",
       "tags": [],
       "kind": {
         "type": "addons",
@@ -3067,7 +3067,7 @@
       "nameAr": "نودلز خضار",
       "section": "Noodles",
       "description": "Bell pepper, carrot, red cabbage, onion, garlic, sauce. Spicy optional.",
-      "image": "/dishes/card/vegi-noodles.webp",
+      "image": "/dishes/portrait/vegi-noodles.webp",
       "tags": [
         "veg"
       ],
@@ -3128,7 +3128,7 @@
       "nameAr": "بوكس سوشينا ميني",
       "section": "Sushinaa box",
       "description": "Nine sushi types, one piece of each, plus one starter of your choice. Serves 1–2. WhatsApp 55075933 for the mix.",
-      "image": "/dishes/card/mini-sushinaa-box.webp",
+      "image": "/dishes/portrait/mini-sushinaa-box.webp",
       "tags": [],
       "kind": {
         "type": "party-box",
@@ -3223,7 +3223,7 @@
       "nameAr": "بوكس سوشينا عادي",
       "section": "Sushinaa box",
       "description": "Nine sushi types, two pieces of each, plus 1 or 2 starters of your choice. The same starter twice is fine. Serves 3–4. WhatsApp 55075933 for the mix.",
-      "image": "/dishes/card/sushinaa-box-regular.webp",
+      "image": "/dishes/portrait/sushinaa-box-regular.webp",
       "tags": [],
       "kind": {
         "type": "party-box",
@@ -3318,7 +3318,7 @@
       "nameAr": "الصوصات",
       "section": "Sauces",
       "description": "Small 1oz or big 2oz. Pick the sauce.",
-      "image": "/dishes/card/extra-sauce.webp",
+      "image": "/dishes/portrait/extra-sauce.webp",
       "tags": [],
       "kind": {
         "type": "size-price",
@@ -3401,7 +3401,7 @@
       "nameAr": "ريد بُل",
       "section": "Drinks",
       "description": "250ml.",
-      "image": "/dishes/card/redbull.webp",
+      "image": "/dishes/portrait/redbull.webp",
       "tags": [],
       "kind": {
         "type": "simple",
@@ -3421,7 +3421,7 @@
       "nameAr": "مياه معدنية",
       "section": "Drinks",
       "description": "Small 330ml or big 500ml.",
-      "image": "/dishes/card/still-water.webp",
+      "image": "/dishes/portrait/still-water.webp",
       "tags": [],
       "kind": {
         "type": "size-price",
@@ -3454,7 +3454,7 @@
       "nameAr": "كينزا",
       "section": "Drinks",
       "description": "Small 185ml or big 250ml. Pick a flavour.",
-      "image": "/dishes/card/kinza.webp",
+      "image": "/dishes/portrait/kinza.webp",
       "tags": [],
       "kind": {
         "type": "size-price",
@@ -3529,7 +3529,7 @@
       "nameAr": "شاني",
       "section": "Drinks",
       "description": "250ml.",
-      "image": "/dishes/card/shani.webp",
+      "image": "/dishes/portrait/shani.webp",
       "tags": [],
       "kind": {
         "type": "simple",

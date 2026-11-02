@@ -78,7 +78,7 @@ export const MENU_CACHE_TAG = "cms-menu";
 // and re-validating the whole document on every view. Saves invalidate the tag;
 // the time limit only bounds staleness on self-hosted multi-instance setups.
 export const getMenu = cache(
-  unstable_cache(readMenu, [MENU_CACHE_TAG], {
+  unstable_cache(readMenu, [MENU_CACHE_TAG, "portrait-photos-v1"], {
     tags: [MENU_CACHE_TAG],
     revalidate: 300,
   }),

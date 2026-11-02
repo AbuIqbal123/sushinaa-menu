@@ -42,7 +42,7 @@ test("the card shows the card photo; the sheet shows the full photo behind it", 
   assert.equal(sheetImageFor(upload, {}), "/api/media/wide.webp");
   // A roll variant brings its own pair, never the dish's full photo.
   const chicken = { protein: "chicken" };
-  assert.equal(imageFor(roll, chicken), "/dishes/card/mario-roll-chicken.webp");
+  assert.equal(imageFor(roll, chicken), "/dishes/portrait/mario-roll-chicken.webp");
   assert.equal(sheetImageFor(roll, chicken), "/dishes/mario-roll-chicken.jpg");
   const proteins = roll.kind.type === "roll" ? roll.kind.proteins : [];
   const uploaded = {
