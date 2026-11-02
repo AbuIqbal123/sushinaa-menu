@@ -287,21 +287,48 @@ html[dir="rtl"] .ticket-pickup.is-driving .pickup-car { animation-name: pickup-d
 .checkout-payment-choice {display:flex;gap:8px;margin-block:22px;}.checkout-payment-choice button {flex:1;padding:12px;border:1px solid #ffffff30;border-radius:8px;background:transparent;color:inherit;}.checkout-payment-choice button[aria-checked="true"]{border-color:#d89071;background:#9d332330;}
 .order-confirmation-reference {overflow-wrap:anywhere;max-width:100%;font-size:11px;}
 
-.order-progress { margin: 12px 0 18px; padding: 14px 16px; border: 1px solid var(--order-line); border-radius: 12px; background: #ffffff70; }
-.order-progress-heading { display: flex; align-items: center; gap: 9px; }
-.order-progress .order-progress-heading h2 { margin: 0; font: inherit; font-size: 15px; font-weight: 700; line-height: 1.45; }
-.order-progress-symbol { display: grid; place-items: center; flex: 0 0 24px; width: 24px; height: 24px; border-radius: 50%; background: #e7e2d8; font: 700 17px/1 system-ui, sans-serif; }
-.order-progress > p { margin: 8px 0 0; color: #35573e; font-size: 12px; line-height: 1.6; }
-.order-progress ol { display: flex; gap: 10px; list-style: none; margin: 14px 0 0; padding: 0; }
-.order-progress li { flex: 1; min-width: 0; color: #756c61; font-size: 11px; line-height: 1.5; }
-.order-progress li > span { display: block; height: 3px; margin-bottom: 6px; background: #ddd7cd; border-radius: 3px; transition: background .25s; }
-.order-progress li.is-reached > span { background: #406c4d; }
-.order-progress li[aria-current] { color: #294c34; font-weight: 700; }
-.order-progress.is-ready { background: #edf4e9; border-color: #98b391; }
-.order-progress.is-ready .order-progress-symbol { color: #fff; background: #406c4d; animation: order-ready-in .35s var(--ease-out) both; }
-.order-progress.is-cancelled .order-progress-symbol { background: #f4dedd; color: #8b2025; }
-@keyframes order-ready-in { from { transform: scale(.7); opacity: .4; } to { transform: scale(1); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .order-progress.is-ready .order-progress-symbol { animation: none; } .order-progress li > span { transition: none; } }
+/* The current kitchen state is the primary message after payment. */
+.order-progress { --progress-ink: #69522b; --progress-soft: #efe3c9; margin: 12px 0 18px; padding: 18px; border: 1px solid #d7c7aa; border-radius: 16px; background: #f5eddd; color: #302617; }
+.order-progress-heading { display: flex; align-items: center; gap: 12px; }
+.order-progress .order-progress-heading h2 { margin: 0; font-family: var(--font-display); font-size: clamp(24px, 6.4vw, 29px); font-weight: 700; line-height: 1.15; }
+.ordering-page[dir="rtl"] .order-progress .order-progress-heading h2 { font-family: var(--font-arabic); line-height: 1.4; }
+.order-progress-symbol { position: relative; display: grid; place-items: center; flex: 0 0 46px; width: 46px; height: 46px; border-radius: 50%; color: var(--progress-ink); background: var(--progress-soft); }
+.order-progress-symbol svg { width: 30px; height: 30px; }
+.order-progress > p { margin: 12px 0 0; font-size: 14px; line-height: 1.55; }
+.order-progress ol { display: flex; gap: 8px; list-style: none; margin: 16px 0 0; padding: 14px 0 0; border-top: 1px solid #00000013; }
+.order-progress li { display: flex; flex: 1; align-items: center; gap: 5px; min-width: 0; color: #746b5e; font-size: 12px; line-height: 1.4; }
+.order-progress li > span { display: grid; place-items: center; flex: 0 0 20px; width: 20px; height: 20px; border-radius: 50%; background: #e6dfd2; font: 700 11px/1 system-ui, sans-serif; }
+.order-progress li.is-reached > span { background: var(--progress-ink); color: #fff; }
+.order-progress li[aria-current] { color: var(--progress-ink); font-weight: 700; }
+.order-progress.is-preparing { --progress-ink: #875018; --progress-soft: #f3d7ad; background: #fff2df; border-color: #dbb783; }
+.order-progress.is-preparing .order-progress-symbol svg { transform-origin: 50% 75%; animation: order-cooking-wobble 3.6s ease-in-out infinite; }
+.order-progress.is-preparing .order-steam { animation: order-steaming 1.8s ease-in-out infinite; }
+.order-progress.is-ready { --progress-ink: #fff; --progress-soft: #ffffff24; color: #fff; background: #285a3c; border-color: #285a3c; box-shadow: 0 5px 18px #285a3c20; animation: order-ready-in .3s ease-out both; }
+.order-progress.is-ready .order-progress-symbol { animation: order-ready-pop 5s ease-in-out infinite; }
+.order-progress.is-ready .order-progress-symbol::after { content: ''; position: absolute; inset: 0; border: 2px solid #ffffff80; border-radius: inherit; pointer-events: none; animation: order-ready-ring 5s ease-out infinite; }
+.order-progress.is-ready .order-check { stroke-dasharray: 1; stroke-dashoffset: 1; animation: order-check-draw .5s .15s ease-out forwards; }
+.order-progress.is-ready .order-progress-heading h2 { color: #fff; }
+.order-progress.is-ready ol { border-top-color: #ffffff30; }
+.order-progress.is-ready li { color: #d1e3d5; }
+.order-progress.is-ready li[aria-current] { color: #fff; }
+.order-progress.is-ready li > span { background: #ffffff24; color: #fff; }
+.order-progress.is-ready li[aria-current] > span { background: #fff; color: #285a3c; }
+.order-progress.is-cancelled { --progress-ink: #8b2025; --progress-soft: #f4dedd; background: #fff1ee; border-color: #d8b2ae; }
+.order-progress.is-collected { --progress-ink: #285a3c; --progress-soft: #dce9dd; background: #edf4e9; border-color: #a8bda9; }
+/* Transform-only motion keeps the card and everything below it in place. */
+@keyframes order-cooking-wobble { 0%,40%,100% { transform: none; } 8% { transform: translateY(-2px) rotate(-9deg); } 17% { transform: translateY(-2px) rotate(7deg); } 26% { transform: rotate(-4deg); } 34% { transform: rotate(2deg); } }
+@keyframes order-ready-pop { 0%,100% { transform: scale(1); } 5% { transform: scale(1.14) rotate(-7deg); } 10% { transform: scale(.96) rotate(5deg); } 15% { transform: scale(1.04) rotate(-2deg); } 20%,95% { transform: none; } }
+@keyframes order-ready-ring { 0% { opacity: .65; transform: scale(1); } 18%,100% { opacity: 0; transform: scale(1.45); } }
+@keyframes order-check-draw { to { stroke-dashoffset: 0; } }
+@keyframes order-steaming { 0%,100% { transform: translateY(1px); opacity: .65; } 50% { transform: translateY(-2px); opacity: 1; } }
+@keyframes order-ready-in { from { opacity: .5; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .order-progress.is-ready, .order-progress.is-preparing .order-steam,
+  .order-progress.is-preparing .order-progress-symbol svg, .order-progress.is-ready .order-progress-symbol,
+  .order-progress.is-ready .order-progress-symbol::after, .order-progress.is-ready .order-check { animation: none; }
+  .order-progress.is-ready .order-check { stroke-dashoffset: 0; }
+  .order-progress.is-ready .order-progress-symbol::after { display: none; }
+}
 
 .field-brand > label { font-size: 12px; }
 .ordering-page .car-brand-trigger { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 66px; padding: 10px 14px; border: 1px solid var(--order-line); border-radius: 8px; background: #fff; color: var(--order-muted); text-align: start; font-size: 14px; }

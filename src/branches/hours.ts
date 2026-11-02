@@ -14,6 +14,7 @@ export type BranchStatus = {
   hours: string;
   /** True when `hours` are tomorrow's. */
   tomorrow: boolean;
+  dayLabel?: string;
 };
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -55,21 +56,27 @@ export function branchStatus(hours: WeekHours, { day, minute }: QatarClock, lang
   const yesterday = hours[(day + 6) % 7];
   const today = hours[day];
   // Still inside last night's session, past midnight.
-  if (yesterday.close > 1440 && minute < yesterday.close - 1440) {
+  if (!yesterday.closed && yesterday.close > 1440 && minute < yesterday.close - 1440) {
     return openFor(yesterday, yesterday.close - 1440 - minute, lang);
   }
-  if (minute >= today.open && minute < today.close) return openFor(today, today.close - minute, lang);
-  if (minute < today.open) {
+  if (!today.closed && minute >= today.open && minute < today.close) return openFor(today, today.close - minute, lang);
+  if (!today.closed && minute < today.open) {
     return { open: false, soon: false, label: lang === "ar" ? `يفتح ${formatMinute(today.open, lang)}` : `Opens ${formatMinute(today.open)}`, hours: range(today, lang), tomorrow: false };
   }
-  // Today's session is over, so tomorrow's hours are the useful ones.
-  return { open: false, soon: false, label: lang === "ar" ? "يفتح غدًا" : "Opens tomorrow", hours: range(hours[(day + 1) % 7], lang), tomorrow: true };
+  for (let offset = 1; offset <= 7; offset++) {
+    const next = hours[(day + offset) % 7];
+    if (next.closed) continue;
+    const label = lang === 'ar' ? ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'][(day+offset)%7]
+      : ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][(day+offset)%7];
+    return {open:false,soon:false,label: offset===1 ? (lang==='ar'?'يفتح غدًا':'Opens tomorrow') : (lang==='ar'?`يفتح ${label}`:`Opens ${label}`), hours:range(next,lang),tomorrow:offset===1,...(offset>1?{dayLabel:label}:{})};
+  }
+  return {open:false,soon:false,label:lang==='ar'?'مغلق':'Closed',hours:lang==='ar'?'مغلق':'Closed',tomorrow:false};
 }
 
 /** "Down Town, open now, today 12pm to 2:30am". */
 export function accessibleName(name: string, status: BranchStatus, lang: Lang = "en"): string {
-  if (lang === "ar") return `${name}، ${status.label}، ${status.tomorrow ? "غدًا" : "اليوم"} ${status.hours.replace(RANGE_DASH, " إلى ")}`;
+  if (lang === "ar") return `${name}، ${status.label}، ${status.dayLabel ?? (status.tomorrow ? "غدًا" : "اليوم")} ${status.hours.replace(RANGE_DASH, " إلى ")}`;
   const label = status.label.charAt(0).toLowerCase() + status.label.slice(1);
-  const when = status.tomorrow ? "tomorrow" : "today";
+  const when = status.dayLabel ?? (status.tomorrow ? "tomorrow" : "today");
   return `${name}, ${label}, ${when} ${status.hours.replace(RANGE_DASH, " to ")}`;
 }

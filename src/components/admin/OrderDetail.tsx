@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { BRANCHES } from '@/branches/branches';
+import { configuredBranches } from '@/branches/branches';
 import { useMenu } from '@/cms/context';
 import { strings } from '@/i18n/copy';
 import { useNotify } from './Notices';
@@ -29,6 +29,7 @@ function lineChoices(line: OrderDetailData['currentLines'][number], menu: MenuDa
 
 export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; onBack: () => void; onChange: () => void; role: Role; menu: MenuData }) {
   const { copy } = useMenu();
+  const branches = configuredBranches(menu.branches);
   const lang = 'en' as const;
   const t = strings(lang, copy);
   const text = (en: string, _ar?: string) => en;
@@ -101,7 +102,7 @@ export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; 
     } catch (e) { setError(e instanceof Error && e.message === 'STALE_STATUS' ? 'STALE_STATUS' : e instanceof Error && e.message === 'PRINT_FAILED' ? 'PRINT_FAILED' : 'UPDATE_FAILED'); await load(); }
     finally { setBusy(false); }
   }
-  const branch = BRANCHES.find(b => b.slug === data?.branchId);
+  const branch = branches.find(b => b.slug === data?.branchId);
   return <section className="staff-order-detail" aria-busy={busy}>
     <button onClick={onBack}>← {text('Back to orders', 'العودة إلى الطلبات')}</button>
     {error && <p role="alert" className="staff-error">{error === 'STALE_STATUS' ? text('Another team member updated this order. The latest status is shown.', 'حدّث موظف آخر هذا الطلب. تظهر الحالة الأحدث الآن.') : error === 'LOAD_FAILED' ? text('Unable to load order. Please retry.', 'تعذّر تحميل الطلب. يرجى المحاولة مجدداً.') : error === 'PRINT_FAILED' ? text('Unable to print this ticket. Please retry.', 'تعذّرت طباعة التذكرة. يرجى المحاولة مجدداً.') : text('Unable to update this order. Please retry.', 'تعذّر تحديث الطلب. يرجى المحاولة مجدداً.')}</p>}

@@ -55,7 +55,7 @@ Playwright runs the local server with a test-only clock during shared branch ope
 ## Parked
 
 - WhatsApp confirmations and ready notifications are on hold at the owner’s request. Before implementation, confirm the number’s Business Platform/API setup, approved bilingual templates and customer opt-in; send only from server-confirmed order/payment/status events. Do not activate messaging yet.
-- Confirmation call buttons currently use the general CMS contact number for all four branches, as approved by the owner; replace with direct branch numbers when supplied.
+- Confirmation call buttons use the confirmed order’s branch contact from `src/branches/branches.ts`: Down Town +974 5507 5933, Al-Thumama +974 5505 5424, West Bay +974 3999 8918 and Al-Khor +974 7115 0001. These voice-call numbers do not configure or register WhatsApp senders.
 
 - Real Sadad adapter and signed webhooks; outbound order delivery worker.
 - `TODO(owner)`: confirm the 90-day retention period and arrange scheduled purging before production ordering.

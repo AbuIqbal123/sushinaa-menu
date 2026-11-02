@@ -93,6 +93,7 @@ export async function saveMenu(
   revision: number,
   audit: AuditContext,
 ): Promise<MenuSnapshot> {
+  const includesBranches = Boolean(input && typeof input === "object" && "branches" in input);
   const menu = menuFromStored(input);
   await initDb();
   await validateImages(menu);
@@ -106,6 +107,7 @@ export async function saveMenu(
     ).rows[0];
     if (!row || Number(row.revision) !== revision) throw conflict();
     const stored = menuFromStored(JSON.parse(String(row.content)));
+    if (!includesBranches) menu.branches = stored.branches;
     // Only new or changed text has to fit; what is already saved stays valid.
     const over = menuLimitIssues(menu, stored);
     if (over.length) throw new ZodError(over);

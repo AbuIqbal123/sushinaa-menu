@@ -7,7 +7,7 @@ import { DishDetailSheet } from '@/components/menu/DishDetailSheet';
 import { CartProvider, useCart, type CartLine } from '@/ordering/cart';
 import { useMenu } from '@/cms/context';
 import { LangButton, useLocale, useSetSheetOpen } from '@/i18n/locale';
-import { BRANCHES as branches, type BranchId } from '@/branches/branches';
+import { configuredBranches, type BranchId } from '@/branches/branches';
 import { branchStatus, qatarClock } from '@/branches/hours';
 import { customerSchema, digits, displayPhone, type Customer } from '@/ordering/checkout/validation';
 import { formatQar } from '@/lib/money';
@@ -19,7 +19,7 @@ import type { PaymentStatus } from '@/ordering/checkout/payment';
 import { MockSadadGateway } from './MockSadadGateway';
 import { CarBrandPicker, CarBrandLogo } from './CarBrandPicker';
 import { carBrandName, findCarBrand } from '@/ordering/car-brands';
-import { OrderProgress } from './OrderProgress';
+import { OrderProgress, orderPhase, orderTrackingLabel } from './OrderProgress';
 
 const emptyCustomer: Customer = { name: '', phone: '', plate: 'Q', brand: '', colour: '', car: '', instructions: '' };
 type Step = 'menu' | 'details' | 'review' | 'payment' | 'receipt';
@@ -33,6 +33,7 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
   const [paymentMethod, setPaymentMethod] = useState<'mock' | 'pay_at_pickup'>('mock');
   const text = (en: string, ar: string) => lang === 'ar' ? ar : en;
   const menu = useMenu();
+  const branches = configuredBranches(menu.branches);
   const router = useRouter();
   const cart = useCart();
   const [step, setStep] = useState<Step>('menu');
@@ -163,8 +164,8 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
   const branchName = branch ? text(branch.name, branch.nameAr) : '';
   const confirmed = receipt && (receipt.paymentStatus === 'paid' || receipt.paymentMethod === 'pay_at_pickup');
   const menuStage = branch ? <div key="menu-stage" className={`app-lock ordering-menu-stage${step !== 'menu' ? ' is-inactive' : ''}`} inert={step !== 'menu'} aria-hidden={step !== 'menu' ? true : undefined}><MenuFeed branch={branchName} inactive={step !== 'menu'} onPickup={() => go('details')}
-    orderTracking={confirmed ? <button type="button" className="order-tracker" onClick={() => go('receipt')}>
-      {text('Track order', 'تتبّع الطلب')}{receipt.orderNumber != null && <span dir="ltr">#{formatOrderNumber(receipt.orderNumber)}</span>}
+    orderTracking={confirmed ? <button type="button" className={`order-tracker is-${orderPhase(receipt.status)}`} aria-live="polite" onClick={() => go('receipt')}>
+      <span className="order-tracker-label">{orderTrackingLabel(receipt.status, lang)}</span>{receipt.orderNumber != null && <span className="order-tracker-number" dir="ltr">#{formatOrderNumber(receipt.orderNumber)}</span>}
     </button> : undefined} /></div> : null;
   if (step === 'menu') return <>{menuStage}</>;
   const receiptCustomer = receipt?.details ? receipt.details.customer ?? emptyCustomer : customer;
@@ -250,10 +251,10 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
             <OrderProgress status={receipt.status} lang={lang} />
             <section className="order-pickup">
               <div className="confirmation-branch"><p className="checkout-branch">{text('Pickup', 'استلام')} · <strong>{receiptBranchName}</strong></p>
-                <a className="branch-call" href={`tel:+${menu.settings.whatsappE164}`} aria-label={text(`Call ${receiptBranchName} branch`, `اتصل بفرع ${receiptBranchName}`)}>
+                {receiptBranch && <a className="branch-call" href={`tel:${receiptBranch.phone}`} aria-label={text(`Call ${receiptBranchName} branch`, `اتصل بفرع ${receiptBranchName}`)}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 3 3 5-2 2c1.3 2.7 3.3 4.7 6 6l2-2 5 3v3c0 1-1 2-2 2C9.6 21.4 2.6 14.4 2 5c0-1 1-2 2-2h3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   {text('Call', 'اتصال')}
-                </a></div>
+                </a>}</div>
               {receiptBranch && <DirectionsLink branchName={receiptBranchName} href={receiptBranch.mapsUrl} text={text} />}
             </section>
             <h2 className="order-items-title">{text('Your order', 'طلبك')}</h2>

@@ -10,6 +10,7 @@ const AREAS: Record<string, string[]> = {
   settings: ["settings", "copy", "fields", "filter"],
   media: ["media"],
   orders: ["order"],
+  branches: ["branch"],
 };
 const PAGE_SIZE = 50;
 export async function GET(request: Request) {

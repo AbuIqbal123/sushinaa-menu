@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { BRANCHES, findBranch } from "@/branches/branches";
+import { BRANCHES, findBranch, configuredBranches } from "@/branches/branches";
 import { getMenu } from "@/cms/repository";
 import { MenuProvider } from "@/cms/context";
 import { publicMenu } from "@/cms/schema";
@@ -18,9 +18,11 @@ export function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props) {
-  const branch = findBranch((await params).branch);
-  if (!branch) return {};
-  return pageMeta((t) => `${t.menu} · ${branch.name}`, (t) => t.menuBlurb, `/${branch.slug}`);
+  const {menu} = await getMenu();
+  const selected = (await params).branch;
+  const current = configuredBranches(menu.branches).find(b=>b.slug===selected);
+  if (!current) return {};
+  return pageMeta((t) => `${t.menu} · ${current.name}`, (t) => t.menuBlurb, `/${current.slug}`);
 }
 
 // Every branch serves the same menu. Ordering branches check out from that menu.
@@ -39,7 +41,7 @@ export default async function BranchMenu({ params }: Props) {
   return (
     <div className="app-lock">
       <MenuProvider menu={published}>
-        <MenuFeed branch={branch.name} />
+        <MenuFeed branch={configuredBranches(menu.branches).find(b=>b.slug===branch.slug)!.name} />
       </MenuProvider>
     </div>
   );

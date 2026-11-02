@@ -4,7 +4,7 @@ import type { Dish, Selection } from '@/catalog/types';
 import type { MenuData } from '@/cms/schema';
 import { publicMenu } from '@/cms/schema';
 import { isSelectionComplete, unitPrice } from '@/ordering/price';
-import { BRANCHES as branches } from '@/branches/branches';
+import { configuredBranches } from '@/branches/branches';
 import { branchId } from '@/ordering/contracts';
 import { branchStatus, qatarClock } from '@/branches/hours';
 
@@ -72,7 +72,7 @@ export function validCheckoutSelection(dish: Dish, sel: Selection) {
   return Object.keys(sel).every(key => sel[key as keyof Selection] === undefined || allowed.has(key)) && required.every(key => sel[key as keyof Selection] !== undefined);
 }
 export function quoteOrder(input: CheckoutInput, menu: MenuData, now = new Date(), options?: { allowClosed?: boolean }) {
-  const branch = branches.find(b => b.slug === input.branchId)!;
+  const branch = configuredBranches(menu.branches).find(b => b.slug === input.branchId)!;
   if (!options?.allowClosed && !branchStatus(branch.hours, qatarClock(now)).open) throw new CheckoutError('CLOSED');
   if (input.lines.reduce((n, line) => n + line.quantity, 0) > 100) throw new CheckoutError('LIMIT');
   const available = publicMenu(menu).dishes;
