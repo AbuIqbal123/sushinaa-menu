@@ -250,10 +250,10 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
             <OrderProgress status={receipt.status} lang={lang} />
             <section className="order-pickup">
               <div className="confirmation-branch"><p className="checkout-branch">{text('Pickup', 'استلام')} · <strong>{receiptBranchName}</strong></p>
-                <a className="branch-call" href={`tel:+${menu.settings.whatsappE164}`} aria-label={text(`Call ${receiptBranchName} branch`, `اتصل بفرع ${receiptBranchName}`)}>
+                {receiptBranch && <a className="branch-call" href={`tel:${receiptBranch.phone}`} aria-label={text(`Call ${receiptBranchName} branch`, `اتصل بفرع ${receiptBranchName}`)}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 3 3 5-2 2c1.3 2.7 3.3 4.7 6 6l2-2 5 3v3c0 1-1 2-2 2C9.6 21.4 2.6 14.4 2 5c0-1 1-2 2-2h3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   {text('Call', 'اتصال')}
-                </a></div>
+                </a>}</div>
               {receiptBranch && <DirectionsLink branchName={receiptBranchName} href={receiptBranch.mapsUrl} text={text} />}
             </section>
             <h2 className="order-items-title">{text('Your order', 'طلبك')}</h2>
