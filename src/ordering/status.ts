@@ -1,6 +1,6 @@
 export const statuses = ['placed', 'paid', 'accepted', 'preparing', 'ready', 'completed', 'cancelled', 'refunded'] as const;
 export type OrderStatus = typeof statuses[number];
-export type PaymentMethod = 'pay_at_pickup' | 'mock';
+export type PaymentMethod = 'pay_at_pickup' | 'mock' | 'sadad';
 const next: Record<OrderStatus, readonly OrderStatus[]> = {
   placed: ['accepted', 'cancelled'], paid: ['accepted', 'cancelled'],
   accepted: ['preparing', 'cancelled'], preparing: ['ready', 'cancelled'],

@@ -6,6 +6,7 @@ import { assertPaymentProviderAllowed } from '@/cms/env-guard';
 import { db, databaseUrl } from '@/cms/db';
 import { assertOrderDatabaseAllowed, OrderingUnavailable } from './guard';
 import { CheckoutError } from './checkout/validation';
+import { resolvePaymentProvider } from './payment-gateway/resolve';
 export class OrderError extends Error {
   constructor(public code: string, public status: number) { super(code); }
 }
@@ -20,9 +21,7 @@ export function failure(error: unknown) {
 export function provider() {
   assertOrderDatabaseAllowed(databaseUrl);
   assertPaymentProviderAllowed();
-  const p = process.env.PAYMENT_PROVIDER || (process.env.VERCEL_ENV === 'production' ? 'counter' : 'mock');
-  if (p !== 'mock' && p !== 'counter') throw new OrderingUnavailable();
-  return p;
+  return resolvePaymentProvider();
 }
 export async function requireStaff(request: Request | undefined, permission: Permission): Promise<StaffPrincipal> {
   const user = await currentStaff();

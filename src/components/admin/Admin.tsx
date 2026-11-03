@@ -16,6 +16,7 @@ import { CategoryList } from "./CategoryList";
 import { MenuList } from "./MenuList";
 import { Dashboard } from "./Dashboard";
 import { Orders } from "./Orders";
+import { Payments } from "./Payments";
 import { StaffPanel } from "./StaffPanel";
 import { Activity } from "./Activity";
 import type { Role } from "@/cms/permissions";
@@ -28,7 +29,7 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
   const params = useSearchParams();
   // A filtered menu link (?category=&show=&q=) opens straight on the Menu.
   const sections = role === "admin"
-    ? ["Dashboard", "Orders", "Menu", "Categories", "Branches", "Users", "Settings", "Activity"]
+    ? ["Dashboard", "Orders", "Payments", "Menu", "Categories", "Branches", "Users", "Settings", "Activity"]
     : ["Orders"];
   const [section, setSection] = useState(() =>
     role !== "admin" ? "Orders" : ["category", "show", "q"].some((k) => params.has(k)) ? "Menu" : "Dashboard",
@@ -202,6 +203,7 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
             />
           )}
           <Orders active={section === "Orders"} onUnread={setUnreadOrders} role={role} menu={menu} />
+          {role === "admin" && <Payments active={section === "Payments"} />}
           {section === "Users" && role === "admin" && <StaffPanel menu={menu} creating={creatingUser} onCreating={setCreatingUser} />}
           {section === "Branches" && role === "admin" && <BranchEditor menu={menu} onSave={save} />}
           {section === "Activity" && <Activity />}
