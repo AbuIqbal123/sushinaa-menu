@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { BRANCHES } from '@/branches/branches';
 import { formatOrderNumber } from '@/ordering/order-number';
@@ -54,29 +54,28 @@ export function Payments({ active }: { active: boolean }) {
   const [error, setError] = useState('');
   const [detail, setDetail] = useState<Detail | null>(null);
   const [busy, setBusy] = useState(false);
+  const [revision, setRevision] = useState(0);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
     if (!active) return;
-    setBusy(true);
-    setError('');
-    try {
-      const params = new URLSearchParams();
-      if (status) params.set('status', status);
-      if (branch) params.set('branchId', branch);
-      params.set('limit', '50');
-      const response = await fetch(`/api/admin/payments?${params}`, { cache: 'no-store' });
-      if (response.status === 401) { router.push('/admin/login'); return; }
-      const body = await response.json() as List & { code?: string };
-      if (!response.ok) { setError(body.code || 'LOAD_FAILED'); return; }
-      setData(body);
-    } catch {
-      setError('LOAD_FAILED');
-    } finally {
-      setBusy(false);
-    }
-  }, [active, status, branch, router]);
-
-  useEffect(() => { void load(); }, [load]);
+    const controller = new AbortController();
+    const params = new URLSearchParams({ limit: '50' });
+    if (status) params.set('status', status);
+    if (branch) params.set('branchId', branch);
+    fetch(`/api/admin/payments?${params}`, { cache: 'no-store', signal: controller.signal })
+      .then(async (response) => {
+        if (response.status === 401) { router.push('/admin/login'); return; }
+        const body = await response.json() as List & { code?: string };
+        if (!response.ok) { setError(body.code || 'LOAD_FAILED'); return; }
+        setData(body);
+        setError('');
+      })
+      .catch((e: unknown) => {
+        if (e instanceof DOMException && e.name === 'AbortError') return;
+        setError('LOAD_FAILED');
+      });
+    return () => controller.abort();
+  }, [active, status, branch, router, revision]);
 
   async function openDetail(orderId: string, reveal = false) {
     setBusy(true);
@@ -123,12 +122,12 @@ export function Payments({ active }: { active: boolean }) {
             ))}
           </select>
         </label>
-        <button type="button" onClick={() => void load()}>Refresh</button>
+        <button type="button" onClick={() => setRevision((n) => n + 1)}>Refresh</button>
       </form>
 
       {error && (
         <div role="alert" className="staff-error">
-          Unable to load payments. <button type="button" onClick={() => void load()}>Retry</button>
+          Unable to load payments. <button type="button" onClick={() => setRevision((n) => n + 1)}>Retry</button>
         </div>
       )}
 

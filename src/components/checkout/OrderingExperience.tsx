@@ -96,8 +96,11 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
         window.history.replaceState({}, '', url.pathname + url.search);
       }
     } catch { /* Keep recovery via localStorage. */ }
+    let failTimer: number | undefined;
     if (payFailed) {
-      setError(text('Payment was not completed. Your pickup details are still here — try again when ready.', 'لم يكتمل الدفع. بيانات الاستلام ما زالت هنا — حاول مجدداً عندما تكون جاهزاً.'));
+      failTimer = window.setTimeout(() => {
+        setError(text('Payment was not completed. Your pickup details are still here — try again when ready.', 'لم يكتمل الدفع. بيانات الاستلام ما زالت هنا — حاول مجدداً عندما تكون جاهزاً.'));
+      }, 0);
     }
     const storedFromPay = paidId;
     let stored: string | null = storedFromPay;
@@ -126,7 +129,10 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
         setStep(payFailed ? 'review' : 'payment');
       }
     }).catch(() => {});
-    return () => { cancel = true; };
+    return () => {
+      cancel = true;
+      if (failTimer !== undefined) window.clearTimeout(failTimer);
+    };
   }, []);
   useEffect(() => {
     if (!['receipt', 'menu'].includes(step) || !receipt?.id) return;
