@@ -32,7 +32,7 @@ export function OrderingExperience({ initialNow, branchId }: { initialNow: strin
 }
 function Experience({ initialNow, branchId: initialBranch }: { initialNow: string; branchId: BranchId }) {
   const { lang, t } = useLocale();
-  const [paymentProvider, setPaymentProvider] = useState<'mock' | 'counter' | 'sadad' | null>(null);
+  const [paymentProvider, setPaymentProvider] = useState<'mock' | 'pay_at_pickup' | 'sadad' | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodUi>('mock');
   const [launch, setLaunch] = useState<Launch | null>(null);
   const text = (en: string, ar: string) => lang === 'ar' ? ar : en;
@@ -69,9 +69,9 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
     const timer = window.setInterval(() => setNow(new Date()), 15000);
     void fetch('/api/orders').then(async r => {
       if (!r.ok) return;
-      const data = await r.json() as { paymentProvider?: 'mock' | 'counter' | 'sadad' };
+      const data = await r.json() as { paymentProvider?: 'mock' | 'pay_at_pickup' | 'sadad' };
       setPaymentProvider(data.paymentProvider ?? null);
-      if (data.paymentProvider === 'counter') setPaymentMethod('pay_at_pickup');
+      if (data.paymentProvider === 'pay_at_pickup') setPaymentMethod('pay_at_pickup');
       else if (data.paymentProvider === 'sadad') setPaymentMethod('sadad');
       else if (data.paymentProvider === 'mock') setPaymentMethod('mock');
     }).catch(() => {});

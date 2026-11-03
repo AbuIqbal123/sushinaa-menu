@@ -1,6 +1,6 @@
 # Car collection — Stage 2 preview
 
-Work stays on feature branches; pull requests target `dev`. The product is **car-collection / pickup ordering**. Customers still order for pickup; online pay (Sadad WebCheckout) replaces mock/counter for that pickup order — it is not delivery or dine-in.
+Work stays on feature branches; pull requests target `dev`. The product is **car-collection / pickup ordering**. Customers still order for pickup; online pay (Sadad WebCheckout) replaces mock / pay-at-pickup for that pickup order — it is not delivery or dine-in.
 
 ## Customer journey
 
@@ -22,7 +22,7 @@ Orders use the existing CMS database and credentials. `0002_orders.sql` is addit
 
 Before any order bootstrap/access, the live database hostname is rejected with `503 ORDERING_UNAVAILABLE`; no order tables are created there. CMS behaviour is preserved. Migrations also refuse the live host. Lazy clients allow route imports during a preview build without connecting to the database. A read-only public menu source still runs the environment guard first.
 
-`PAYMENT_PROVIDER` selects `mock`, `counter` (pay at pickup), or `sadad` (hosted WebCheckout before pickup). When unset it defaults to mock locally/in preview (or sadad if `SADAD_*` are complete), and counter in production until a live Sadad cutover. Explicit production mock fails at startup/request time; the mock payment endpoint returns 404 in production. See `.env.example` for `SADAD_SECRET_KEY`, `SADAD_MERCHANT_ID`, and `SADAD_PUBLIC_ORIGIN`. Collection details, kitchen visibility after `paid_at`, and staff Orders stay as before. Admin **Payments** is a read-only online-pay ledger (no refund UI).
+`PAYMENT_PROVIDER` selects `mock`, `pay_at_pickup`, or `sadad` (hosted WebCheckout before pickup). When unset it defaults to mock locally/in preview (or sadad if `SADAD_*` are complete), and `pay_at_pickup` in production until a live Sadad cutover. Explicit production mock fails at startup/request time; the mock payment endpoint returns 404 in production. See `.env.example` for `SADAD_SECRET_KEY`, `SADAD_MERCHANT_ID`, and `SADAD_PUBLIC_ORIGIN`. Collection details, kitchen visibility after `paid_at`, and staff Orders stay as before. Admin **Payments** is a read-only online-pay ledger (no refund UI).
 
 Order APIs use no-store responses, strict validation and stable error codes. Admin writes require authentication and same-origin JSON. Checkout and staff status writes use database-backed IP rate limits; checkout also has a per-session limit. Customer lookup is scoped to an HttpOnly session cookie. Contact is excluded from audit diffs and error responses.
 

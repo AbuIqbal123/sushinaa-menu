@@ -2,7 +2,7 @@
 
 For agents changing online payment or hosted checkout. Update **this file** in the same change.
 
-Product stays **car-collection / pickup**. Customers still order for pickup (name, phone, plate, car, etc.). Sadad only replaces mock/counter for **pay online before collection**. Not delivery. Not dine-in.
+Product stays **car-collection / pickup**. Customers still order for pickup (name, phone, plate, car, etc.). Sadad only replaces mock / pay-at-pickup for **pay online before collection**. Not delivery. Not dine-in.
 
 ## How it works
 
@@ -30,7 +30,7 @@ Field names, signature rules, callback/webhook shapes: treat **`private/sadad/`*
 
 | Variable | Purpose |
 | --- | --- |
-| `PAYMENT_PROVIDER` | `mock` \| `counter` \| `sadad` (empty → see resolution below) |
+| `PAYMENT_PROVIDER` | `mock` \| `pay_at_pickup` \| `sadad` (empty → see resolution below; legacy alias `counter` still accepted) |
 | `SADAD_SECRET_KEY` | Merchant secret (Vercel / local env only) |
 | `SADAD_MERCHANT_ID` | Merchant id |
 | `SADAD_PUBLIC_ORIGIN` | Public https origin, no trailing slash (builds callback URL + `WEBSITE` hostname) |
@@ -41,8 +41,8 @@ Also see `.env.example` and `docs/environments.md`. Never put live keys in git.
 
 `resolvePaymentProvider()` in `payment-gateway/resolve.ts`:
 
-- Explicit `mock` / `counter` / `sadad` (sadad requires all three `SADAD_*` or ordering is unavailable).
-- Else if `VERCEL_ENV=production` → **counter** (pay at pickup) until live cutover.
+- Explicit `mock` / `pay_at_pickup` / `sadad` (sadad requires all three `SADAD_*` or ordering is unavailable). Legacy env value `counter` still maps to `pay_at_pickup`.
+- Else if `VERCEL_ENV=production` → **pay_at_pickup** until live Sadad cutover.
 - Else if `SADAD_*` complete → **sadad**.
 - Else → **mock**.
 
@@ -68,8 +68,8 @@ Admin-only **Payments** tab: read-only ledger of online pickup pays (`sadad` / `
 | Site | Payment intent |
 | --- | --- |
 | Local / CI | `mock` (or unset) |
-| `test-dev` | Env **slots** already on Vercel Production: `SADAD_PUBLIC_ORIGIN` set; paste `SADAD_SECRET_KEY` + `SADAD_MERCHANT_ID`; flip `PAYMENT_PROVIDER` from `counter` → `sadad`; register callback/webhook URLs with Sadad; redeploy |
-| Production (`sushinaa-menu`) | Stay **counter** until sandbox sign-off; then live key + cutover. Do not push/merge to `main` from agents. PRs → `dev`. |
+| `test-dev` | Env **slots** already on Vercel Production: `SADAD_PUBLIC_ORIGIN` set; paste `SADAD_SECRET_KEY` + `SADAD_MERCHANT_ID`; flip `PAYMENT_PROVIDER` from `pay_at_pickup` → `sadad`; register callback/webhook URLs with Sadad; redeploy |
+| Production (`sushinaa-menu`) | Stay **pay_at_pickup** until sandbox sign-off; then live key + cutover. Do not push/merge to `main` from agents. PRs → `dev`. |
 
 Migration: `db/migrations/0007_payment_events.sql` (+ schema bootstrap). Apply only via the project’s migration rules — never against live casually.
 
