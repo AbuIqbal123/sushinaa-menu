@@ -42,35 +42,27 @@ export function HostedCheckoutRedirect({
 
   return (
     <div className="ordering-page" data-step="payment" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-      <main id="main" className="checkout-main checkout-step">
-        <h1>{text('Redirecting to payment', 'جارٍ التحويل إلى الدفع')}</h1>
-        <p className="checkout-branch">{text('Pickup order — pay securely to confirm.', 'طلب استلام — ادفع بأمان للتأكيد.')}</p>
-        <form ref={formRef} action={launch.action} method={launch.method} acceptCharset="UTF-8">
-          {Object.entries(launch.fields).map(([name, value]) => (
-            <input key={name} type="hidden" name={name} defaultValue={value} />
-          ))}
-          <noscript>
-            <button type="submit" className="checkout-primary">{text('Continue to payment', 'المتابعة إلى الدفع')}</button>
-          </noscript>
-        </form>
+      <main id="main" className="checkout-main has-step-action">
+        <div className="checkout-payment-copy">
+          <h1>{text('Redirecting to payment', 'جارٍ التحويل إلى الدفع')}</h1>
+          <p className="checkout-branch">{text('Pickup order — pay securely to confirm.', 'طلب استلام — ادفع بأمان للتأكيد.')}</p>
+          <form ref={formRef} id="sadad-hosted-checkout" action={launch.action} method={launch.method} acceptCharset="UTF-8">
+            {Object.entries(launch.fields).map(([name, value]) => (
+              <input key={name} type="hidden" name={name} defaultValue={value} />
+            ))}
+            <noscript>
+              <button type="submit" className="checkout-primary">{text('Continue to payment', 'المتابعة إلى الدفع')}</button>
+            </noscript>
+          </form>
+          <button type="button" className="text-action" onClick={onBack}>
+            <span className="back-arrow" aria-hidden="true">←</span> {text('Back', 'رجوع')}
+          </button>
+        </div>
         <div className="checkout-step-action">
-          <button
-            type="button"
-            className="checkout-primary"
-            onClick={() => {
-              try {
-                formRef.current?.submit();
-              } catch {
-                onError(lang === 'ar' ? 'تعذّر فتح صفحة الدفع.' : 'Could not open the payment page.');
-              }
-            }}
-          >
+          <button type="submit" form="sadad-hosted-checkout" className="checkout-primary">
             {text('Continue to payment', 'المتابعة إلى الدفع')}
           </button>
         </div>
-        <button type="button" className="text-action" onClick={onBack}>
-          <span className="back-arrow" aria-hidden="true">←</span> {text('Back', 'رجوع')}
-        </button>
       </main>
     </div>
   );
