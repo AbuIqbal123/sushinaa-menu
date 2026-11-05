@@ -16,8 +16,9 @@ const csp = [
   "connect-src 'self' https://vitals.vercel-insights.com https://va.vercel-scripts.com",
   "frame-ancestors 'self' https://abuiqbal.com https://*.abuiqbal.com http://localhost:3000 http://127.0.0.1:3000",
   "base-uri 'self'",
-  // Hosted Sadad WebCheckout posts the browser to this origin (see vendors/sadad/begin.ts).
-  "form-action 'self' https://sadadqa.com",
+  // Hosted Sadad WebCheckout posts here, then redirects to payment.sadadqa.com for 3DS.
+  // Some browsers also apply form-action to that redirect chain.
+  "form-action 'self' https://sadadqa.com https://payment.sadadqa.com",
   // Safari upgrades http://localhost assets to https when this is set, so the
   // dev menu loses its stylesheet and photos. Production stays on HTTPS.
   ...(isDev || localHttpPreview ? [] : ["upgrade-insecure-requests"]),
@@ -49,7 +50,11 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   compiler: {
-    removeConsole: process.env.NODE_ENV === "production",
+    // Keep warn/error so structured payment logs (channel: payment) reach Vercel.
+    // Still strip console.log / debug / table noise from production bundles.
+    removeConsole: process.env.NODE_ENV === "production"
+      ? { exclude: ["error", "warn"] }
+      : false,
   },
   // Vercel runs linux-x64 glibc, so that libsql and sharp pair stays in the
   // trace. The other native builds, and sharp's wasm builds, do not.

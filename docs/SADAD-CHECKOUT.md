@@ -54,11 +54,32 @@ Sadad accepts omitting `EMAIL` on WebCheckout. We do not collect email in the cu
 
 ## CSP
 
-Hosted checkout POSTs the browser to `https://sadadqa.com/webpurchase`. `next.config.ts` must keep that origin on `form-action` (with `'self'`). Without it, auto-submit and Continue stay on our page with no thrown error.
+Hosted checkout POSTs the browser to `https://sadadqa.com/webpurchase`, which then moves to `https://payment.sadadqa.com` for 3DS. `next.config.ts` `form-action` must allow `'self'`, `https://sadadqa.com`, and `https://payment.sadadqa.com`. Without the Sadad hosts, auto-submit / Continue never leave our page.
+
+## Panel checklist (sandbox)
+
+1. Test key domain = exact hostname of `SADAD_PUBLIC_ORIGIN` (today: `test-dev-abu-iqbal-projects.vercel.app`, no `https://`).
+2. Webhook URL = `{SADAD_PUBLIC_ORIGIN}/api/payments/webhook`.
+3. We send `CALLBACK_URL={SADAD_PUBLIC_ORIGIN}/api/payments/callback` on each launch — it must be HTTPS on that same host.
+4. After 3DS success, the browser must POST that callback. If you stay on `payment.sadadqa.com`, our logs will show a `checkout.launch` and **no** `callback.received`.
+
+## Observability
+
+Runtime logs (Vercel → test-dev → Runtime Logs) emit one JSON line per payment event on channel `payment`:
+
+| event | when |
+| --- | --- |
+| `checkout.launch` | Hosted form built (website + callback host, no secrets) |
+| `callback.received` / `callback.verify_failed` / `callback.applied` | Browser return |
+| `webhook.received` / `webhook.verify_failed` / `webhook.applied` | Server notify |
+
+Never logged: secret key, checksum/signature values, full phone, card data. Durable trail remains `payment_events` + admin Payments.
+
+Payment logs use `console.warn` / `console.error` (eslint-safe). `next.config.ts` keeps those methods in production builds so they reach Vercel; plain `console.log` is still stripped.
 
 ## Callback vs webhook
 
-- **Callback** (`POST /api/payments/callback`): browser return after pay; verify signature; apply fact; 303 to `/{branch}?paid={orderId}` (pickup receipt recovery via session).
+- **Callback** (`POST /api/payments/callback`): browser return after pay; verify signature; apply fact; respond **200 HTML** that navigates to absolute `{origin}/{branch}?paid={orderId}` (pickup receipt recovery via session). Unexpected `GET` is logged and treated as failed return. Do not use relative `Location` — sandbox returns have left the browser on `payment.sadadqa.com`.
 - **Webhook** (`POST /api/payments/webhook`): authoritative server notification; verify; `applyVerifiedFact`; ACK `{ status: 'success' }`. Prefer webhook for settlement certainty; callback is UX + best-effort settle.
 
 Both feed the same ledger/`settlePayment` path. Amount must match `orders.total_minor`.

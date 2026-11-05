@@ -4,6 +4,7 @@ import { hash, initOrders } from './repository';
 import { gateway } from '@/ordering/payment-gateway/resolve';
 import type { CheckoutIntent, CheckoutLaunch } from '@/ordering/payment-gateway/types';
 import { appendPaymentEvent, latestAttempt } from '@/ordering/ledger';
+import { callbackHost, paymentLog } from '@/ordering/payment-log';
 
 /**
  * Start hosted payment for a pickup order that is awaiting online pay.
@@ -55,5 +56,14 @@ export async function beginHostedCheckout(
     amountMinor: intent.amountMinor,
     eventKey: `launch:${orderId}:${now.toISOString()}`,
   }, now);
+  paymentLog('info', {
+    event: 'checkout.launch',
+    orderId,
+    provider: method,
+    amountMinor: intent.amountMinor,
+    website: launch.fields.WEBSITE,
+    callbackHost: launch.fields.CALLBACK_URL ? callbackHost(launch.fields.CALLBACK_URL) : undefined,
+    fieldNames: Object.keys(launch.fields).sort(),
+  });
   return launch;
 }
