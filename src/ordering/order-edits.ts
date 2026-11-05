@@ -9,16 +9,15 @@ import { validCheckoutSelection } from './checkout/validation';
 import { unitPrice } from './price';
 import { OrderError } from './http';
 import { branchClause, type BranchScope } from './scope';
-import type { OrderStatus } from './status';
+import { statusInSql, type OrderStatus } from './status';
 import { afterChange } from './write';
 import {
   applyEdits, cancelReasonFor, discountFrom, editableStatuses, linesFromSnapshot, parseEditBody,
   type EditBody, type ResolvedEdit, type WorkingLine,
 } from './edits';
+import { KITCHEN_VISIBLE } from './visibility';
 
-const KITCHEN_VISIBLE = "(payment_method='pay_at_pickup' OR paid_at IS NOT NULL)";
-
-const editableSql = `status IN (${editableStatuses.map((status) => `'${status}'`).join(',')})`;
+const editableSql = statusInSql(editableStatuses);
 
 export async function storedEdits(orderId: string): Promise<ResolvedEdit[]> {
   const rows = (await db.execute({

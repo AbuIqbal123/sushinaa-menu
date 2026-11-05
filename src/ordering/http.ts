@@ -4,6 +4,7 @@ import { currentStaff, sameOrigin, type StaffPrincipal } from '@/cms/auth';
 import { allows, type Permission } from '@/cms/permissions';
 import { assertPaymentProviderAllowed } from '@/cms/env-guard';
 import { db, databaseUrl } from '@/cms/db';
+import { isProductionDeployment } from '@/lib/deploy-env';
 import { assertOrderDatabaseAllowed, OrderingUnavailable } from './guard';
 import { CheckoutError } from './checkout/validation';
 export class OrderError extends Error {
@@ -20,7 +21,7 @@ export function failure(error: unknown) {
 export function provider() {
   assertOrderDatabaseAllowed(databaseUrl);
   assertPaymentProviderAllowed();
-  const p = process.env.PAYMENT_PROVIDER || (process.env.VERCEL_ENV === 'production' ? 'counter' : 'mock');
+  const p = process.env.PAYMENT_PROVIDER || (isProductionDeployment() ? 'counter' : 'mock');
   if (p !== 'mock' && p !== 'counter') throw new OrderingUnavailable();
   return p;
 }

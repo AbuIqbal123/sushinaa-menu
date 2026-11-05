@@ -1,9 +1,10 @@
 import { z } from 'zod';
 import type { Selection } from '@/catalog/types';
 import { selectionSchema } from './checkout/validation';
+import { activeStatuses } from './status';
 
-/** Editable while the kitchen still owns the order. */
-export const editableStatuses = ['placed', 'paid', 'accepted', 'preparing', 'ready'] as const;
+/** Editable while the kitchen still owns the order. Same set as the live queue. */
+export const editableStatuses = activeStatuses;
 
 export const editReasons = [
   'customer_request', 'wrong_item', 'item_unavailable', 'quality_issue',

@@ -1,24 +1,27 @@
 import { carBrandName } from './car-brands';
 import { applyEdits, linesFromSnapshot, type ResolvedEdit } from './edits';
-import type { Row } from '@libsql/client';
+import type { DbRow } from '@/cms/sql';
 import { db } from '@/cms/db';
 import { auditInsert, type AuditContext } from '@/cms/audit';
 import { initOrders, hash, customerOrder } from './checkout/repository';
-import { canTransition, isPrintable, staffGroups, type OrderStatus, type StaffStatus } from './status';
+import { activeStatuses, canTransition, isPrintable, printableStatuses, staffGroups, statusInSql, terminalStatuses, type OrderStatus, type StaffStatus } from './status';
 import type { Role } from '@/cms/permissions';
 import type { OrderQuery, StatusInput, OrderSummary, OrderDetailData } from './contracts';
 import { OrderError } from './http';
 import type { BranchId } from '@/branches/branches';
 import { branchClause, type BranchScope } from './scope';
+import { operationScope } from './operations-calendar';
 import { counterSettlementStatements, mockProvider, settlePayment } from './payments';
 import { AUTO_PRINT_WINDOW_MS } from './config';
 import { afterChange } from './write';
+import { KITCHEN_VISIBLE } from './visibility';
+import { isProductionDeployment } from '@/lib/deploy-env';
 
+export { KITCHEN_VISIBLE } from './visibility';
 export const maskPhone = (phone: unknown) => typeof phone === 'string' && phone.length >= 4 ? `+974 •••• ${phone.slice(-4, -2)} ${phone.slice(-2)}` : '—';
 export const maskPlate = (plate: unknown) => typeof plate === 'string' && plate.length >= 4 ? `${plate[0]} ••• ${plate.slice(-2)}` : '—';
 const text = (v: unknown) => typeof v === 'string' ? v : '';
 const nullable = (v: unknown) => typeof v === 'string' ? v : null;
-export const KITCHEN_VISIBLE = "(payment_method='pay_at_pickup' OR paid_at IS NOT NULL)";
 
 export async function orderEditMeta(orderId: string) {
   const edits = (await db.execute({
@@ -36,9 +39,9 @@ export async function orderEditMeta(orderId: string) {
   })).rows[0];
   return { edits, owedBackMinor: Number(owed?.n ?? 0) };
 }
-const printableSql = `status IN (${['paid', 'accepted', 'preparing', 'ready', 'completed'].map((status) => `'${status}'`).join(',')})`;
+const printableSql = statusInSql(printableStatuses);
 
-export function summary(row: Row, contact: 'staff' | 'masked' = 'masked'): OrderSummary {
+export function summary(row: DbRow, contact: 'staff' | 'masked' = 'masked'): OrderSummary {
   const name = typeof row.customer_name === 'string' && row.customer_name ? String(row.customer_name) : '—';
   const phone = typeof row.customer_phone === 'string' && row.customer_phone ? String(row.customer_phone) : '—';
   const plate = typeof row.car_plate === 'string' && row.car_plate ? String(row.car_plate) : '—';
@@ -63,10 +66,11 @@ async function unprintedCount(scope: BranchScope) {
 
 export async function listOrders(scope: BranchScope, query: OrderQuery) {
   await initOrders();
-  const selectedScope: BranchScope = scope.kind === 'all' && query.branch ? {kind:'branch',branchId:query.branch} : scope;
+  // Branch staff keep their server scope; only owners may narrow via query.branch.
+  const selectedScope = operationScope(scope, scope.kind === 'all' ? query.branch : undefined);
   const branch = branchClause(selectedScope);
   const where = [KITCHEN_VISIBLE, branch.sql];
-  if (query.view) where.push(query.view === 'active' ? "status IN ('placed','paid','accepted','preparing','ready')" : "status IN ('completed','cancelled','refunded')");
+  if (query.view) where.push(query.view === 'active' ? statusInSql(activeStatuses) : statusInSql(terminalStatuses));
   const args: (string | number)[] = [...branch.args];
   if (query.unprinted) where.push('print_count=0');
   if (query.status) {
@@ -74,7 +78,6 @@ export async function listOrders(scope: BranchScope, query: OrderQuery) {
     where.push(`status IN (${states.map(() => '?').join(',')})`);
     args.push(...states);
   }
-  if (scope.kind === 'all' && query.branch) { where.push('branch_id=?'); args.push(query.branch); }
   if (query.from) { where.push('created_at>=?'); args.push(new Date(`${query.from}T00:00:00+03:00`).toISOString()); }
   if (query.to) { where.push('created_at<?'); args.push(new Date(Date.parse(`${query.to}T00:00:00+03:00`) + 86400000).toISOString()); }
   if (query.q) {
@@ -157,7 +160,7 @@ export async function transitionOrder(scope: BranchScope, id: string, input: Sta
   const branch = branchClause(scope);
   if (input.to === 'refunded' && role !== 'admin') throw new OrderError('FORBIDDEN', 403);
   if (!canTransition(input.expected, input.to, 'sql-checks-paid-at')) throw new OrderError('INVALID_TRANSITION', 409);
-  if (input.to === 'refunded' && process.env.VERCEL_ENV === 'production') throw new OrderError('INVALID_TRANSITION', 409);
+  if (input.to === 'refunded' && isProductionDeployment()) throw new OrderError('INVALID_TRANSITION', 409);
   const at = now.toISOString();
   const settled = input.to === 'completed' && input.recordPayment === true
     ? (await db.execute({ sql: `SELECT total_minor FROM orders WHERE id=? AND ${branch.sql}`, args: [id, ...branch.args] })).rows[0]
@@ -182,7 +185,7 @@ export async function transitionOrder(scope: BranchScope, id: string, input: Sta
 }
 
 export async function payMock(id: string, session: string | null, now = new Date()) {
-  if (process.env.VERCEL_ENV === 'production') throw new OrderError('NOT_FOUND', 404);
+  if (isProductionDeployment()) throw new OrderError('NOT_FOUND', 404);
   await initOrders();
   const current = await customerOrder(id, session);
   if (current.paymentMethod !== 'mock') throw new OrderError('INVALID_PAYMENT', 409);
@@ -198,7 +201,7 @@ export async function payMock(id: string, session: string | null, now = new Date
 export async function purgeOrders(now = new Date(), limit = 100) {
   await initOrders();
   const rows = (await db.execute({
-    sql: "SELECT id,snapshot FROM orders WHERE purge_after<=? AND status IN ('completed','cancelled','refunded') AND customer_phone IS NOT NULL LIMIT ?",
+    sql: `SELECT id,snapshot FROM orders WHERE purge_after<=? AND ${statusInSql(terminalStatuses)} AND customer_phone IS NOT NULL LIMIT ?`,
     args: [now.toISOString(), limit],
   })).rows;
   for (const row of rows) {

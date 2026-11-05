@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { InStatement } from "@libsql/client";
+import type { SqlStatement } from "./sql";
 import { db } from "./db";
 
 // Failed sign-ins are counted in the database (in-memory counters don't
@@ -33,7 +33,7 @@ export async function signInWait(ip: string | null, username: string | null, now
 }
 
 /** Counts one failure for the address and the address-and-username pair. */
-export function recordFailure(ip: string | null, username: string | null, now = Date.now()): InStatement[] {
+export function recordFailure(ip: string | null, username: string | null, now = Date.now()): SqlStatement[] {
   const k = keys(ip, username);
   const expired = now - WINDOW_MS;
   return [
@@ -45,6 +45,6 @@ export function recordFailure(ip: string | null, username: string | null, now = 
   ];
 }
 
-export function clearFailures(ip: string | null, username: string | null): InStatement {
+export function clearFailures(ip: string | null, username: string | null): SqlStatement {
   return { sql: "DELETE FROM login_attempts WHERE key=?", args: [keys(ip, username).pair] };
 }

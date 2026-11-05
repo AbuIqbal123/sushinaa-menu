@@ -1,17 +1,17 @@
 import { randomUUID } from 'node:crypto';
-import type { Row } from '@libsql/client';
+import type { DbRow } from '@/cms/sql';
 import { db } from '@/cms/db';
 import { auditInsert, type AuditContext } from '@/cms/audit';
 import { initOrders } from './checkout/repository';
-import { KITCHEN_VISIBLE } from './orders';
+import { KITCHEN_VISIBLE } from './visibility';
 import { OrderError } from './http';
 import { branchClause, type BranchScope } from './scope';
 import { AUTO_PRINT_WINDOW_MS } from './config';
-import { printableStatuses } from './status';
+import { printableStatuses, statusInSql } from './status';
 import { afterChange } from './write';
 
 const CLAIM_MS = 2 * 60 * 1000;
-const printableSql = `status IN (${printableStatuses.map((status) => `'${status}'`).join(',')})`;
+const printableSql = statusInSql(printableStatuses);
 
 export async function claimPrint(scope: BranchScope, id: string, mode: 'auto' | 'manual' | 'reprint', now = new Date()) {
   await initOrders();
@@ -77,7 +77,7 @@ export async function confirmPrint(scope: BranchScope, id: string, claimId: stri
   }
 }
 
-export async function loadTicket(scope: BranchScope, id: string): Promise<Row> {
+export async function loadTicket(scope: BranchScope, id: string): Promise<DbRow> {
   await initOrders();
   const branch = branchClause(scope);
   const row = (await db.execute({
