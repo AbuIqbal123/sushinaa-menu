@@ -17,7 +17,7 @@ import { selectionLabel } from '@/ordering/price';
 import { pickName } from '@/i18n/localize';
 import type { PaymentStatus } from '@/ordering/checkout/payment';
 import { MockSadadGateway } from './MockSadadGateway';
-import { HostedCheckoutRedirect } from './HostedCheckoutRedirect';
+import { submitHostedCheckout } from './submit-hosted-checkout';
 import { CarBrandPicker, CarBrandLogo } from './CarBrandPicker';
 import { carBrandName, findCarBrand } from '@/ordering/car-brands';
 import { OrderProgress, orderPhase, orderTrackingLabel } from './OrderProgress';
@@ -26,7 +26,6 @@ const emptyCustomer: Customer = { name: '', phone: '', plate: 'Q', brand: '', co
 type Step = 'menu' | 'details' | 'review' | 'payment' | 'receipt';
 type PaymentMethodUi = 'mock' | 'pay_at_pickup' | 'sadad';
 type Receipt = { id: string; orderNumber?: number | null; paymentStatus: PaymentStatus; totalMinor: number; paymentMethod: PaymentMethodUi; status: string; details?: CustomerReceiptDetails };
-type Launch = { action: string; method: 'POST'; fields: Record<string, string> };
 export function OrderingExperience({ initialNow, branchId }: { initialNow: string; branchId: BranchId }) {
   return <CartProvider storageKey="sushinaa-curbside-basket-v1"><Experience initialNow={initialNow} branchId={branchId} /></CartProvider>;
 }
@@ -34,7 +33,7 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
   const { lang, t } = useLocale();
   const [paymentProvider, setPaymentProvider] = useState<'mock' | 'pay_at_pickup' | 'sadad' | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodUi>('mock');
-  const [launch, setLaunch] = useState<Launch | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
   const text = (en: string, ar: string) => lang === 'ar' ? ar : en;
   const menu = useMenu();
   const branches = configuredBranches(menu.branches);
@@ -165,30 +164,32 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
       document.removeEventListener('visibilitychange', pull); window.removeEventListener('online', pull);
     };
   }, [step, receipt?.id, receipt?.status]);
-  useEffect(() => {
-    if (step !== 'payment' || !receipt || receipt.paymentMethod !== 'sadad' || launch) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const response = await fetch(`/api/orders/${receipt.id}/pay/begin`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ language: lang === 'ar' ? 'ar' : 'en' }),
-        });
-        const data = await response.json() as Launch & { code?: string };
-        if (cancelled) return;
-        if (!response.ok) { setError(errorMessage(data.code || 'NETWORK')); go('review'); return; }
-        setLaunch(data);
-      } catch {
-        if (!cancelled) { setError(errorMessage('NETWORK')); go('review'); }
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [step, receipt, launch, lang]);
   function go(next: Step) {
     const order: Step[] = ['menu', 'details', 'review', 'payment', 'receipt'];
     setMotion(order.indexOf(next) < order.indexOf(step) ? 'back' : 'forward');
-    setError(''); setStep(next); window.scrollTo({ top: 0, behavior: 'instant' });
+    setError(''); setRedirecting(false); setStep(next); window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+  /** Stay on review; button shows Redirecting… while we POST the hosted form. */
+  async function beginSadadPay(orderId: string) {
+    setRedirecting(true);
+    setError('');
+    try {
+      const response = await fetch(`/api/orders/${orderId}/pay/begin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ language: lang === 'ar' ? 'ar' : 'en' }),
+      });
+      const data = await response.json() as Parameters<typeof submitHostedCheckout>[0] & { code?: string };
+      if (!response.ok) {
+        setError(errorMessage(data.code || 'NETWORK'));
+        setRedirecting(false);
+        return;
+      }
+      submitHostedCheckout(data);
+    } catch {
+      setError(errorMessage('NETWORK'));
+      setRedirecting(false);
+    }
   }
   function validateDetails(event: React.FormEvent) {
     event.preventDefault();
@@ -209,7 +210,7 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
     ORDERING_UNAVAILABLE: text('Ordering is unavailable right now. Your basket is still here.', 'الطلب غير متاح الآن. سلتك ما زالت محفوظة.'),
   }[code] ?? text('We couldn’t continue. Check your connection and try again. Your details are still here.', 'تعذّرت المتابعة. تحقق من الاتصال وحاول مجدداً. بياناتك ما زالت محفوظة.'));
   async function checkout() {
-    if (busyRef.current || !branch || !cart.lines.length || cart.unavailableCount > 0) return;
+    if (busyRef.current || redirecting || !branch || !cart.lines.length || cart.unavailableCount > 0) return;
     busyRef.current = true; setBusy(true); setError('');
     try {
       const session = await fetch('/api/orders');
@@ -225,8 +226,13 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
       if (!res.ok) { setError(errorMessage(data.code)); return; }
       setReceipt(data); try { localStorage.setItem(orderKey, data.id); } catch { /* Keep tracking in memory. */ }
       const confirmedNow = data.paymentMethod === 'pay_at_pickup' || data.paymentStatus === 'paid';
-      if (confirmedNow) { cart.clear(); attempt.current = null; }
-      go(confirmedNow ? 'receipt' : 'payment');
+      if (confirmedNow) { cart.clear(); attempt.current = null; go('receipt'); return; }
+      if (data.paymentMethod === 'sadad') {
+        // Leave review visible; CTA flips to Redirecting… then posts to Sadad.
+        await beginSadadPay(data.id);
+        return;
+      }
+      go('payment');
     } catch { setError(errorMessage('NETWORK')); }
     finally { setBusy(false); busyRef.current = false; }
   }
@@ -276,12 +282,6 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
       <div className="customer-fold-body"><p className="order-who"><strong>{customer.name}</strong><span dir="ltr" className="review-phone">{displayPhone(customer.phone)}</span></p><div className="vehicle-pair"><QatarPlate plate={customer.plate} /><p className="review-vehicle"><CarBrandLogo brand={findCarBrand(customer.brand)} /><span>{[customer.colour, carBrandName(customer.brand, lang)].filter(Boolean).join(' · ')}</span></p></div>{customer.instructions && <p className="checkout-note">{customer.instructions}</p>}</div>
     </details>
   </>;
-  if (step === 'payment' && receipt && receipt.paymentMethod === 'sadad') {
-    if (!launch) {
-      return <>{menuStage}<div className="ordering-page" data-step="payment"><main className="checkout-main"><p>{text('Preparing payment…', 'جارٍ تجهيز الدفع…')}</p></main></div></>;
-    }
-    return <>{menuStage}<HostedCheckoutRedirect launch={launch} lang={lang === 'ar' ? 'ar' : 'en'} onBack={() => { setLaunch(null); go('review'); }} onError={(message) => { setError(message); go('review'); }} /></>;
-  }
   if (step === 'payment' && receipt && receipt.paymentMethod === 'mock') return <>{menuStage}<MockSadadGateway amount={money(receipt.totalMinor)} lang={lang} onBack={() => go('review')} onComplete={() => go('receipt')} onPay={async () => {
     const response = await fetch(`/api/orders/${receipt.id}/mock-pay`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
     const result = await response.json();
@@ -293,8 +293,13 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
     <div className="ordering-content" inert={Boolean(editing)}>
       <header className="ordering-header"><button type="button" className="ordering-logo" onClick={() => go('menu')} aria-label={text('Back to the menu', 'العودة إلى القائمة')}><Image src={menu.settings.logo} width={59} height={55} alt={t.brand} unoptimized /></button><LangButton /></header>
       <>
-        {step !== 'receipt' && <div className="checkout-navigation"><button type="button" className="text-action" disabled={busy} onClick={() => go(step === 'details' ? 'menu' : step === 'review' ? 'details' : 'review')}><span className="back-arrow" aria-hidden="true">←</span> {text('Back', 'رجوع')}</button>{(['details', 'review'] as Step[]).includes(step) && <span aria-label={text(`Step ${['details', 'review'].indexOf(step) + 1} of 2`, `الخطوة ${['details', 'review'].indexOf(step) + 1} من ٢`)}>{['details', 'review'].indexOf(step) + 1} / 2</span>}</div>}
-        <main id="main" className={`checkout-main${step === 'details' || step === 'review' ? ' has-step-action' : ''}`}>
+        <div className="checkout-navigation">
+          <button type="button" className="text-action" disabled={busy || redirecting} onClick={() => go(step === 'receipt' || step === 'details' ? 'menu' : step === 'review' ? 'details' : 'review')}>
+            <span className="back-arrow" aria-hidden="true">←</span> {step === 'receipt' ? text('Back to menu', 'العودة للقائمة') : text('Back', 'رجوع')}
+          </button>
+          {(['details', 'review'] as Step[]).includes(step) && <span aria-label={text(`Step ${['details', 'review'].indexOf(step) + 1} of 2`, `الخطوة ${['details', 'review'].indexOf(step) + 1} من ٢`)}>{['details', 'review'].indexOf(step) + 1} / 2</span>}
+        </div>
+        <main id="main" className={`checkout-main${step === 'details' || step === 'review' || step === 'receipt' ? ' has-step-action' : ''}`}>
           {/*
             Keep the fixed CTA outside `.checkout-step`. Step enter/back animations use
             transform, which would otherwise reparent `position: fixed` and make the
@@ -371,12 +376,16 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
                   </div>
                 </div>
               </details>
-              <button type="button" className="checkout-primary" onClick={() => go('menu')}>{text('Back to menu', 'العودة للقائمة')}<span className="back-arrow" aria-hidden="true">←</span></button>
             </div>}
             {error && <div className="checkout-error" role="alert"><p>{error}</p><button className="text-action" type="button" onClick={() => { go('menu'); router.refresh(); }}>{text('Refresh menu', 'تحديث القائمة')}</button></div>}
           </div>
           {step === 'details' && <div className="checkout-step-action"><button type="submit" form="collection-details" className="checkout-primary" disabled={!canPlace || !count || cart.unavailableCount > 0}>{text('Review order', 'مراجعة الطلب')}<Forward /></button></div>}
-          {step === 'review' && <div className="checkout-step-action"><button type="button" className="checkout-primary" disabled={busy || !canPlace || (!resumePay && (!count || cart.unavailableCount > 0))} onClick={() => { if (resumePay) go('payment'); else void checkout(); }}>{busy ? text('Checking…', 'جارٍ التحقق…') : resumePay || paymentMethod !== 'pay_at_pickup' ? text('Continue to payment', 'المتابعة إلى الدفع') : text('Place order · pay at pickup', 'تأكيد الطلب · الدفع عند الاستلام')}<Forward /></button></div>}
+          {step === 'review' && <div className="checkout-step-action"><button type="button" className="checkout-primary" disabled={busy || redirecting || !canPlace || (!resumePay && (!count || cart.unavailableCount > 0))} onClick={() => {
+            if (resumePay && receipt?.paymentMethod === 'sadad') void beginSadadPay(receipt.id);
+            else if (resumePay) go('payment');
+            else void checkout();
+          }}>{redirecting ? text('Redirecting…', 'جارٍ التحويل…') : busy ? text('Checking…', 'جارٍ التحقق…') : resumePay || paymentMethod !== 'pay_at_pickup' ? text('Continue to payment', 'المتابعة إلى الدفع') : text('Place order · pay at pickup', 'تأكيد الطلب · الدفع عند الاستلام')}{!redirecting && !busy && <Forward />}</button></div>}
+          {step === 'receipt' && <div className="checkout-step-action"><button type="button" className="checkout-primary" onClick={() => go('menu')}><span><span className="back-arrow" aria-hidden="true">←</span> {text('Back to menu', 'العودة للقائمة')}</span></button></div>}
         </main>
       </>
       <footer className="ordering-footer"><span>Sushinaa</span></footer>

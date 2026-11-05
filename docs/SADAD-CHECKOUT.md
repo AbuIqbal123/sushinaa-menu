@@ -18,7 +18,7 @@ Staff Orders flow and collection details are unchanged. Refunds: Sadad portal on
 
 | Layer | Role | Where |
 | --- | --- | --- |
-| UI | Pickup UX + hosted redirect | `OrderingExperience`, `HostedCheckoutRedirect` |
+| UI | Pickup UX + hosted form submit | `OrderingExperience`, `submit-hosted-checkout` |
 | HTTP | Begin / browser return / webhook / admin ledger | `api/orders/[id]/pay/begin`, `api/payments/callback`, `api/payments/webhook`, `api/admin/payments` |
 | App | Launch + settle orchestration | `checkout/begin-payment`, `payments.settlePayment` / `applyVerifiedFact`, `ledger` |
 | Port | Vendor-agnostic gateway | `payment-gateway/port`, `types`, `resolve` |
