@@ -9,16 +9,17 @@ test('callbackHost extracts host without leaking path', () => {
 
 test('paymentLog writes a single JSON object with channel payment', () => {
   const lines: string[] = [];
-  const original = console.info;
-  console.info = (msg: string) => { lines.push(String(msg)); };
+  const original = console.warn;
+  console.warn = (msg: string) => { lines.push(String(msg)); };
   try {
     paymentLog('info', { event: 'checkout.launch', orderId: 'SU-1', website: 'example.com' });
   } finally {
-    console.info = original;
+    console.warn = original;
   }
   assert.equal(lines.length, 1);
-  const parsed = JSON.parse(lines[0]!) as { channel: string; event: string; orderId: string };
+  const parsed = JSON.parse(lines[0]!) as { channel: string; event: string; orderId: string; level: string };
   assert.equal(parsed.channel, 'payment');
+  assert.equal(parsed.level, 'info');
   assert.equal(parsed.event, 'checkout.launch');
   assert.equal(parsed.orderId, 'SU-1');
 });

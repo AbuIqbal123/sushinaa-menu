@@ -50,10 +50,10 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   compiler: {
-    // Keep info/warn/error so structured payment logs (channel: payment) reach Vercel.
+    // Keep warn/error so structured payment logs (channel: payment) reach Vercel.
     // Still strip console.log / debug / table noise from production bundles.
     removeConsole: process.env.NODE_ENV === "production"
-      ? { exclude: ["error", "warn", "info"] }
+      ? { exclude: ["error", "warn"] }
       : false,
   },
   // Vercel runs linux-x64 glibc, so that libsql and sharp pair stays in the

@@ -75,7 +75,7 @@ Runtime logs (Vercel → test-dev → Runtime Logs) emit one JSON line per payme
 
 Never logged: secret key, checksum/signature values, full phone, card data. Durable trail remains `payment_events` + admin Payments.
 
-`next.config.ts` keeps `console.info` / `warn` / `error` in production builds so these lines are not stripped; plain `console.log` is still removed.
+Payment logs use `console.warn` / `console.error` (eslint-safe). `next.config.ts` keeps those methods in production builds so they reach Vercel; plain `console.log` is still stripped.
 
 ## Callback vs webhook
 

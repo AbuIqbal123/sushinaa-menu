@@ -28,9 +28,9 @@ export function paymentLog(level: PaymentLogLevel, fields: PaymentLogFields) {
     channel: 'payment',
     ...fields,
   });
+  // eslint allows warn/error only; JSON `level` still carries info|warn|error.
   if (level === 'error') console.error(line);
-  else if (level === 'warn') console.warn(line);
-  else console.info(line);
+  else console.warn(line);
 }
 
 export function callbackHost(url: string) {
