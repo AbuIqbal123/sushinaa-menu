@@ -1642,6 +1642,7 @@ button {
   .category-tile-name { font-size: 14px; }
 }
 
+.order-tracker.is-awaiting { background: #5a3a14; border-color: #e5ba7a; color: #fff1dc; }
 .order-tracker.is-preparing { background: #6e4018; border-color: #e5ba7a; color: #fff1dc; }
 .order-tracker.is-ready { background: #285a3c; border-color: #a7d5ae; color: #fff; box-shadow: 0 2px 12px #0003; }
 

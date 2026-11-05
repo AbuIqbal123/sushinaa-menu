@@ -126,7 +126,13 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
         attempt.current = null;
         setStep('receipt');
       } else if (saved.paymentStatus === 'awaiting_payment' && (saved.paymentMethod === 'mock' || saved.paymentMethod === 'sadad')) {
-        setStep(payFailed ? 'review' : 'payment');
+        // Never auto-enter payment on a cold branch visit — that re-fires hosted
+        // checkout and dumps the customer straight onto Sadad. Resume from review
+        // only after an explicit failed-return (`?pay=failed`) or CTA click.
+        if (saved.details?.customer) {
+          setCustomer({ ...emptyCustomer, ...saved.details.customer });
+        }
+        if (payFailed) setStep('review');
       }
     }).catch(() => {});
     return () => {
@@ -226,9 +232,16 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
   }
   const branchName = branch ? text(branch.name, branch.nameAr) : '';
   const confirmed = receipt && (receipt.paymentStatus === 'paid' || receipt.paymentMethod === 'pay_at_pickup');
+  const resumePay = Boolean(
+    receipt
+    && receipt.paymentStatus === 'awaiting_payment'
+    && (receipt.paymentMethod === 'mock' || receipt.paymentMethod === 'sadad'),
+  );
   const menuStage = branch ? <div key="menu-stage" className={`app-lock ordering-menu-stage${step !== 'menu' ? ' is-inactive' : ''}`} inert={step !== 'menu'} aria-hidden={step !== 'menu' ? true : undefined}><MenuFeed branch={branchName} inactive={step !== 'menu'} onPickup={() => go('details')}
     orderTracking={confirmed ? <button type="button" className={`order-tracker is-${orderPhase(receipt.status)}`} aria-live="polite" onClick={() => go('receipt')}>
       <span className="order-tracker-label">{orderTrackingLabel(receipt.status, lang)}</span>{receipt.orderNumber != null && <span className="order-tracker-number" dir="ltr">#{formatOrderNumber(receipt.orderNumber)}</span>}
+    </button> : resumePay && receipt ? <button type="button" className="order-tracker is-awaiting" aria-live="polite" onClick={() => go('review')}>
+      <span className="order-tracker-label">{text('Finish payment', 'أكمل الدفع')}</span>{receipt.orderNumber != null && <span className="order-tracker-number" dir="ltr">#{formatOrderNumber(receipt.orderNumber)}</span>}
     </button> : undefined} /></div> : null;
   if (step === 'menu') return <>{menuStage}</>;
   const receiptCustomer = receipt?.details ? receipt.details.customer ?? emptyCustomer : customer;
@@ -311,7 +324,25 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
               </div>
               <details className="optional-vehicle"><summary>{text('Add vehicle details', 'أضف تفاصيل السيارة')}</summary><div className="checkout-fields">{(['colour', 'instructions'] as const).map(key => <label key={key} className={`checkout-field field-${key}`} htmlFor={`collection-${key}`}><span>{{ colour: text('Car colour', 'لون السيارة'), car: text('Car model', 'طراز السيارة'), instructions: text('Collection instructions', 'تعليمات الاستلام') }[key]}</span>{key === 'instructions' ? <textarea id={`collection-${key}`} value={customer[key]} maxLength={400} rows={3} onChange={e => setCustomer({ ...customer, [key]: e.target.value })} /> : <input id={`collection-${key}`} value={customer[key]} maxLength={key === 'colour' ? 50 : 80} onChange={e => setCustomer({ ...customer, [key]: e.target.value })} />}</label>)}</div></details>
             </form>}
-            {step === 'review' && receiptBody(true)}
+            {step === 'review' && (resumePay && receipt?.details?.lines?.length
+              ? <>
+                <section className="ticket checkout-ticket" aria-label={t.yourTicket}>
+                  <div className="ticket-scallop" aria-hidden="true" />
+                  <header className="ticket-head"><div><p className="ticket-kicker">{t.brand}</p><h2 className="ticket-title">{t.yourTicket}</h2></div><span className="ticket-count">{receipt.details.lines.reduce((n, line) => n + line.quantity, 0)} {text('items', 'صنف')}</span></header>
+                  <p className="ticket-rule" aria-hidden="true" />
+                  <ul className="ticket-lines">{receipt.details.lines.map(line => <li key={line.id} className="ticket-line">
+                    <div className="line-main"><p className="line-name">{pickName(line, lang)}</p>{line.note && <p className="line-note">{t.commentWord}: {line.note}</p>}</div>
+                    <span className="ticket-static-qty" dir="ltr" aria-label={text(`Quantity ${line.quantity}`, `الكمية ${line.quantity}`)}><span className="qty-times" aria-hidden="true">×</span>{line.quantity}</span>
+                    <p className="line-total">{ticketMoney(line.totalMinor / 100)}</p>
+                  </li>)}</ul>
+                  <div className="ticket-sum"><span>{t.total}</span><strong>{money(receipt.totalMinor)}</strong></div>
+                </section>
+                <details className="customer-fold review-details">
+                  <summary><span>{text('Your details', 'بياناتك')}</span></summary>
+                  <div className="customer-fold-body"><p className="order-who"><strong>{customer.name}</strong><span dir="ltr" className="review-phone">{displayPhone(customer.phone)}</span></p><div className="vehicle-pair"><QatarPlate plate={customer.plate} /><p className="review-vehicle"><CarBrandLogo brand={findCarBrand(customer.brand)} /><span>{[customer.colour, carBrandName(customer.brand, lang)].filter(Boolean).join(' · ')}</span></p></div>{customer.instructions && <p className="checkout-note">{customer.instructions}</p>}</div>
+                </details>
+              </>
+              : receiptBody(true))}
             {step === 'receipt' && receipt && <div data-order-id={receipt.id}>
               <header className="order-status">
                 <p className="order-confirmed" role="status">{receipt.paymentMethod === 'pay_at_pickup' ? text('Order received', 'تم استلام الطلب') : text('Payment confirmed', 'تم تأكيد الدفع')}</p>
@@ -345,7 +376,7 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
             {error && <div className="checkout-error" role="alert"><p>{error}</p><button className="text-action" type="button" onClick={() => { go('menu'); router.refresh(); }}>{text('Refresh menu', 'تحديث القائمة')}</button></div>}
           </div>
           {step === 'details' && <div className="checkout-step-action"><button type="submit" form="collection-details" className="checkout-primary" disabled={!canPlace || !count || cart.unavailableCount > 0}>{text('Review order', 'مراجعة الطلب')}<Forward /></button></div>}
-          {step === 'review' && <div className="checkout-step-action"><button type="button" className="checkout-primary" disabled={busy || !canPlace || !count || cart.unavailableCount > 0} onClick={checkout}>{busy ? text('Checking…', 'جارٍ التحقق…') : paymentMethod === 'pay_at_pickup' ? text('Place order · pay at pickup', 'تأكيد الطلب · الدفع عند الاستلام') : text('Continue to payment', 'المتابعة إلى الدفع')}<Forward /></button></div>}
+          {step === 'review' && <div className="checkout-step-action"><button type="button" className="checkout-primary" disabled={busy || !canPlace || (!resumePay && (!count || cart.unavailableCount > 0))} onClick={() => { if (resumePay) go('payment'); else void checkout(); }}>{busy ? text('Checking…', 'جارٍ التحقق…') : resumePay || paymentMethod !== 'pay_at_pickup' ? text('Continue to payment', 'المتابعة إلى الدفع') : text('Place order · pay at pickup', 'تأكيد الطلب · الدفع عند الاستلام')}<Forward /></button></div>}
         </main>
       </>
       <footer className="ordering-footer"><span>Sushinaa</span></footer>
