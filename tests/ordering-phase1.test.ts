@@ -7,7 +7,8 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { menuSchema } from '../src/cms/schema';
 import { orderQuery } from '../src/ordering/contracts';
-import { checkoutSchema, quoteOrder, type OrderSnapshot } from '../src/ordering/checkout/validation';
+import { checkoutSchema } from '../src/ordering/checkout/validation';
+import { quoteOrder, type OrderSnapshot } from '../src/ordering/checkout/quote';
 import { defaultSelection, unitPrice } from '../src/ordering/price';
 import { LIVE_DATABASE_HOST } from '../src/lib/deploy-env';
 import { composeOrderNumber, formatOrderNumber, qatarDay } from '../src/ordering/order-number';
@@ -47,9 +48,10 @@ const quoteInput = checkoutSchema.parse({
   customer: { name: 'Test customer', phone: '97455551234', brand: 'toyota', plate: 'Q123456', colour: 'silver', car: 'test car', instructions: 'gate note' },
   lines: [{ dishId: dish.id, selection: defaultSelection(dish), quantity: 1, note: 'line note', expectedUnitMinor: Math.round(unitPrice(dish, defaultSelection(dish)) * 100) }],
 });
-const snapshot: OrderSnapshot = quoteOrder(quoteInput, menu, when);
+let snapshot: OrderSnapshot;
 
 before(async () => {
+  snapshot = await quoteOrder(quoteInput, menu, when);
   dir = mkdtempSync(join(tmpdir(), 'sn-phase1-'));
   process.env.CMS_DATABASE_URL = `file:${dir}/orders.db`;
   process.env.CMS_DATABASE_AUTH_TOKEN = '';

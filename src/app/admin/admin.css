@@ -748,6 +748,14 @@
 .admin dialog.users-dialog { width:min(26rem, calc(100vw - 32px)); }
 .users-dialog label { margin-bottom:12px; }
 .users-dialog .staff-error { margin:0 0 12px; }
+.coupons-form { display:flex; flex-wrap:wrap; gap:8px 10px; align-items:end; margin-bottom:12px; }
+.coupons-form label { display:grid; gap:4px; flex:0 1 9rem; min-width:0; color:var(--muted); font-size:12px; }
+.coupons-form .coupons-code { flex:1 1 16rem; }
+.coupons-code-row { display:flex; gap:6px; align-items:center; }
+.coupons-code-row input { flex:1; min-width:0; letter-spacing:0.04em; }
+.admin .coupons-form input,
+.admin .coupons-form select { width:100%; min-height:32px; padding:4px 8px; }
+.admin .coupons-form button { width:auto; min-height:32px; padding:4px 10px; }
 .admin dialog.payments-dialog { width:min(36rem, calc(100vw - 32px)); overflow:auto; }
 .payments-dialog-body { display:grid; gap:16px; padding-top:8px; }
 .payments-facts { margin:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 20px; }

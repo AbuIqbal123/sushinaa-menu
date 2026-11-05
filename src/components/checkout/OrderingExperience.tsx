@@ -21,11 +21,12 @@ import { submitHostedCheckout } from './submit-hosted-checkout';
 import { CarBrandPicker, CarBrandLogo } from './CarBrandPicker';
 import { carBrandName, findCarBrand } from '@/ordering/car-brands';
 import { OrderProgress, orderPhase, orderTrackingLabel } from './OrderProgress';
+import { CouponField, knownCouponMessage, type AppliedCoupon } from './CouponField';
 
 const emptyCustomer: Customer = { name: '', phone: '', plate: 'Q', brand: '', colour: '', car: '', instructions: '' };
 type Step = 'menu' | 'details' | 'review' | 'payment' | 'receipt';
 type PaymentMethodUi = 'mock' | 'pay_at_pickup' | 'sadad';
-type Receipt = { id: string; orderNumber?: number | null; paymentStatus: PaymentStatus; totalMinor: number; paymentMethod: PaymentMethodUi; status: string; arrivedAt?: string | null; details?: CustomerReceiptDetails };
+type Receipt = { id: string; orderNumber?: number | null; paymentStatus: PaymentStatus; totalMinor: number; paymentMethod: PaymentMethodUi; status: string; arrivedAt?: string | null; details?: CustomerReceiptDetails & { coupon?: { code?: string }; couponCode?: string } };
 export function OrderingExperience({
   initialNow,
   branchId,
@@ -77,6 +78,8 @@ function Experience({
   const busyRef = useRef(false);
   const attempt = useRef<{ body: string; key: string } | null>(null);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
+  const [couponPending, setCouponPending] = useState(false);
   const orderKey = 'sushinaa-order-id';
   const [editing, setEditing] = useState<CartLine | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -258,14 +261,16 @@ function Experience({
     LIMIT: text('The order limit was reached. Reduce the quantity or try again later.', 'تم الوصول إلى الحد المسموح. قلّل الكمية أو حاول لاحقاً.'),
     CONFLICT: text('This checkout attempt has changed. Return to review and try again.', 'تغيّرت محاولة الدفع هذه. عُد للمراجعة وحاول مجدداً.'),
     ORDERING_UNAVAILABLE: text('Ordering is unavailable right now. Your basket is still here.', 'الطلب غير متاح الآن. سلتك ما زالت محفوظة.'),
-  }[code] ?? text('We couldn’t continue. Check your connection and try again. Your details are still here.', 'تعذّرت المتابعة. تحقق من الاتصال وحاول مجدداً. بياناتك ما زالت محفوظة.'));
+  }[code] ?? knownCouponMessage(code, text) ?? text('We couldn’t continue. Check your connection and try again. Your details are still here.', 'تعذّرت المتابعة. تحقق من الاتصال وحاول مجدداً. بياناتك ما زالت محفوظة.'));
   async function checkout() {
-    if (busyRef.current || redirecting || !branch || !cart.lines.length || cart.unavailableCount > 0) return;
+    if (busyRef.current || redirecting || couponPending || !branch || !cart.lines.length || cart.unavailableCount > 0) return;
     busyRef.current = true; setBusy(true); setError('');
     try {
       const session = await fetch('/api/orders');
       if (!session.ok) { setError(errorMessage('ORDERING_UNAVAILABLE')); return; }
-      const body = JSON.stringify({ branchId, customer, paymentMethod, lines: cart.lines.map(line => ({ dishId: line.dish.id, selection: line.sel, quantity: line.qty, note: line.note, expectedUnitMinor: Math.round(line.unitQar * 100) })) });
+      const subtotalMinor = Math.round(cart.totalQar * 100);
+      const couponCode = appliedCoupon?.subtotalMinor === subtotalMinor ? appliedCoupon.code : undefined;
+      const body = JSON.stringify({ branchId, customer, paymentMethod, ...(couponCode ? { couponCode } : {}), lines: cart.lines.map(line => ({ dishId: line.dish.id, selection: line.sel, quantity: line.qty, note: line.note, expectedUnitMinor: Math.round(line.unitQar * 100) })) });
       if (attempt.current?.body !== body) {
         // crypto.randomUUID is unavailable on an HTTP LAN preview; getRandomValues works there.
         const bytes = crypto.getRandomValues(new Uint8Array(20));
@@ -320,6 +325,8 @@ function Experience({
     : step === 'review' ? text('Review your order', 'راجع طلبك')
     : step === 'receipt' ? text('Your order', 'طلبك') : text('Payment', 'الدفع');
   const count = cart.itemCount;
+  const subtotalMinor = Math.round(cart.totalQar * 100);
+  const couponQuote = appliedCoupon?.subtotalMinor === subtotalMinor ? appliedCoupon : null;
   const onlinePayOpen = paymentProvider === 'mock' || paymentProvider === 'sadad';
   const canPlace = Boolean(status?.open || onlinePayOpen);
   const closedNotice = status && !status.open ? <div className="checkout-notice" role="status"><strong>{text('This branch is currently closed', 'هذا الفرع مغلق حالياً')}</strong><p>{onlinePayOpen ? text('You can still place this pickup order.', 'يمكنك إتمام طلب الاستلام.') : text('Come back when this branch is open. Your basket is saved.', 'عُد عندما يفتح هذا الفرع. سلتك محفوظة.')}</p></div> : null;
@@ -332,7 +339,9 @@ function Experience({
       {editable ? <div className="line-qty"><button type="button" className="qty-btn" onClick={() => cart.dec(line.key)} aria-label={t.fewerOf(line.displayName)}>−</button><span className="qty-num">{line.qty}</span><button type="button" className="qty-btn" onClick={() => cart.inc(line.key)} disabled={line.qty >= 20} aria-label={t.moreOf(line.displayName)}>+</button></div> : <span className="ticket-static-qty" dir="ltr" aria-label={text(`Quantity ${line.qty}`, `الكمية ${line.qty}`)}><span className="qty-times" aria-hidden="true">×</span>{line.qty}</span>}
       <p className="line-total">{ticketMoney(line.lineTotal)}</p>
     </li>)}</ul>
-    <div className="ticket-sum"><span>{t.total}</span><strong>{serverMinor != null ? money(serverMinor) : ticketMoney(cart.totalQar)}</strong></div>
+    <CouponField subtotalMinor={subtotalMinor} applied={couponQuote} text={text} onApplied={setAppliedCoupon} onPending={setCouponPending} onRemove={() => setAppliedCoupon(null)} />
+    {couponQuote && <p className="order-discount ticket-coupon-discount"><span>{text('Discounts', 'الخصومات')}</span><span dir="ltr">−{money(couponQuote.discountMinor)}</span></p>}
+    <div className="ticket-sum"><span>{t.total}</span><strong>{couponQuote ? money(couponQuote.totalMinor) : serverMinor != null ? money(serverMinor) : ticketMoney(cart.totalQar)}</strong></div>
   </section>; }
   const receiptBody = (editable: boolean, serverMinor?: number) => <>
     {ticket(false, editable, serverMinor)}
@@ -442,6 +451,7 @@ function Experience({
               <h2 className="order-items-title">{text('Your order', 'طلبك')}</h2>
               <ul className="order-summary">{receiptLines.map(line => <li key={line.key}><span><b>{line.displayName}</b>{line.meta && <small>{line.meta}</small>}{line.note && <small>{line.note}</small>}</span><span className="order-qty" dir="ltr"><span className="qty-times" aria-hidden="true">×</span>{line.qty}</span><span dir="ltr">{ticketMoney(line.lineTotal)}</span></li>)}</ul>
               {(receipt.details?.discountMinor ?? 0) > 0 && <p className="order-discount"><span>{text('Discounts', 'الخصومات')}</span><span dir="ltr">−{money(receipt.details!.discountMinor)}</span></p>}
+              {(receipt.details?.coupon?.code || receipt.details?.couponCode) && <p className="order-coupon-code" dir="ltr">{receipt.details?.coupon?.code || receipt.details?.couponCode}</p>}
               <p className="order-total"><span>{t.total}</span><strong dir="ltr">{money(receipt.totalMinor)}</strong></p>
               <details className="customer-fold order-collection">
                 <summary><span>{text('Your details', 'بياناتك')}</span></summary>
@@ -457,7 +467,7 @@ function Experience({
             {error && <div className="checkout-error" role="alert"><p>{error}</p><button className="text-action" type="button" onClick={() => { go('menu'); router.refresh(); }}>{text('Refresh menu', 'تحديث القائمة')}</button></div>}
           </div>
           {step === 'details' && <div className="checkout-step-action"><button type="submit" form="collection-details" className="checkout-primary" disabled={!canPlace || !count || cart.unavailableCount > 0}>{text('Review order', 'مراجعة الطلب')}<Forward /></button></div>}
-          {step === 'review' && <div className="checkout-step-action"><button type="button" className="checkout-primary" disabled={busy || redirecting || !canPlace || (!resumePay && (!count || cart.unavailableCount > 0))} onClick={() => {
+          {step === 'review' && <div className="checkout-step-action"><button type="button" className="checkout-primary" disabled={busy || redirecting || couponPending || !canPlace || (!resumePay && (!count || cart.unavailableCount > 0))} onClick={() => {
             if (resumePay && receipt?.paymentMethod === 'sadad') void beginSadadPay(receipt.id);
             else if (resumePay) go('payment');
             else void checkout();

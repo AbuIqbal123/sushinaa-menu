@@ -15,6 +15,7 @@ import { formatQatarDateTime } from '@/lib/datetime';
 import { formatMinor } from '@/lib/money';
 import { formatOrderNumber } from '@/ordering/order-number';
 import { nationalPhone } from '@/ordering/checkout/validation';
+import { orderTotals } from '@/ordering/edits';
 import { imageFor,selectionLabel } from '@/ordering/price';
 import type { Dish } from '@/catalog/types';
 import { printTicket } from './print-ticket';
@@ -117,6 +118,9 @@ export function OrderDetail({ id, onBack, onChange, role, menu, refreshKey=0 }: 
     finally { setBusy(false); }
   }
   const branch = branches.find(b => b.slug === data?.branchId);
+  const storedCoupon = data?.snapshot.coupon;
+  const coupon = storedCoupon && storedCoupon.code && Number.isSafeInteger(storedCoupon.discountMinor) && storedCoupon.discountMinor > 0 ? storedCoupon : null;
+  const subtotalMinor = data && coupon ? orderTotals({ lines: data.currentLines, totalMinor: data.totalMinor }).subtotalMinor : null;
   const times=data?stageTimes(data,now):null;
   const timingBits=times?([[text('Accept','قبول'),times.acceptance],[text('Prep','تحضير'),times.preparation],[text('Collect','استلام'),times.collection]] as const).filter(([,value])=>value!=null).map(([label,value])=>`${label} ${value}${text('m','د')}`):[];
   const timingLine=timingBits.join(' · ');
@@ -168,6 +172,10 @@ export function OrderDetail({ id, onBack, onChange, role, menu, refreshKey=0 }: 
               {line.note && <p className="kitchen-detail"><span>{text('Note', 'ملاحظة')}</span><span>{line.note}</span></p>}
             </li>;
           })}</ul>
+          {coupon && subtotalMinor != null && <>
+            <p className="kitchen-item"><span>{text('Subtotal', 'المجموع الفرعي')}</span><span dir="ltr">{formatMinor(subtotalMinor, lang)}</span></p>
+            <p className="kitchen-item"><span>{text('Coupon', 'قسيمة')} <span dir="ltr">{coupon.code}</span></span><span dir="ltr">{formatMinor(-coupon.discountMinor, lang)}</span></p>
+          </>}
           <p className="kitchen-total"><span>{text('Total', 'الإجمالي')}</span><strong dir="ltr">{formatMinor(data.totalMinor, lang)}</strong></p>
         </section>
         <section className="ops-detail-secondary">

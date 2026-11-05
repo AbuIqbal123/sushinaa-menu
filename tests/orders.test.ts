@@ -6,7 +6,8 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { statuses, canTransition, staffStatus, staffLabels, type OrderStatus } from '../src/ordering/status';
 import { orderQuery, statusBody } from '../src/ordering/contracts';
-import { checkoutSchema, quoteOrder, type OrderSnapshot } from '../src/ordering/checkout/validation';
+import { checkoutSchema } from '../src/ordering/checkout/validation';
+import { quoteOrder, type OrderSnapshot } from '../src/ordering/checkout/quote';
 import { menuSchema } from '../src/cms/schema';
 import { defaultSelection, unitPrice } from '../src/ordering/price';
 
@@ -64,12 +65,12 @@ test('same key with a different body is rejected', async () => {
 const menu = menuSchema.parse(JSON.parse(readFileSync('data/initial-menu.json','utf8')));
 const dish = menu.dishes.find(d=>d.visible && d.available && d.kind.type === 'simple')!;
 const input = {branchId:'down-town',customer:snapshot.customer,lines:[{dishId:dish.id,selection:defaultSelection(dish),quantity:1,note:'',expectedUnitMinor:Math.round(unitPrice(dish,defaultSelection(dish))*100)}]};
-test('client-sent total or paid flag is ignored', () => {
+test('client-sent total or paid flag is ignored', async () => {
   // Strict validation refuses forged fields entirely; they can never affect persistence.
   for(const fields of [{totalMinor:1},{paid:true},{paymentStatus:'paid'}]) assert.equal(checkoutSchema.safeParse({...input,...fields}).success,false);
-  const valid=checkoutSchema.parse(input);const order=quoteOrder(valid,menu,new Date('2026-10-23T15:00:00+03:00'));
+  const valid=checkoutSchema.parse(input);const order=await quoteOrder(valid,menu,new Date('2026-10-23T15:00:00+03:00'));
   assert.equal(order.totalMinor,input.lines[0].expectedUnitMinor);
-  assert.throws(()=>quoteOrder({...valid,lines:[{...valid.lines[0],expectedUnitMinor:1}]},menu,new Date('2026-10-23T15:00:00+03:00')),/PRICE_CHANGED/);
+  await assert.rejects(()=>quoteOrder({...valid,lines:[{...valid.lines[0],expectedUnitMinor:1}]},menu,new Date('2026-10-23T15:00:00+03:00')),/PRICE_CHANGED/);
 });
 test('zero, negative, huge and malformed quantities are rejected', () => {
   for(const quantity of [0,-1,21,1.1,NaN,Infinity,'2',null,{},100000000]) assert.equal(checkoutSchema.safeParse({...input,lines:[{...input.lines[0],quantity}]}).success,false);

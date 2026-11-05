@@ -12,6 +12,7 @@ import type { BranchId } from '@/branches/branches';
 import { branchClause, type BranchScope } from './scope';
 import { operationScope } from './operations-calendar';
 import { counterSettlementStatements, mockProvider, settlePayment } from './payments';
+import { releaseCouponStatement } from './coupons/repository';
 import { AUTO_PRINT_WINDOW_MS } from './config';
 import { afterChange } from './write';
 import { KITCHEN_VISIBLE } from './visibility';
@@ -185,6 +186,7 @@ export async function transitionOrder(scope: BranchScope, id: string, input: Sta
       args: [input.to, at, input.to, purge, id, ...branch.args, input.expected, input.to, input.to, Number(recordPayment)] },
     afterChange(auditInsert(ctx, { action: 'order.status', entityType: 'order', entityId: id, label: input.to === 'cancelled' ? input.reason : undefined, diff: { status: { from: input.expected, to: input.to }, ...(settled ? { settledMinor: Number(settled.total_minor) } : {}) } })),
     ...(recordPayment ? counterSettlementStatements(id, at) : []),
+    ...(input.to === 'cancelled' ? [releaseCouponStatement(id, at)] : []),
   ], 'write');
   if (result[0].rowsAffected !== 1) {
     const visible = (await db.execute({ sql: `SELECT id FROM orders WHERE id=? AND ${branch.sql}`, args: [id, ...branch.args] })).rows[0];

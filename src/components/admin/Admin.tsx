@@ -23,6 +23,7 @@ import { Dashboard } from "./Dashboard";
 import { Orders } from "./Orders";
 import { Payments } from "./Payments";
 import { StaffPanel } from "./StaffPanel";
+import { CouponsPanel } from "./CouponsPanel";
 import { Activity } from "./Activity";
 import type { Role } from "@/cms/permissions";
 import { confirmDiscard } from "./Fields";
@@ -48,7 +49,7 @@ export function Admin({ initial, role, branchId }: { initial: MenuSnapshot; role
     return()=>{document.removeEventListener('keydown',keys);document.body.style.overflow=overflow;previous?.focus();};
   },[mobileNav]);
   const [orderIntent,setOrderIntent]=useState<OrderIntent&{key:number}>({key:0});
-  const labels:Record<string,[string,string,OpsIconName]>={Dashboard:['Dashboard','لوحة التحكم','dashboard'],Orders:['Orders','الطلبات المباشرة','orders'],History:['Order history','سجل الطلبات','history'],Payments:['Payments','المدفوعات','money'],Menu:['Menu','القائمة','menu'],Categories:['Categories','التصنيفات','categories'],Branches:['Branches','الفروع','branches'],Users:['Users','المستخدمون','users'],Settings:['Settings','الإعدادات','settings'],Activity:['Activity','النشاط','activity']};
+  const labels:Record<string,[string,string,OpsIconName]>={Dashboard:['Dashboard','لوحة التحكم','dashboard'],Orders:['Orders','الطلبات المباشرة','orders'],History:['Order history','سجل الطلبات','history'],Payments:['Payments','المدفوعات','money'],Menu:['Menu','القائمة','menu'],Categories:['Categories','التصنيفات','categories'],Branches:['Branches','الفروع','branches'],Users:['Users','المستخدمون','users'],Coupons:['Coupons','القسائم','money'],Settings:['Settings','الإعدادات','settings'],Activity:['Activity','النشاط','activity']};
   const [unreadOrders, setUnreadOrders] = useState(0);
   const [snapshot, setSnapshot] = useState(initial);
   const params = useSearchParams();
@@ -58,7 +59,7 @@ export function Admin({ initial, role, branchId }: { initial: MenuSnapshot; role
         { id: "dashboard", label: ["Dashboard", "لوحة التحكم"] as const, items: ["Dashboard"] },
         { id: "orders", label: ["Orders", "الطلبات"] as const, items: ["Orders", "History", "Payments"] },
         { id: "menu", label: ["Menu", "القائمة"] as const, items: ["Menu", "Categories"] },
-        { id: "admin", label: ["Admin", "الإدارة"] as const, items: ["Branches", "Users", "Settings", "Activity"] },
+        { id: "admin", label: ["Admin", "الإدارة"] as const, items: ["Branches", "Users", "Coupons", "Settings", "Activity"] },
       ]
     : [
         { id: "dashboard", label: ["Dashboard", "لوحة التحكم"] as const, items: ["Dashboard"] },
@@ -224,6 +225,7 @@ export function Admin({ initial, role, branchId }: { initial: MenuSnapshot; role
           <Orders active={section === "Orders" || section === "History"} view={section==='History'?'history':'active'} branch={branch} intent={orderIntent} onUnread={setUnreadOrders} role={role} menu={menu} />
           {role === "admin" && <Payments active={section === "Payments"} />}
           {section === "Users" && role === "admin" && <StaffPanel menu={menu} creating={creatingUser} onCreating={setCreatingUser} />}
+          {section === "Coupons" && role === "admin" && <CouponsPanel />}
           {section === "Branches" && role === "admin" && <BranchEditor menu={menu} onSave={save} />}
           {section === "Activity" && <Activity />}
           {section === "Settings" && role === "admin" && (

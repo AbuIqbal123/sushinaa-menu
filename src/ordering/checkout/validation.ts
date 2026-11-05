@@ -1,12 +1,8 @@
 import { z } from 'zod';
 import { CAR_BRANDS } from '@/ordering/car-brands';
 import type { Dish, Selection } from '@/catalog/types';
-import type { MenuData } from '@/cms/schema';
-import { publicMenu } from '@/cms/schema';
-import { isSelectionComplete, unitPrice } from '@/ordering/price';
-import { configuredBranches } from '@/branches/branches';
+import { isSelectionComplete } from '@/ordering/price';
 import { branchId } from '@/ordering/contracts';
-import { branchStatus, qatarClock } from '@/branches/hours';
 
 export const digits = (value: string) => value.replace(/[٠-٩۰-۹]/g, c => String(c.charCodeAt(0) >= 1776 ? c.charCodeAt(0) - 1776 : c.charCodeAt(0) - 1632));
 export function nationalPhone(phone: string) {
@@ -51,12 +47,13 @@ export const selectionSchema = z.object({
 export const checkoutSchema = z.object({
   branchId,
   paymentMethod: z.enum(['mock', 'pay_at_pickup', 'sadad']).optional(),
+  couponCode: z.string().trim().min(1).max(32).optional(),
   customer: customerSchema,
   lines: z.array(z.object({ dishId: option, selection: selectionSchema, quantity: z.number().int().min(1).max(20), note: optionalText(400), expectedUnitMinor: z.number().int().min(0) }).strict()).min(1).max(100),
 }).strict();
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
 export class CheckoutError extends Error {
-  constructor(public code: 'CLOSED' | 'UNAVAILABLE' | 'OPTIONS' | 'PRICE_CHANGED' | 'LIMIT' | 'CONFLICT') { super(code); }
+  constructor(public code: 'CLOSED' | 'UNAVAILABLE' | 'OPTIONS' | 'PRICE_CHANGED' | 'LIMIT' | 'CONFLICT' | 'NOT_FOUND' | 'EXPIRED' | 'NON_POSITIVE' | 'INVALID_CODE') { super(code); }
 }
 // The viewing menu tolerates legacy selections; checkout deliberately accepts only options belonging to this dish.
 export function validCheckoutSelection(dish: Dish, sel: Selection) {
@@ -78,23 +75,3 @@ export function validCheckoutSelection(dish: Dish, sel: Selection) {
   }
   return Object.keys(sel).every(key => sel[key as keyof Selection] === undefined || allowed.has(key)) && required.every(key => sel[key as keyof Selection] !== undefined);
 }
-export function quoteOrder(input: CheckoutInput, menu: MenuData, now = new Date(), options?: { allowClosed?: boolean }) {
-  const branch = configuredBranches(menu.branches).find(b => b.slug === input.branchId)!;
-  if (!options?.allowClosed && !branchStatus(branch.hours, qatarClock(now)).open) throw new CheckoutError('CLOSED');
-  if (input.lines.reduce((n, line) => n + line.quantity, 0) > 100) throw new CheckoutError('LIMIT');
-  const available = publicMenu(menu).dishes;
-  const lines = input.lines.map(line => {
-    const dish = available.find(d => d.id === line.dishId);
-    if (!dish) throw new CheckoutError('UNAVAILABLE');
-    if (!validCheckoutSelection(dish, line.selection)) throw new CheckoutError('OPTIONS');
-    const unitMinor = Math.round(unitPrice(dish, line.selection) * 100);
-    if (unitMinor !== line.expectedUnitMinor) throw new CheckoutError('PRICE_CHANGED');
-    const category = menu.categories.find((item) => item.id === dish.section);
-    return { dishId: dish.id, name: dish.name, nameAr: dish.nameAr, kind: dish.kind, freeDips: dish.freeDips, extras: dish.extras,
-      categoryId: dish.section, categoryName: category?.name ?? 'Items', categoryNameAr: category?.nameAr ?? '', categoryOrder: category?.order ?? 0,
-      selection: line.selection, quantity: line.quantity, note: line.note, unitMinor, totalMinor: unitMinor * line.quantity };
-  });
-  return { branchId: branch.slug, branchName: branch.name, customer: input.customer, collection: 'car' as const, lines,
-    totalMinor: lines.reduce((n, line) => n + line.totalMinor, 0), currency: 'QAR' as const };
-}
-export type OrderSnapshot = ReturnType<typeof quoteOrder>;

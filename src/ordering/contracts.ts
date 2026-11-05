@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { BRANCHES, type BranchId } from '@/branches/branches';
 import { statuses, type OrderStatus, type PaymentMethod } from './status';
-import type { OrderSnapshot } from './checkout/validation';
+import type { OrderSnapshot } from './checkout/quote';
 export const orderId = z.string().regex(/^SU-[0-9a-f-]{36}$/);
 export const branchId = z.custom<BranchId>((v) => typeof v === 'string' && BRANCHES.some(b => b.slug === v));
 const date = z.iso.date();

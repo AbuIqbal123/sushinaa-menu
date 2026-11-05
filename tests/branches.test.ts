@@ -7,7 +7,8 @@ import {menuSchema} from '../src/cms/schema';
 import {configuredBranches,BRANCHES} from '../src/branches/branches';
 import {branchListSchema} from '../src/branches/schema';
 import {branchStatus} from '../src/branches/hours';
-import {checkoutSchema,quoteOrder} from '../src/ordering/checkout/validation';
+import { checkoutSchema } from '../src/ordering/checkout/validation';
+import { quoteOrder } from '../src/ordering/checkout/quote';
 import {defaultSelection,unitPrice} from '../src/ordering/price';
 const legacy=()=>JSON.parse(readFileSync('data/initial-menu.json','utf8'));
 test('older menus retain all four branch defaults; editing details preserves routing/maps/codes',()=>{
@@ -30,13 +31,13 @@ test('closed days skip to the next opening but still honour the previous night s
   assert.equal(branchStatus(hours,{day:5,minute:800},'ar').label,'يفتح الأحد');
   for(const day of hours)day.closed=true;assert.equal(branchStatus(hours,{day:1,minute:800}).label,'Closed');assert.equal(branchStatus(hours,{day:1,minute:800}).open,false);
 });
-test('checkout enforces published hours and snapshots the published branch name',()=>{
+test('checkout enforces published hours and snapshots the published branch name',async()=>{
   const menu=menuSchema.parse(legacy());const dish=menu.dishes.find(d=>d.visible&&d.available&&d.kind.type==='simple')!;const selection=defaultSelection(dish);
   const input=checkoutSchema.parse({branchId:'down-town',customer:{name:'Test',phone:'55551234',brand:'toyota',plate:'Q123'},lines:[{dishId:dish.id,selection,quantity:1,expectedUnitMinor:Math.round(unitPrice(dish,selection)*100)}]});
   menu.branches[0].name='New branch name';menu.branches[0].hours[0]={open:900,close:1620};
-  assert.throws(()=>quoteOrder(input,menu,new Date('2026-11-01T14:59:00+03:00')),/CLOSED/);
-  assert.equal(quoteOrder(input,menu,new Date('2026-11-01T15:00:00+03:00')).branchName,'New branch name');
-  menu.branches[0].hours[0].closed=true;assert.throws(()=>quoteOrder(input,menu,new Date('2026-11-01T15:00:00+03:00')),/CLOSED/);
+  await assert.rejects(()=>quoteOrder(input,menu,new Date('2026-11-01T14:59:00+03:00')),/CLOSED/);
+  assert.equal((await quoteOrder(input,menu,new Date('2026-11-01T15:00:00+03:00'))).branchName,'New branch name');
+  menu.branches[0].hours[0].closed=true;await assert.rejects(()=>quoteOrder(input,menu,new Date('2026-11-01T15:00:00+03:00')),/CLOSED/);
 });
 test('branch changes persist with audit/revision protection, including saves from older clients',async()=>{
   const dir=mkdtempSync(join(tmpdir(),'sn-branches-'));process.env.CMS_DATABASE_URL=`file:${dir}/menu.db`;process.env.CMS_ENV_GUARD='report';process.env.VERCEL='';process.env.VERCEL_ENV='';
