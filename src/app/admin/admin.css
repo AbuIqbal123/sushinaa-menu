@@ -626,9 +626,6 @@
   text-align: center;
   color: var(--muted);
 }
-.admin-settings {
-  max-width: 1200px;
-}
 @media (max-width: 800px) {
   .admin-sidebar {
     position: static;
@@ -886,23 +883,47 @@
 .order-edit-confirm .admin-confirm p { display: flex; justify-content: space-between; gap: 8px; margin: 0; }
 .order-edit-confirm .admin-confirm p > span:first-child { min-width: 0; overflow-wrap: anywhere; }
 
-.branch-editor { max-width: 1200px; }
-.branch-editor-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.branch-editor { max-width: 1200px; display: grid; gap: 12px; }
+.branch-editor-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 0; }
+.branch-editor-tabs button { min-height: 34px; padding: 6px 12px; font-size: 13px; }
 .branch-editor-tabs button[aria-pressed="true"] { background: #8b2025; border-color: #8b2025; color: #fff; }
-.branch-editor h2 { margin: 0 0 20px; font-size: 20px; }
-.branch-editor .admin-field { display: grid; gap: 7px; }
-.branch-editor input, .branch-editor select { max-width: 100%; min-width: 0; min-height: 44px; }
-.branch-editor-note, .branch-hours-heading p { font-size: 13px; color: #6b6258; margin: 0 0 16px; }
-.branch-hours-heading h2 { margin-bottom: 8px; }
-.branch-hours-copy { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin: 18px 0; }
-.branch-hours-copy label { display: grid; gap: 5px; font-size: 12px; }
-.branch-hours-day { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: start; gap: 12px; min-width: 0; margin: 0; padding: 14px 0; border: 0; border-top: 1px solid #eee7db; }
-.branch-hours-day legend { padding: 0 8px 0 0; font-size: 14px; font-weight: 700; }
-.branch-hours-day > label:not(.branch-closed) { display: grid; gap: 5px; font-size: 12px; }
-.branch-hours-day input[type="time"] { width: 100%; padding: 10px; }
-.branch-hours-day small { color: #776348; }
-.branch-editor .branch-closed { display: flex; flex-direction: row; gap: 8px; align-items: center; min-height: 40px; font-size: 13px; }
-.branch-closed input { width: 18px; min-height: 18px; }
-.branch-editor-save { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; position: sticky; bottom: 0; padding: 14px 0; background: #f5f4ef; }
-.branch-editor-save span { font-size: 13px; color: #6b6258; }
-@media (max-width: 540px) { .branch-hours-day { grid-template-columns: 1fr 1fr; gap: 8px; } .branch-closed { grid-column: 1 / -1; min-height: 32px; } }
+.branch-editor .admin-card { padding: 14px 16px; margin-bottom: 0; }
+.branch-editor h2 { margin: 0 0 10px; font-size: 15px; font-weight: 650; }
+.branch-editor .admin-field { display: grid; gap: 4px; margin-bottom: 0; }
+.branch-editor .admin-grid { gap: 10px 14px; }
+.branch-editor input, .branch-editor select { max-width: 100%; min-width: 0; min-height: 36px; padding: 6px 10px; }
+.branch-editor-note, .branch-hours-heading p { font-size: 12px; color: #6b6258; margin: 8px 0 0; }
+.branch-hours-heading { margin-bottom: 4px; }
+.branch-hours-heading h2 { margin-bottom: 4px; }
+.branch-hours-copy { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin: 10px 0 6px; }
+.branch-hours-copy label { display: grid; gap: 3px; font-size: 11px; }
+.branch-hours-copy button { min-height: 34px; font-size: 12px; }
+.branch-hours-day { display: grid; grid-template-columns: 7rem auto minmax(0,1fr) minmax(0,1fr); align-items: center; gap: 8px 10px; min-width: 0; margin: 0; padding: 7px 0; border: 0; border-top: 1px solid #eee7db; }
+.branch-hours-day:first-of-type { border-top: 0; }
+.branch-hours-day-name { font-size: 13px; font-weight: 650; min-width: 0; }
+.branch-hours-day > label:not(.branch-closed) { display: grid; gap: 3px; font-size: 11px; }
+.branch-hours-day input[type="time"] { width: 100%; min-height: 34px; padding: 6px 8px; }
+.branch-hours-day small { color: #776348; font-size: 11px; }
+.branch-editor .branch-closed { display: flex; flex-direction: row; gap: 6px; align-items: center; min-height: 34px; font-size: 12px; white-space: nowrap; }
+.branch-closed input { width: 16px; min-height: 16px; }
+.branch-editor-save { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; position: sticky; bottom: 0; padding: 10px 0; background: #f5f4ef; }
+.branch-editor-save span { font-size: 12px; color: #6b6258; }
+@media (max-width: 720px) {
+  .branch-hours-day { grid-template-columns: 1fr 1fr; gap: 6px 8px; }
+  .branch-hours-day-name, .branch-closed { grid-column: 1 / -1; }
+}
+.admin-settings { max-width: 1200px; display: grid; gap: 10px; }
+.admin-settings .admin-card { padding: 14px 16px; margin-bottom: 0; }
+.admin-settings .admin-grid { gap: 10px 14px; }
+.admin-settings .admin-field { margin-bottom: 0; }
+.admin-settings-restaurant { display: grid; gap: 14px; }
+.admin-settings-logos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+.admin-settings .admin-card h3 { margin: 0 0 8px; font-size: 14px; font-weight: 650; }
+.admin-settings .admin-card + .admin-card,
+.admin-settings .admin-grid + h2 { margin-top: 4px; }
+.admin-settings h2 { margin: 8px 0 6px; font-size: 15px; }
+.admin-settings .muted { margin: 0 0 8px; font-size: 12px; }
+.admin-settings .admin-row { padding: 6px 0; gap: 8px; }
+@media (max-width: 720px) {
+  .admin-settings-logos { grid-template-columns: 1fr; }
+}

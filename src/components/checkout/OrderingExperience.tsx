@@ -25,7 +25,7 @@ import { OrderProgress, orderPhase, orderTrackingLabel } from './OrderProgress';
 const emptyCustomer: Customer = { name: '', phone: '', plate: 'Q', brand: '', colour: '', car: '', instructions: '' };
 type Step = 'menu' | 'details' | 'review' | 'payment' | 'receipt';
 type PaymentMethodUi = 'mock' | 'pay_at_pickup' | 'sadad';
-type Receipt = { id: string; orderNumber?: number | null; paymentStatus: PaymentStatus; totalMinor: number; paymentMethod: PaymentMethodUi; status: string; details?: CustomerReceiptDetails };
+type Receipt = { id: string; orderNumber?: number | null; paymentStatus: PaymentStatus; totalMinor: number; paymentMethod: PaymentMethodUi; status: string; arrivedAt?: string | null; details?: CustomerReceiptDetails };
 export function OrderingExperience({
   initialNow,
   branchId,
@@ -125,7 +125,7 @@ function Experience({
     let failTimer: number | undefined;
     if (payFailed) {
       failTimer = window.setTimeout(() => {
-        setError(text('Payment was not completed. Your pickup details are still here — try again when ready.', 'لم يكتمل الدفع. بيانات الاستلام ما زالت هنا — حاول مجدداً عندما تكون جاهزاً.'));
+        setError(text('Payment was not completed. Your pickup details are still here. Try again when ready.', 'لم يكتمل الدفع. بيانات الاستلام ما زالت هنا. حاول مجدداً عندما تكون جاهزاً.'));
       }, 0);
     }
     const storedFromPay = paidId;
@@ -174,7 +174,9 @@ function Experience({
         }
         if (payFailed || returnMode) setStep('review');
       }
-      finish();
+      // Clear recovering in this turn so a Strict Mode / HMR remount cannot leave
+      // the success path stuck on "Confirming your order…".
+      setRecovering(false);
     }).catch(() => {
       finish(returnMode ? (payFailed ? 'review' : 'menu') : undefined);
     });
@@ -411,6 +413,24 @@ function Experience({
                 {receipt.orderNumber != null && <p className="order-number" dir="ltr"><span>{text('Order number', 'رقم الطلب')}</span>{formatOrderNumber(receipt.orderNumber)}</p>}
               </header>
               <OrderProgress status={receipt.status} lang={lang} />
+              {receipt.status === 'ready' && !receipt.arrivedAt && <div className="order-arrived-action">
+                <button type="button" className="checkout-primary order-arrived-button" disabled={busy} onClick={() => {
+                  if (busyRef.current) return;
+                  busyRef.current = true; setBusy(true); setError('');
+                  void fetch(`/api/orders/${receipt.id}/arrived`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: '{}',
+                  }).then(async (response) => {
+                    const body = await response.json() as Receipt & { code?: string };
+                    if (!response.ok) throw new Error(body.code || 'NETWORK');
+                    setReceipt((current) => current ? { ...current, ...body, details: body.details ?? current.details } : body);
+                  }).catch(() => setError(text('Unable to notify the kitchen. Please try again.', 'تعذّر إبلاغ المطبخ. يرجى المحاولة مجدداً.')))
+                    .finally(() => { busyRef.current = false; setBusy(false); });
+                }}>{busy ? text('Notifying…', 'جارٍ الإبلاغ…') : text("I've arrived", 'لقد وصلت')}</button>
+                <p>{text('Tap when you are at the branch for pickup.', 'اضغط عندما تصل إلى الفرع للاستلام.')}</p>
+              </div>}
+              {receipt.status === 'ready' && receipt.arrivedAt && <p className="order-arrived-note" role="status">{text('Kitchen notified. Stay in your car.', 'تم إبلاغ المطبخ. يرجى البقاء في سيارتك.')}</p>}
               <section className="order-pickup">
                 <div className="confirmation-branch"><p className="checkout-branch">{text('Pickup', 'استلام')} · <strong>{receiptBranchName}</strong></p>
                   {receiptBranch && <a className="branch-call" href={`tel:${receiptBranch.phone}`} aria-label={text(`Call ${receiptBranchName} branch`, `اتصل بفرع ${receiptBranchName}`)}>

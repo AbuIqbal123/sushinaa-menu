@@ -190,7 +190,10 @@
 .ops-live-table th,.ops-live-table td { overflow:hidden; text-overflow:ellipsis; }
 .ops-flag { margin-inline-start:3px; color:#a59a8a; font-weight:700; }
 .ops-flag.is-note { color:#a07931; }
+.ops-live-table tr.is-arrived td { background:#eaf6ee; }
+.ops-arrived-banner { margin:8px 0 0; padding:8px 10px; border-radius:8px; background:#e8f3eb; border:1px solid #9fc5aa; color:#1f6b3a; font-size:13px; font-weight:700; }
 .admin-workspace .staff-status { font-size:10px; padding:3px 7px; border-radius:999px; line-height:1.3; font-weight:600; white-space:nowrap; }
+.admin-workspace .status-arrived { background:#1f6b3a; color:#fff; }
 .admin-workspace .status-received,.admin-workspace .status-awaiting_payment { background:#f9e8e8; color:#ab3945; }
 .admin-workspace .status-preparing,.admin-workspace .status-processing { background:#fbf0dc; color:#9c751e; }
 .admin-workspace .status-ready,.admin-workspace .status-paid { background:#e6f2e9; color:#427958; }

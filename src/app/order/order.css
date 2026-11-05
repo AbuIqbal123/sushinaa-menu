@@ -401,6 +401,10 @@ html[dir="rtl"] .ticket-pickup.is-driving .pickup-car { animation-name: pickup-d
 .ordering-page[data-step="review"] .review-details .plate-card { min-height: 64px; }
 .ordering-page[data-step="receipt"] .checkout-main h1 { margin: 4px 0 10px; font-size: clamp(29px, 7.5vw, 36px); line-height: 1.15; }
 .ordering-page[data-step="receipt"] .order-progress { margin: 0 0 12px; }
+.order-arrived-action { display: grid; gap: 8px; margin: 0 0 14px; }
+.order-arrived-action p { margin: 0; color: #5a5247; font-size: 13px; line-height: 1.45; }
+.order-arrived-button { justify-content: center; }
+.order-arrived-note { margin: 0 0 14px; padding: 12px 14px; border-radius: 12px; background: #edf4e9; border: 1px solid #a8bda9; color: #285a3c; font-size: 14px; font-weight: 650; line-height: 1.4; }
 .order-pickup { display: grid; gap: 8px; margin: 0 0 12px; }
 .order-pickup .confirmation-branch,
 .order-pickup .directions-link { margin: 0; }

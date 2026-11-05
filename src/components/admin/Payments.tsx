@@ -250,7 +250,7 @@ export function Payments({ active }: { active: boolean }) {
               ))}
             </tbody>
           </table>
-          {data.more && <p className="staff-more">More rows available — narrow the filters.</p>}
+          {data.more && <p className="staff-more">More rows available. Narrow the filters.</p>}
         </div>
       )}
 

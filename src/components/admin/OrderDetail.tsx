@@ -131,6 +131,7 @@ export function OrderDetail({ id, onBack, onChange, role, menu, refreshKey=0 }: 
           <span className={`staff-status status-${staffStatus(data.status)}`}>{staffLabels[staffStatus(data.status)][lang]}</span>
         </div>
         <p className="ops-detail-sub">{[branchName,timingLine].filter(Boolean).join(' · ')}</p>
+        {data.arrivedAt && <p className="ops-arrived-banner" role="status">{text('Customer has arrived for pickup', 'وصل العميل للاستلام')}</p>}
       </header>
       <section className="kitchen-actions-band ops-detail-actions-top" aria-label={text('Actions', 'إجراءات')}>
         <div className="kitchen-actions">

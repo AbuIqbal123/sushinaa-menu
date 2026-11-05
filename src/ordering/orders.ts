@@ -51,7 +51,8 @@ export function summary(row: DbRow): OrderSummary {
     paymentMethod: row.payment_method as OrderSummary['paymentMethod'], paidAt: nullable(row.paid_at),
     totalMinor: Number(row.total_minor), currency: 'QAR', createdAt: String(row.created_at),
     name, phone, plate,
-    printCount: Number(row.print_count ?? 0), printedAt: nullable(row.printed_at) };
+    printCount: Number(row.print_count ?? 0), printedAt: nullable(row.printed_at),
+    arrivedAt: nullable(row.customer_arrived_at) };
 }
 
 async function unprintedCount(scope: BranchScope) {
@@ -108,13 +109,19 @@ export async function listOrders(scope: BranchScope, query: OrderQuery) {
   // Live + history both newest-first. Live uses kitchen arrival (paid/created); history uses last status change.
   const orderBy = query.view === 'history' ? STATUS_AT_SQL : LIVE_SORT_SQL;
   const rows = await db.execute({
-    sql: `SELECT id,branch_id,status,payment_method,paid_at,total_minor,created_at,updated_at,snapshot,instructions,customer_name,customer_phone,car_plate,order_number,print_count,printed_at, ${STATUS_AT_SQL} status_at FROM orders WHERE ${branch.sql} AND ${predicate} ORDER BY ${orderBy} DESC, order_number DESC, id DESC LIMIT ? OFFSET ?`,
+    sql: `SELECT id,branch_id,status,payment_method,paid_at,total_minor,created_at,updated_at,snapshot,instructions,customer_name,customer_phone,car_plate,order_number,print_count,printed_at,customer_arrived_at, ${STATUS_AT_SQL} status_at FROM orders WHERE ${branch.sql} AND ${predicate} ORDER BY ${orderBy} DESC, order_number DESC, id DESC LIMIT ? OFFSET ?`,
     args: [...branch.args, ...args, query.limit + 1, (page - 1) * query.limit],
   });
   const count = followCursor ? Number((await db.execute({ sql: `SELECT COUNT(*) AS n FROM orders WHERE ${branch.sql} AND ${predicate}`, args: [...branch.args, ...args] })).rows[0].n) : 0;
+  const arrivedCount = query.arrivedSince
+    ? Number((await db.execute({
+      sql: `SELECT COUNT(*) AS n FROM orders WHERE ${KITCHEN_VISIBLE} AND ${branch.sql} AND customer_arrived_at>?`,
+      args: [...branch.args, query.arrivedSince],
+    })).rows[0].n)
+    : 0;
   const cutoff = new Date(Date.now() - AUTO_PRINT_WINDOW_MS).toISOString();
   const autoPrint = (await db.execute({
-    sql: `SELECT id,branch_id,status,payment_method,paid_at,total_minor,created_at,customer_name,customer_phone,car_plate,order_number,print_count,printed_at
+    sql: `SELECT id,branch_id,status,payment_method,paid_at,total_minor,created_at,customer_name,customer_phone,car_plate,order_number,print_count,printed_at,customer_arrived_at
       FROM orders WHERE ${KITCHEN_VISIBLE} AND ${branch.sql} AND print_count=0 AND print_claimed_at IS NULL AND ${printableSql}
       AND ${LIVE_SORT_SQL}>=? ORDER BY ${LIVE_SORT_SQL}, id`,
     args: [...branch.args, cutoff],
@@ -132,7 +139,7 @@ export async function listOrders(scope: BranchScope, query: OrderQuery) {
       items:lines.slice(0,3).map(line=>({dishId:line.dishId,name:line.name,nameAr:line.nameAr,quantity:line.quantity,selection:line.selection})),
       itemCount:lines.reduce((sum,line)=>sum+line.quantity,0),hasNotes:lines.some(line=>Boolean(line.note))||Boolean(row.instructions)};
   });
-  return { rows: summaries, more: rows.rows.length > query.limit, page, newCount: count, unprintedCount: backlog, autoPrint };
+  return { rows: summaries, more: rows.rows.length > query.limit, page, newCount: count, arrivedCount, unprintedCount: backlog, autoPrint };
 }
 
 export async function detailOrder(scope: BranchScope, id: string): Promise<OrderDetailData> {

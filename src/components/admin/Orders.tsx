@@ -16,28 +16,50 @@ import { OpsIcon,useOperations } from './OperationsUI';
 import { qatarDate } from '@/ordering/operations-calendar';
 import type { OrderIntent } from './Dashboard';
 
-type List={rows:OrderSummary[];more:boolean;newCount:number;unprintedCount?:number};
+type List={rows:OrderSummary[];more:boolean;newCount:number;arrivedCount?:number;unprintedCount?:number};
 type Props={active:boolean;onUnread:(n:number)=>void;role:Role;menu:MenuData;branch?:string;view?:'active'|'history';intent?:OrderIntent&{key?:number}};
 export function Orders({active,onUnread,role,menu,branch='',view='active',intent={}}:Props){
   const router=useRouter();const {lang}=useLocale();const text=(en:string,ar:string)=>lang==='ar'?ar:en;
   const [sound,setSound]=useState(true),[revision,setRevision]=useState(0),[paused,setPaused]=useState(false),[lastOk,setLastOk]=useState<string|null>(null);
-  const latest=useRef<string|null>(null),unread=useRef(0),audio=useRef<HTMLAudioElement|null>(null),activeRef=useRef(active),soundRef=useRef(sound),viewRef=useRef(view);
+  const latest=useRef<string|null>(null),arrivedCursor=useRef<string|null>(null),unread=useRef(0),audio=useRef<HTMLAudioElement|null>(null),arrivedAudio=useRef<HTMLAudioElement|null>(null),activeRef=useRef(active),soundRef=useRef(sound),viewRef=useRef(view);
   useEffect(()=>{activeRef.current=active;if(active){unread.current=0;onUnread(0);}},[active,onUnread]);
   useEffect(()=>{soundRef.current=sound;},[sound]);
   useEffect(()=>{viewRef.current=view;},[view]);
-  useEffect(()=>{const chime=new Audio('/order-chime.wav');chime.preload='auto';audio.current=chime;
+  useEffect(()=>{
+    const chime=new Audio('/order-chime.wav');chime.preload='auto';audio.current=chime;
+    const arrived=new Audio('/arrived-chime.wav');arrived.preload='auto';arrivedAudio.current=arrived;
     const timer=setTimeout(()=>{try{setSound(localStorage.getItem('sushinaa-order-sound')!=='false');}catch{/* Optional preference. */}},0);
-    const unlock=()=>{if(!soundRef.current||!chime.paused)return;chime.muted=true;void chime.play().then(()=>{chime.pause();chime.currentTime=0;chime.muted=false;document.removeEventListener('pointerdown',unlock,true);document.removeEventListener('keydown',unlock,true);}).catch(()=>{chime.muted=false;});};
+    const unlock=()=>{
+      if(!soundRef.current)return;
+      for(const clip of [chime,arrived]){
+        if(!clip.paused)continue;
+        clip.muted=true;void clip.play().then(()=>{clip.pause();clip.currentTime=0;clip.muted=false;}).catch(()=>{clip.muted=false;});
+      }
+      document.removeEventListener('pointerdown',unlock,true);document.removeEventListener('keydown',unlock,true);
+    };
     document.addEventListener('pointerdown',unlock,true);document.addEventListener('keydown',unlock,true);
-    return()=>{clearTimeout(timer);chime.pause();document.removeEventListener('pointerdown',unlock,true);document.removeEventListener('keydown',unlock,true);};
+    return()=>{clearTimeout(timer);chime.pause();arrived.pause();document.removeEventListener('pointerdown',unlock,true);document.removeEventListener('keydown',unlock,true);};
   },[]);
-  useEffect(()=>{let live=true,initial=true;const controller=new AbortController();const poller=createOrderPoller({hidden:()=>document.hidden,onUnauthorized:()=>router.push('/admin/login'),poll:async()=>{
-    try{const r=await fetch(`/api/admin/orders?${latest.current?`since=${latest.current}`:'limit=1'}`,{cache:'no-store',signal:controller.signal});if(r.status===401)return 'unauthorized';const body:List=await r.json();if(!r.ok)throw Error('Unavailable');if(!live)return 'ok';setPaused(false);setLastOk(new Date().toISOString());
-      if(body.rows.length){const count=initial?0:latest.current?body.newCount:body.rows.length;latest.current=body.rows[0].id;if(count&&!activeRef.current){unread.current+=count;onUnread(unread.current);}if(count&&soundRef.current)void audio.current?.play().catch(()=>{});}
-      if(!initial&&activeRef.current&&viewRef.current==='active')setRevision(v=>v+1);initial=false;return 'ok';
+  useEffect(()=>{let live=true,initial=true;const controller=new AbortController();
+    // Keep polling while this tab is open but unfocused so arrival/new-order chimes still fire.
+    const poller=createOrderPoller({hidden:()=>false,onUnauthorized:()=>router.push('/admin/login'),poll:async()=>{
+    try{
+      const params=new URLSearchParams(latest.current?{since:latest.current}:{limit:'1'});
+      if(arrivedCursor.current)params.set('arrivedSince',arrivedCursor.current);
+      const r=await fetch(`/api/admin/orders?${params}`,{cache:'no-store',signal:controller.signal});if(r.status===401)return 'unauthorized';const body:List=await r.json();if(!r.ok)throw Error('Unavailable');if(!live)return 'ok';setPaused(false);setLastOk(new Date().toISOString());
+      const arrived=initial?0:(body.arrivedCount??0);
+      let newOrders=0;
+      if(body.rows.length){newOrders=initial?0:latest.current?body.newCount:body.rows.length;latest.current=body.rows[0].id;if(newOrders&&!activeRef.current){unread.current+=newOrders;onUnread(unread.current);}}
+      if(soundRef.current){
+        if(arrived)void arrivedAudio.current?.play().catch(()=>{});
+        else if(newOrders)void audio.current?.play().catch(()=>{});
+      }
+      if(!initial&&activeRef.current&&viewRef.current==='active')setRevision(v=>v+1);
+      arrivedCursor.current=new Date().toISOString();
+      initial=false;return 'ok';
     }catch{if(live)setPaused(true);return 'fail';}
-  }});void poller.start();const visible=()=>{if(!document.hidden)void poller.wake();};document.addEventListener('visibilitychange',visible);
-    return()=>{live=false;controller.abort();poller.stop();document.removeEventListener('visibilitychange',visible);};
+  }});void poller.start();
+    return()=>{live=false;controller.abort();poller.stop();};
   },[onUnread,router]);
   const refresh=useCallback(()=>setRevision(v=>v+1),[]);
   if(!active)return null;
@@ -100,7 +122,7 @@ function OrderWorkspace({view,branch,role,menu,revision,refresh,intent,sound,onS
     <div className={`ops-order-workspace${detail?' has-detail':''}${history?' is-history':''}`}>
       <div className="ops-order-queue">
         {filteredData?.rows.length===0&&<div className="ops-empty-panel ops-queue-empty"><span className="ops-empty-mark"><OpsIcon name={history?'history':'orders'} size={36}/></span><h2>{history?text('No closed orders in this period','لا توجد طلبات مغلقة في هذه الفترة'):text('The kitchen is all caught up','كل الطلبات قيد المتابعة')}</h2><p>{search||status||unprinted||hasDates?text('Try changing your filters.','جرّب تغيير عوامل التصفية.'):history?text('Completed and cancelled orders appear here as soon as they close.','ستظهر الطلبات المكتملة والملغاة هنا فور إغلاقها.'):text('New pickup orders will appear here automatically.','ستظهر طلبات الاستلام الجديدة هنا تلقائياً.')}</p></div>}
-        {!history&&filteredData&&filteredData.rows.length>0&&<div className="staff-order-list ops-history-table ops-live-table"><table><thead><tr><th>{text('Order','الطلب')}</th><th>{text('Customer','العميل')}</th><th>{text('Plate','اللوحة')}</th><th>{text('Status','الحالة')}</th></tr></thead><tbody>{filteredData.rows.map(row=>{const group=staffStatus(row.status);const b=branches.find(x=>x.slug===row.branchId);const flags=[!branch&&b?(ar?b.nameAr:b.name):'',!row.printedAt?text('Not printed','لم تُطبع'):'',row.hasNotes?text('Notes','ملاحظات'):''].filter(Boolean).join(' · ');return <tr key={row.id} data-order-id={row.id} className={detail===row.id?'is-selected':''} title={flags||undefined} onClick={()=>openOrder(row.id)}><td data-label={text('Order','الطلب')}><button type="button" className="ops-table-order" dir="ltr" onClick={e=>{e.stopPropagation();openOrder(row.id);}}>#{formatOrderNumber(row.orderNumber)}</button>{!row.printedAt&&<span className="ops-flag" aria-label={text('Not printed','لم تُطبع')}>·</span>}{row.hasNotes&&<span className="ops-flag is-note" aria-label={text('Notes','ملاحظات')}>!</span>}</td><td data-label={text('Customer','العميل')} className="ops-cell-clip">{row.name}{!branch&&b?<small>{ar?b.nameAr:b.name}</small>:null}</td><td data-label={text('Plate','اللوحة')} dir="ltr">{row.plate}</td><td data-label={text('Status','الحالة')}><span className={`staff-status status-${group}`}>{staffLabels[group][lang]}</span></td></tr>;})}</tbody></table></div>}
+        {!history&&filteredData&&filteredData.rows.length>0&&<div className="staff-order-list ops-history-table ops-live-table"><table><thead><tr><th>{text('Order','الطلب')}</th><th>{text('Customer','العميل')}</th><th>{text('Plate','اللوحة')}</th><th>{text('Status','الحالة')}</th></tr></thead><tbody>{filteredData.rows.map(row=>{const group=staffStatus(row.status);const b=branches.find(x=>x.slug===row.branchId);const flags=[!branch&&b?(ar?b.nameAr:b.name):'',row.arrivedAt?text('Arrived','وصل'):'',!row.printedAt?text('Not printed','لم تُطبع'):'',row.hasNotes?text('Notes','ملاحظات'):''].filter(Boolean).join(' · ');return <tr key={row.id} data-order-id={row.id} className={`${detail===row.id?'is-selected':''}${row.arrivedAt?' is-arrived':''}`} title={flags||undefined} onClick={()=>openOrder(row.id)}><td data-label={text('Order','الطلب')}><button type="button" className="ops-table-order" dir="ltr" onClick={e=>{e.stopPropagation();openOrder(row.id);}}>#{formatOrderNumber(row.orderNumber)}</button>{!row.printedAt&&<span className="ops-flag" aria-label={text('Not printed','لم تُطبع')}>·</span>}{row.hasNotes&&<span className="ops-flag is-note" aria-label={text('Notes','ملاحظات')}>!</span>}</td><td data-label={text('Customer','العميل')} className="ops-cell-clip">{row.name}{!branch&&b?<small>{ar?b.nameAr:b.name}</small>:null}</td><td data-label={text('Plate','اللوحة')} dir="ltr">{row.plate}</td><td data-label={text('Status','الحالة')}>{row.arrivedAt?<span className="staff-status status-arrived">{text('Arrived','وصل')}</span>:<span className={`staff-status status-${group}`}>{staffLabels[group][lang]}</span>}</td></tr>;})}</tbody></table></div>}
         {history&&filteredData&&filteredData.rows.length>0&&<div className="staff-order-list ops-history-table"><table><thead><tr><th>{text('Order','الطلب')}</th>{!branch&&<th>{text('Branch','الفرع')}</th>}<th>{text('Customer','العميل')}</th><th>{text('Status','الحالة')}</th><th>{text('Closed','وقت الإغلاق')}</th><th>{text('Total','الإجمالي')}</th></tr></thead><tbody>{filteredData.rows.map(row=><tr key={row.id} data-order-id={row.id} className={detail===row.id?'is-selected':''} onClick={()=>openOrder(row.id)}><td data-label={text('Order','الطلب')}><button type="button" className="ops-table-order" dir="ltr" onClick={e=>{e.stopPropagation();openOrder(row.id);}}>#{formatOrderNumber(row.orderNumber)}</button></td>{!branch&&<td data-label={text('Branch','الفرع')}>{ar?branches.find(b=>b.slug===row.branchId)?.nameAr:branches.find(b=>b.slug===row.branchId)?.name}</td>}<td data-label={text('Customer','العميل')}>{row.name}<small dir="ltr">{nationalPhone(row.phone)}</small></td><td data-label={text('Status','الحالة')}><span className={`staff-status status-${staffStatus(row.status)}`}>{staffLabels[staffStatus(row.status)][lang]}</span></td><td data-label={text('Closed','وقت الإغلاق')}>{formatQatarDateTime(row.statusAt??row.createdAt)}</td><td data-label={text('Total','الإجمالي')} dir="ltr">{(row.totalMinor/100).toFixed(2)} {text('QAR','ر.ق')}</td></tr>)}</tbody></table></div>}
         {filteredData&&(page>1||filteredData.more)&&<nav className="admin-pager"><button disabled={page===1} onClick={()=>setPage(v=>v-1)}>{text('Previous','السابق')}</button><span>{num(page)}</span><button disabled={!filteredData.more} onClick={()=>setPage(v=>v+1)}>{text('Next','التالي')}</button></nav>}
       </div>

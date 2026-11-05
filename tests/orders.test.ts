@@ -157,6 +157,30 @@ test('rate limits are atomic per IP and scope and recover after their window',as
 });
 test('strict query and cancellation validation reject unknown fields and PII reasons',()=>{
   for(const query of [{status:'bad'},{page:0},{limit:101},{branch:'fake'},{from:'2026-02-30'},{from:'2026-10-25',to:'2026-10-24'},{q:'x'.repeat(81)},{q:'   '},{unknown:'x'}]) assert.equal(orderQuery.safeParse(query).success,false);
-  for(const query of [{q:'3'},{q:'1234'},{q:'1234567'},{q:'55551234'},{q:'101100001'},{q:'Guest'}]) assert.equal(orderQuery.safeParse(query).success,true);
+  for(const query of [{q:'3'},{q:'1234'},{q:'1234567'},{q:'55551234'},{q:'101100001'},{q:'Guest'},{arrivedSince:'2026-11-05T12:00:00.000Z'}]) assert.equal(orderQuery.safeParse(query).success,true);
   assert.equal(statusBody.safeParse({to:'cancelled',expected:'placed',reason:'Call 55551234'}).success,false);
 });
+test('customer arrival is ready-only, session-gated, and idempotent', async () => {
+  const session = randomUUID();
+  const order = await repository.persistPendingOrder(session, randomUUID(), 'same', snapshot, 1, 'pay_at_pickup');
+  await rejected(repository.markCustomerArrived(order.id, session), 'INVALID');
+  await rejected(repository.markCustomerArrived(order.id, 'other-session'), 'NOT_FOUND');
+  for (const [expected, to] of [['placed', 'accepted'], ['accepted', 'preparing'], ['preparing', 'ready']] as [OrderStatus, OrderStatus][]) {
+    await orders.transitionOrder(admin, order.id, { expected, to }, ctx);
+  }
+  const at = new Date('2026-11-05T15:00:00.000Z');
+  const first = await repository.markCustomerArrived(order.id, session, at);
+  assert.equal(first.arrivedAt, at.toISOString());
+  assert.equal(first.status, 'ready');
+  const again = await repository.markCustomerArrived(order.id, session, new Date('2026-11-05T16:00:00.000Z'));
+  assert.equal(again.arrivedAt, at.toISOString());
+  const listed = await orders.listOrders(admin, orderQuery.parse({ view: 'active', limit: 100, arrivedSince: '2026-11-05T14:00:00.000Z' }));
+  const rowSummary = listed.rows.find((item) => item.id === order.id);
+  assert.equal(rowSummary?.arrivedAt, at.toISOString());
+  assert.equal(listed.arrivedCount, 1);
+  const before = await orders.listOrders(admin, orderQuery.parse({ view: 'active', limit: 1, arrivedSince: at.toISOString() }));
+  assert.equal(before.arrivedCount, 0);
+  const receipt = await repository.customerOrder(order.id, session);
+  assert.equal(receipt.arrivedAt, at.toISOString());
+});
+
