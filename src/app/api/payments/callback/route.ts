@@ -51,13 +51,15 @@ async function parseBody(request: Request): Promise<Record<string, string>> {
   return out;
 }
 
-function branchPath(branchId: string | null | undefined) {
+/** Receipt return route — not the branch menu shell (avoids homepage flash after Sadad). */
+function branchOrderPath(branchId: string | null | undefined) {
   const match = BRANCHES.find((b) => b.slug === branchId);
-  return match ? `/${match.slug}` : (BRANCHES[0]?.slug ? `/${BRANCHES[0].slug}` : '/');
+  const slug = match?.slug ?? BRANCHES[0]?.slug;
+  return slug ? `/${slug}/order` : '/order';
 }
 
 async function handleCallback(request: Request, method: 'GET' | 'POST') {
-  const fallback = branchPath(null);
+  const fallback = branchOrderPath(null);
   try {
     if (resolvePaymentProvider() !== 'sadad') {
       paymentLog('warn', { event: 'callback.skipped', reason: 'provider_not_sadad', fieldNames: [method] });
@@ -126,7 +128,7 @@ async function handleCallback(request: Request, method: 'GET' | 'POST') {
       sql: 'SELECT branch_id FROM orders WHERE id=?',
       args: [fact.orderId],
     })).rows[0];
-    const base = branchPath(order ? String(order.branch_id) : null);
+    const base = branchOrderPath(order ? String(order.branch_id) : null);
     // Customer recovers the pickup receipt via session + local order id.
     return redirectTo(request, `${base}?paid=${encodeURIComponent(fact.orderId)}`);
   } catch (error) {

@@ -26,10 +26,35 @@ const emptyCustomer: Customer = { name: '', phone: '', plate: 'Q', brand: '', co
 type Step = 'menu' | 'details' | 'review' | 'payment' | 'receipt';
 type PaymentMethodUi = 'mock' | 'pay_at_pickup' | 'sadad';
 type Receipt = { id: string; orderNumber?: number | null; paymentStatus: PaymentStatus; totalMinor: number; paymentMethod: PaymentMethodUi; status: string; details?: CustomerReceiptDetails };
-export function OrderingExperience({ initialNow, branchId }: { initialNow: string; branchId: BranchId }) {
-  return <CartProvider storageKey="sushinaa-curbside-basket-v1"><Experience initialNow={initialNow} branchId={branchId} /></CartProvider>;
+export function OrderingExperience({
+  initialNow,
+  branchId,
+  returnPaidId,
+  payFailed: initialPayFailed = false,
+}: {
+  initialNow: string;
+  branchId: BranchId;
+  /** Set on `/{branch}/order?paid=` so we never paint the menu before the receipt. */
+  returnPaidId?: string;
+  payFailed?: boolean;
+}) {
+  return (
+    <CartProvider storageKey="sushinaa-curbside-basket-v1">
+      <Experience initialNow={initialNow} branchId={branchId} returnPaidId={returnPaidId} payFailed={initialPayFailed} />
+    </CartProvider>
+  );
 }
-function Experience({ initialNow, branchId: initialBranch }: { initialNow: string; branchId: BranchId }) {
+function Experience({
+  initialNow,
+  branchId: initialBranch,
+  returnPaidId,
+  payFailed: initialPayFailed,
+}: {
+  initialNow: string;
+  branchId: BranchId;
+  returnPaidId?: string;
+  payFailed: boolean;
+}) {
   const { lang, t } = useLocale();
   const [paymentProvider, setPaymentProvider] = useState<'mock' | 'pay_at_pickup' | 'sadad' | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodUi>('mock');
@@ -39,7 +64,9 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
   const branches = configuredBranches(menu.branches);
   const router = useRouter();
   const cart = useCart();
-  const [step, setStep] = useState<Step>('menu');
+  const returnMode = Boolean(returnPaidId || initialPayFailed);
+  const [recovering, setRecovering] = useState(returnMode);
+  const [step, setStep] = useState<Step>(returnMode ? 'receipt' : 'menu');
   const [motion, setMotion] = useState<'forward' | 'back'>('forward');
   const [branchId] = useState<BranchId>(initialBranch);
   const [now, setNow] = useState(() => new Date(initialNow));
@@ -81,13 +108,13 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
     previousStep.current = step;
   }, [step]);
   useEffect(() => {
-    let paidId: string | null = null;
-    let payFailed = false;
+    let paidId: string | null = returnPaidId ?? null;
+    let payFailed = initialPayFailed;
     try {
       const params = new URLSearchParams(window.location.search);
       const paid = params.get('paid');
-      if (paid && /^SU-[0-9a-f-]{36}$/.test(paid)) paidId = paid;
-      payFailed = params.get('pay') === 'failed';
+      if (!paidId && paid && /^SU-[0-9a-f-]{36}$/.test(paid)) paidId = paid;
+      if (!payFailed) payFailed = params.get('pay') === 'failed';
       if (paidId || payFailed) {
         const url = new URL(window.location.href);
         url.searchParams.delete('paid');
@@ -103,17 +130,31 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
     }
     const storedFromPay = paidId;
     let stored: string | null = storedFromPay;
-    if (!stored) {
-      try { stored = localStorage.getItem(orderKey) || sessionStorage.getItem(orderKey); } catch { return; }
-    }
-    if (!stored || !/^SU-[0-9a-f-]{36}$/.test(stored)) return;
     let cancel = false;
+    const finish = (next?: Step) => {
+      void Promise.resolve().then(() => {
+        if (cancel) return;
+        if (next) setStep(next);
+        setRecovering(false);
+      });
+    };
+    if (!stored) {
+      try { stored = localStorage.getItem(orderKey) || sessionStorage.getItem(orderKey); } catch {
+        finish(returnMode ? (payFailed ? 'review' : 'menu') : undefined);
+        return () => { cancel = true; if (failTimer !== undefined) window.clearTimeout(failTimer); };
+      }
+    }
+    if (!stored || !/^SU-[0-9a-f-]{36}$/.test(stored)) {
+      finish(returnMode ? (payFailed ? 'review' : 'menu') : undefined);
+      return () => { cancel = true; if (failTimer !== undefined) window.clearTimeout(failTimer); };
+    }
     void fetch(`/api/orders/${stored}`, { cache: 'no-store' }).then(async (response) => {
       if (cancel) return;
       if (!response.ok) {
         if (response.status === 404 || response.status === 401) {
           try { localStorage.removeItem(orderKey); sessionStorage.removeItem(orderKey); } catch { /* Storage unavailable. */ }
         }
+        finish(returnMode ? (payFailed ? 'review' : 'menu') : undefined);
         return;
       }
       const saved = await response.json() as Receipt;
@@ -131,9 +172,12 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
         if (saved.details?.customer) {
           setCustomer({ ...emptyCustomer, ...saved.details.customer });
         }
-        if (payFailed) setStep('review');
+        if (payFailed || returnMode) setStep('review');
       }
-    }).catch(() => {});
+      finish();
+    }).catch(() => {
+      finish(returnMode ? (payFailed ? 'review' : 'menu') : undefined);
+    });
     return () => {
       cancel = true;
       if (failTimer !== undefined) window.clearTimeout(failTimer);
@@ -165,6 +209,10 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
     };
   }, [step, receipt?.id, receipt?.status]);
   function go(next: Step) {
+    if (next === 'menu' && returnMode) {
+      router.replace(`/${branchId}`);
+      return;
+    }
     const order: Step[] = ['menu', 'details', 'review', 'payment', 'receipt'];
     setMotion(order.indexOf(next) < order.indexOf(step) ? 'back' : 'forward');
     setError(''); setRedirecting(false); setStep(next); window.scrollTo({ top: 0, behavior: 'instant' });
@@ -249,6 +297,15 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
     </button> : resumePay && receipt ? <button type="button" className="order-tracker is-awaiting" aria-live="polite" onClick={() => go('review')}>
       <span className="order-tracker-label">{text('Finish payment', 'أكمل الدفع')}</span>{receipt.orderNumber != null && <span className="order-tracker-number" dir="ltr">#{formatOrderNumber(receipt.orderNumber)}</span>}
     </button> : undefined} /></div> : null;
+  if (recovering) {
+    return (
+      <div className="ordering-page" data-step="receipt" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+        <main id="main" className="checkout-main">
+          <p role="status">{text('Confirming your order…', 'جارٍ تأكيد طلبك…')}</p>
+        </main>
+      </div>
+    );
+  }
   if (step === 'menu') return <>{menuStage}</>;
   const receiptCustomer = receipt?.details ? receipt.details.customer ?? emptyCustomer : customer;
   const receiptBranch = branches.find(b => b.slug === receipt?.details?.branchId) ?? branch;
