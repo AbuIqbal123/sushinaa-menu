@@ -131,7 +131,7 @@ test("the source client rejects anything except menu and media", async () => {
 test("migrations apply once on a file database and refuse the live database", async () => {
   const dir = mkdtempSync(join(tmpdir(), "sushinaa-migrate-"));
   const url = `file:${dir}/menu.db`;
-  assert.equal(await migrate(url), 7);
+  assert.equal(await migrate(url), 8);
   assert.equal(await migrate(url), 0);
   const db = createClient({ url });
   const tables = await db.execute(
@@ -145,7 +145,7 @@ test("migrations apply once on a file database and refuse the live database", as
   assert.ok(names.includes("staff_sessions"));
   assert.ok(names.includes("schema_migrations"));
   const applied = await db.execute("SELECT id FROM schema_migrations ORDER BY id");
-  assert.deepEqual(applied.rows.map((row) => String(row.id)), ["0001", "0002", "0003", "0004", "0005", "0006", "0007"]);
+  assert.deepEqual(applied.rows.map((row) => String(row.id)), ["0001", "0002", "0003", "0004", "0005", "0006", "0007", "0008"]);
   db.close();
   await assert.rejects(migrate(`libsql://${LIVE_DATABASE_HOST}`), MigrateRefused);
 });
