@@ -2,13 +2,14 @@ import { createClient } from "@libsql/client";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { AUDIT_SCHEMA } from "./audit";
-import type { Client } from "@libsql/client";
+import type { DbClient } from "./sql";
+export type { DbClient, DbRow, SqlStatement } from "./sql";
 import { EDIT_SQL, ORDER_NUMBER_SQL, ORDER_SCHEMA, PAYMENT_EVENTS_SQL, PRINT_SQL, STAFF_SCHEMA } from "@/ordering/schema";
 import { orderDatabaseAllowed } from "@/ordering/guard";
 // Capture configuration once, but create no connection or files during route imports.
 export const databaseUrl = process.env.CMS_DATABASE_URL || "file:./data/menu.db";
-let client: Client | undefined;
-export const db = new Proxy({} as Client, {
+let client: DbClient | undefined;
+export const db = new Proxy({} as DbClient, {
   get(_target, key) {
     if (!client) {
       if (process.env.VERCEL && databaseUrl.startsWith("file:"))

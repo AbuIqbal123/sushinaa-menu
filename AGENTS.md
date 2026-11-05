@@ -8,6 +8,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
+## Coding principles
+
+Structure and coupling follow `docs/engineering/coding-principles.md` (and `.cursor/rules/coding-principles.mdc`): DRY; orthogonal, shy modules; layered abstractions; small change blast radius; no reliance on what we cannot control; tests that do not drag in the whole system; third-party and persistence vendors behind our own abstractions; flexibility at architecture, deployment, and vendor seams.
+
 ## Sushinaa dev and production
 
 Read `docs/environments.md` before touching a database, an env var, or a deployment.

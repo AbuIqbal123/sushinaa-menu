@@ -7,9 +7,8 @@ import { db, databaseUrl } from '@/cms/db';
 import { assertOrderDatabaseAllowed, OrderingUnavailable } from './guard';
 import { CheckoutError } from './checkout/validation';
 import { resolvePaymentProvider } from './payment-gateway/resolve';
-export class OrderError extends Error {
-  constructor(public code: string, public status: number) { super(code); }
-}
+import { OrderError } from './errors';
+export { OrderError } from './errors';
 export const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 export function failure(error: unknown) {
   if (error instanceof OrderError) return reply({ code: error.code }, error.status);

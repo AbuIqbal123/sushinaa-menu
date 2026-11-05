@@ -3,7 +3,7 @@ import { db } from '@/cms/db';
 import { orderId } from '@/ordering/contracts';
 import { initOrders } from '@/ordering/checkout/repository';
 import { requireStaff, reply, failure, OrderError } from '@/ordering/http';
-import { KITCHEN_VISIBLE } from '@/ordering/orders';
+import { KITCHEN_VISIBLE } from '@/ordering/visibility';
 import { branchClause } from '@/ordering/scope';
 
 export const dynamic = 'force-dynamic';

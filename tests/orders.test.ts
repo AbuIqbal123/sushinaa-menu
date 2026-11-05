@@ -157,7 +157,7 @@ test('rate limits are atomic per IP and scope and recover after their window',as
   assert.equal(await rate.rateAllowed('checkout','another-ip',at,5),true);assert.equal(await rate.rateAllowed('checkout','test-ip',at+900000,5),true);
 });
 test('strict query and cancellation validation reject unknown fields and PII reasons',()=>{
-  for(const query of [{status:'bad'},{page:0},{limit:101},{branch:'fake'},{from:'2026-02-30'},{from:'2026-10-25',to:'2026-10-24'},{q:'55551234'},{q:'12345678'},{unknown:'x'}]) assert.equal(orderQuery.safeParse(query).success,false);
-  for(const query of [{q:'3'},{q:'1234'},{q:'1234567'}]) assert.equal(orderQuery.safeParse(query).success,true);
+  for(const query of [{status:'bad'},{page:0},{limit:101},{branch:'fake'},{from:'2026-02-30'},{from:'2026-10-25',to:'2026-10-24'},{q:'x'.repeat(81)},{q:'   '},{unknown:'x'}]) assert.equal(orderQuery.safeParse(query).success,false);
+  for(const query of [{q:'3'},{q:'1234'},{q:'1234567'},{q:'55551234'},{q:'101100001'},{q:'Guest'}]) assert.equal(orderQuery.safeParse(query).success,true);
   assert.equal(statusBody.safeParse({to:'cancelled',expected:'placed',reason:'Call 55551234'}).success,false);
 });

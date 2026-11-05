@@ -8,7 +8,8 @@ const date = z.iso.date();
 export const orderQuery = z.object({
   status: z.enum([...statuses, 'received', 'collected']).optional(), branch: branchId.optional(),
   from: date.optional(), to: date.optional(),
-  q: z.union([orderId, z.string().regex(/^\d{1,7}$/)]).optional(),
+  q: z.string().trim().min(1).max(80).optional(),
+  view: z.enum(['active','history']).optional(), unprinted: z.literal('1').optional(),
   page: z.coerce.number().int().min(1).max(1000).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(25), since: orderId.optional(),
 }).strict().refine(v => !v.from || !v.to || v.from <= v.to);
@@ -21,7 +22,8 @@ export const statusBody = z.object({ to: z.enum(statuses), expected: z.enum(stat
 export type StatusInput = z.infer<typeof statusBody>;
 export type OrderSummary = { id: string; orderNumber: number | null; branchId: BranchId; status: OrderStatus; paymentMethod: PaymentMethod;
   paidAt: string | null; totalMinor: number; currency: 'QAR'; createdAt: string; name: string; phone: string; plate: string;
-  printCount: number; printedAt: string | null };
+  printCount: number; printedAt: string | null; updatedAt?: string; statusAt?:string; brandId?: string;
+  items?: {dishId:string;name:string;nameAr:string;quantity:number;selection?:OrderSnapshot['lines'][number]['selection']}[]; itemCount?:number; hasNotes?:boolean };
 export type OrderDetailData = OrderSummary & { customer: { name: string; phone: string; plate: string; colour: string; brand: string; car: string; instructions: string };
   snapshot: Omit<OrderSnapshot, 'customer'> & { version: number; menuRevision: number };
   history: { at: string; from: OrderStatus; to: OrderStatus; reason: string | null }[]; contactRevealed: boolean;
