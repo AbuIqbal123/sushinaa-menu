@@ -93,6 +93,12 @@ function options(line: StoredLine) {
   );
 }
 
+function printedCoupon(coupon: { code?: unknown; discountMinor?: unknown } | undefined) {
+  if (!coupon || typeof coupon.code !== 'string' || !coupon.code) return null;
+  if (typeof coupon.discountMinor !== 'number' || !Number.isSafeInteger(coupon.discountMinor) || coupon.discountMinor <= 0) return null;
+  return { code: coupon.code, discountMinor: coupon.discountMinor };
+}
+
 export function ticketModel(row: DbRow, edits: ResolvedEdit[] = []): TicketModel {
   const snapshot = JSON.parse(String(row.snapshot)) as {
     version?: number;
@@ -101,6 +107,7 @@ export function ticketModel(row: DbRow, edits: ResolvedEdit[] = []): TicketModel
     customer?: { brand?: string } | null;
     lines?: StoredLine[];
     totalMinor?: number;
+    coupon?: { code?: unknown; discountMinor?: unknown };
   };
   const removed = row.customer_name == null && row.customer_phone == null;
   const projected = applyEdits(linesFromSnapshot(snapshot.lines ?? []), edits);
@@ -139,6 +146,21 @@ export function ticketModel(row: DbRow, edits: ResolvedEdit[] = []): TicketModel
     group.lines.push({ name: 'Discount', amount: minorAmount(-orderDiscount.amountMinor), quantity: 1, note: '', total: price(-orderDiscount.amountMinor), options: '', voided: false });
     groups.set('Items', group);
   }
+  const coupon = printedCoupon(snapshot.coupon);
+  if (coupon) {
+    const group = groups.get('Items') ?? { order: 1000, lines: [] };
+    group.lines.push({
+      name: `Coupon ${coupon.code}`,
+      nameAr: `قسيمة ${coupon.code}`,
+      amount: minorAmount(-coupon.discountMinor),
+      quantity: 1,
+      note: '',
+      total: price(-coupon.discountMinor),
+      options: '',
+      voided: false,
+    });
+    groups.set('Items', group);
+  }
   const car = typeof row.car_plate === 'string' ? row.car_plate : '';
   const brand = removed ? '' : carBrandName(snapshot.customer?.brand);
   const vehicle = [row.car_colour, row.car_model].filter((part) => typeof part === 'string' && part).join(' · ');
@@ -164,7 +186,7 @@ export function ticketModel(row: DbRow, edits: ResolvedEdit[] = []): TicketModel
     reference: receiptReference(String(row.created_at), String(row.branch_id), row.order_number == null ? '0' : String(row.order_number)),
     amountDue: minorAmount(Number(row.total_minor)),
     subtotal: minorAmount(projected.lines.filter(line => !line.voided).reduce((n, line) => n + line.unitMinor * line.quantity, 0)),
-    discount: minorAmount(projected.discounts.reduce((n, discount) => n + discount.amountMinor, 0)),
+    discount: minorAmount(projected.discounts.reduce((n, discount) => n + discount.amountMinor, 0) + (coupon?.discountMinor ?? 0)),
     instructions: typeof row.instructions === 'string' ? row.instructions : '',
   };
 }
