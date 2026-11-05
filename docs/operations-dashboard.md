@@ -6,7 +6,7 @@ The CMS dashboard and live order queue use the existing collection-order databas
 
 Owners can select all branches or one branch in the shared header. This scopes the dashboard, live queue, history and export. Branch staff remain restricted to their assigned branch on the server, including analytics and CSV downloads.
 
-The dashboard shows live Received, Preparing and Ready counts, irrespective of the reporting dates. Performance cards, branch sales, charts and popular dishes use the selected reporting period in Qatar time. Custom periods and exports are limited to 92 days. The queue puts the oldest orders first; history contains collected, cancelled and refunded orders. Live updates pause in hidden tabs and back off on connection failures.
+The dashboard shows live Received, Preparing and Ready counts, irrespective of the reporting dates. Performance cards, branch sales, charts and popular dishes default to the last 7 days in Qatar time (changeable in the period control). Custom periods and exports are limited to 92 days. The live queue puts the newest orders first; history contains collected, cancelled and refunded orders. Live updates pause in hidden tabs and back off on connection failures.
 
 ## What the figures mean
 

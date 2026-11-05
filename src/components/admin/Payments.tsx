@@ -1,8 +1,11 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { BRANCHES } from '@/branches/branches';
+import { formatQatarDateTime } from '@/lib/datetime';
+import { nationalPhone } from '@/ordering/checkout/validation';
 import { formatOrderNumber } from '@/ordering/order-number';
+import { useModal } from './Fields';
 
 type PaymentRow = {
   orderId: string;
@@ -45,6 +48,82 @@ function money(minor: number) {
   return `${(minor / 100).toFixed(2)} QAR`;
 }
 
+function localPhone(phone: string) {
+  return nationalPhone(phone) || '—';
+}
+
+function statusLabel(status: string) {
+  return status.replace(/_/g, ' ');
+}
+
+function capturedMinor(history: Detail['history']) {
+  for (let i = history.length - 1; i >= 0; i -= 1) {
+    const event = history[i];
+    if (event.status === 'paid' && event.amountMinor != null) return event.amountMinor;
+  }
+  return null;
+}
+
+function PaymentDetailDialog({
+  detail,
+  busy,
+  onClose,
+}: {
+  detail: Detail;
+  busy: boolean;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useModal(ref);
+  const captured = capturedMinor(detail.history);
+  const title = detail.orderNumber != null ? formatOrderNumber(detail.orderNumber) : detail.orderId;
+  return (
+    <dialog
+      ref={ref}
+      className="payments-dialog"
+      aria-labelledby="payment-dialog-title"
+      onCancel={(event) => { event.preventDefault(); onClose(); }}
+      onClose={onClose}
+      onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
+    >
+      <header className="admin-dialog-head">
+        <h2 id="payment-dialog-title">{title}</h2>
+        <button type="button" disabled={busy} onClick={onClose}>Close</button>
+      </header>
+      <div className="admin-dialog-body payments-dialog-body">
+        <dl className="payments-facts">
+          <div><dt>Status</dt><dd><span className={`staff-status status-${detail.status}`}>{statusLabel(detail.status)}</span></dd></div>
+          <div><dt>Order total</dt><dd dir="ltr">{money(detail.amountMinor)}</dd></div>
+          {captured != null && captured !== detail.amountMinor && (
+            <div><dt>Captured</dt><dd dir="ltr">{money(captured)}</dd></div>
+          )}
+          <div><dt>Provider</dt><dd>{detail.provider}</dd></div>
+          <div><dt>Reference</dt><dd dir="ltr">{detail.reference || '—'}</dd></div>
+          <div><dt>Branch</dt><dd>{BRANCHES.find((b) => b.slug === detail.branchId)?.name ?? detail.branchId}</dd></div>
+          <div><dt>When</dt><dd>{formatQatarDateTime(detail.recordedAt)}</dd></div>
+          <div><dt>Customer</dt><dd>{detail.customerName} · <span dir="ltr">{localPhone(detail.customerPhone)}</span></dd></div>
+        </dl>
+        <section className="payments-history" aria-label="Payment history">
+          <h3>Payment history</h3>
+          <ol>
+            {detail.history.map((h, i) => (
+              <li key={`${h.at}-${i}`}>
+                <time>{formatQatarDateTime(h.at)}</time>
+                {' · '}<span className={`staff-status status-${h.status}`}>{statusLabel(h.status)}</span>
+                {' · '}{h.kind}
+                {h.provider ? ` · ${h.provider}` : ''}
+                {h.reference ? ` · ${h.reference}` : ''}
+                {h.amountMinor != null ? ` · ${money(h.amountMinor)}` : ''}
+              </li>
+            ))}
+            {detail.history.length === 0 && <li>No ledger events yet.</li>}
+          </ol>
+        </section>
+      </div>
+    </dialog>
+  );
+}
+
 /** Admin-only ledger of online pickup payments (Sadad / mock). No refunds. */
 export function Payments({ active }: { active: boolean }) {
   const router = useRouter();
@@ -77,14 +156,11 @@ export function Payments({ active }: { active: boolean }) {
     return () => controller.abort();
   }, [active, status, branch, router, revision]);
 
-  async function openDetail(orderId: string, reveal = false) {
+  async function openDetail(orderId: string) {
     setBusy(true);
     setError('');
     try {
-      const response = await fetch(
-        `/api/admin/payments/${orderId}${reveal ? '?contact=1' : ''}`,
-        { cache: 'no-store' },
-      );
+      const response = await fetch(`/api/admin/payments/${orderId}`, { cache: 'no-store' });
       if (response.status === 401) { router.push('/admin/login'); return; }
       const body = await response.json() as Detail & { code?: string };
       if (!response.ok) { setError(body.code || 'LOAD_FAILED'); return; }
@@ -140,29 +216,36 @@ export function Payments({ active }: { active: boolean }) {
           <table>
             <thead>
               <tr>
-                <th>When</th>
                 <th>Order</th>
                 <th>Branch</th>
                 <th>Customer</th>
                 <th>Amount</th>
                 <th>Provider</th>
                 <th>Status</th>
+                <th>When</th>
               </tr>
             </thead>
             <tbody>
               {data.rows.map((row) => (
-                <tr key={row.orderId}>
-                  <td>
-                    <button type="button" className="text-action" onClick={() => void openDetail(row.orderId)}>
-                      {new Date(row.recordedAt).toLocaleString('en', { timeZone: 'Asia/Qatar' })}
-                    </button>
-                  </td>
+                <tr
+                  key={row.orderId}
+                  className="staff-row-open"
+                  tabIndex={0}
+                  onClick={() => void openDetail(row.orderId)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      void openDetail(row.orderId);
+                    }
+                  }}
+                >
                   <td dir="ltr">{row.orderNumber != null ? formatOrderNumber(row.orderNumber) : '—'}</td>
                   <td>{BRANCHES.find((b) => b.slug === row.branchId)?.name ?? row.branchId}</td>
-                  <td className="staff-customer">{row.customerName}<br /><span dir="ltr">{row.customerPhone}</span></td>
+                  <td className="staff-customer">{row.customerName}<br /><span dir="ltr">{localPhone(row.customerPhone)}</span></td>
                   <td dir="ltr">{money(row.amountMinor)}</td>
                   <td>{row.provider}</td>
-                  <td><span className={`staff-status status-${row.status}`}>{row.status.replace(/_/g, ' ')}</span></td>
+                  <td><span className={`staff-status status-${row.status}`}>{statusLabel(row.status)}</span></td>
+                  <td><time dateTime={row.recordedAt}>{formatQatarDateTime(row.recordedAt)}</time></td>
                 </tr>
               ))}
             </tbody>
@@ -172,40 +255,11 @@ export function Payments({ active }: { active: boolean }) {
       )}
 
       {detail && (
-        <aside className="staff-order-detail" aria-label="Payment detail">
-          <header className="staff-detail-head">
-            <h2>
-              {detail.orderNumber != null ? formatOrderNumber(detail.orderNumber) : detail.orderId}
-            </h2>
-            <button type="button" className="text-action" onClick={() => setDetail(null)}>Close</button>
-          </header>
-          <dl>
-            <div><dt>Status</dt><dd>{detail.status.replace(/_/g, ' ')}</dd></div>
-            <div><dt>Amount</dt><dd dir="ltr">{money(detail.amountMinor)}</dd></div>
-            <div><dt>Provider</dt><dd>{detail.provider}</dd></div>
-            <div><dt>Reference</dt><dd dir="ltr">{detail.reference || '—'}</dd></div>
-            <div><dt>Customer</dt><dd>{detail.customerName} · <span dir="ltr">{detail.customerPhone}</span></dd></div>
-          </dl>
-          {detail.customerPhone.includes('••••') && (
-            <button type="button" className="text-action" onClick={() => void openDetail(detail.orderId, true)}>
-              Reveal contact
-            </button>
-          )}
-          <details className="staff-history" open>
-            <summary>Payment history</summary>
-            <ol>
-              {detail.history.map((h, i) => (
-                <li key={`${h.at}-${i}`}>
-                  <time>{new Date(h.at).toLocaleString('en', { timeZone: 'Asia/Qatar' })}</time>
-                  {' · '}{h.kind} · {h.status}
-                  {h.reference ? ` · ${h.reference}` : ''}
-                  {h.amountMinor != null ? ` · ${money(h.amountMinor)}` : ''}
-                </li>
-              ))}
-              {detail.history.length === 0 && <li>No ledger events yet.</li>}
-            </ol>
-          </details>
-        </aside>
+        <PaymentDetailDialog
+          detail={detail}
+          busy={busy}
+          onClose={() => setDetail(null)}
+        />
       )}
     </section>
   );

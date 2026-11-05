@@ -81,7 +81,10 @@ export function OrderEditPanel({ id, data, role, menu, onSaved, onReprint }: {
 
   return <div className="order-edit">
     <section className="admin-card order-edit-card">
-      <h3>{text('Items', 'الأصناف')}</h3>
+      <div className="order-edit-head">
+        <h3>{text('Items', 'الأصناف')}</h3>
+        <small>{line ? text(`Selected: ${lang === 'ar' ? line.nameAr || line.name : line.name}`, `المحدد: ${line.nameAr || line.name}`) : text('Select a line to edit it.', 'اختر صنفاً لتعديله.')}</small>
+      </div>
       <ul className="order-edit-lines">
         {data.currentLines.map((item) => {
           const edit = latest.get(item.id);
@@ -122,13 +125,9 @@ export function OrderEditPanel({ id, data, role, menu, onSaved, onReprint }: {
         <button type="button" disabled={!canEdit || cancelled || busy} onClick={() => open('discount')}>{text('Discount', 'خصم')}</button>
         <button type="button" disabled={!lineOn || busy || role !== 'admin'} onClick={() => { setError(''); setConfirm('compliment'); }}>{text('Comp', 'هدية')}</button>
         <button type="button" className="danger" disabled={!lineOn || busy} onClick={() => { setError(''); setConfirm('void'); }}>{text('Void', 'إلغاء الصنف')}</button>
-      </div>
-      <span className="order-edit-divider" />
-      <div className="order-edit-group">
         <button type="button" disabled={!canEdit || cancelled || Boolean(data.paidAt) || busy} onClick={() => open('add')}>{text('Add item', 'إضافة صنف')}</button>
         <button type="button" disabled={cancelled || busy || !isPrintable(data.status)} onClick={onReprint}>{text('Reprint kitchen', 'إعادة طباعة المطبخ')}</button>
       </div>
-      <small>{line ? text(`Selected: ${lang === 'ar' ? line.nameAr || line.name : line.name}`, `المحدد: ${line.nameAr || line.name}`) : text('Select a line to edit it.', 'اختر صنفاً لتعديله.')}</small>
     </div>
     {sheet && <EditSheet
       kind={sheet} line={line} dish={dish} dishes={dishes} data={data} totals={totals} busy={busy} error={error}

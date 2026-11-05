@@ -2,6 +2,7 @@ import { requireStaff, failure } from '@/ordering/http';
 import { orderQuery } from '@/ordering/contracts';
 import { listOrders } from '@/ordering/orders';
 import { operationRange, operationScope, qatarDate } from '@/ordering/operations-calendar';
+import { formatQatarDateTime } from '@/lib/datetime';
 import { formatOrderNumber } from '@/ordering/order-number';
 export const dynamic='force-dynamic';
 function csv(value:unknown){let s=String(value??'');if(/^[\s]*[=+@-]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"';}
@@ -14,7 +15,7 @@ export async function GET(request:Request){
     const rows:string[]=[['Order','Branch','Status','Created (Qatar)','Total QAR','Payment'].map(csv).join(',')];
     let page=1,more=true;
     while(more&&page<=100){const result=await listOrders(scope,{...query,from:range.from,to:range.to,page,limit:100});
-      for(const row of result.rows)rows.push([formatOrderNumber(row.orderNumber),row.branchId,row.status,new Date(row.createdAt).toLocaleString('en-GB',{timeZone:'Asia/Qatar'}),(row.totalMinor/100).toFixed(2),row.paidAt?'Paid':'Pay at pickup'].map(csv).join(','));
+      for(const row of result.rows)rows.push([formatOrderNumber(row.orderNumber),row.branchId,row.status,formatQatarDateTime(row.createdAt),(row.totalMinor/100).toFixed(2),row.paidAt?'Paid':'Pay at pickup'].map(csv).join(','));
       more=result.more;page++;
     }
     if(more)return Response.json({code:'RANGE_TOO_LARGE'},{status:400});

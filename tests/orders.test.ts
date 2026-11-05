@@ -99,22 +99,21 @@ test('order list shows staff the name, phone, and plate',async()=>{
   await create();const result=await orders.listOrders(admin, orderQuery.parse({limit:100}));const raw=JSON.stringify(result);
   assert.equal(result.rows[0]?.name,snapshot.customer.name);
   assert.ok(raw.includes(snapshot.customer.phone));assert.ok(raw.includes(snapshot.customer.plate));
-  assert.equal(orders.maskPhone(snapshot.customer.phone),'+974 •••• 12 34');assert.equal(orders.maskPlate(snapshot.customer.plate),'Q ••• 56');
 });
 test('order history is latest first',async()=>{
   const order=await create();
   await orders.transitionOrder(admin, order.id,{expected:'placed',to:'accepted'},ctx);
   await orders.transitionOrder(admin, order.id,{expected:'accepted',to:'preparing'},ctx);
-  const detail=await orders.detailOrder(admin, order.id,true,ctx);
+  const detail=await orders.detailOrder(admin, order.id);
   assert.equal(detail.history[0]?.to,'preparing');
   assert.equal(detail.history.at(-1)?.to,'accepted');
 });
-test('contact reveal is audited and the snapshot cannot leak hidden contact',async()=>{
-  const order=await create();const hidden=await orders.detailOrder(admin, order.id,false,ctx);
-  assert.ok(!JSON.stringify(hidden).includes(snapshot.customer.phone));assert.ok(!('customer' in hidden.snapshot));
-  const revealed=await orders.detailOrder(admin, order.id,true,ctx);assert.equal(revealed.customer.phone,snapshot.customer.phone);
-  const audit=(await db.execute({sql:'SELECT * FROM audit WHERE entity_id=?',args:[order.id]})).rows;
-  assert.equal(audit[0].action,'order.contact_viewed');assert.equal(audit[0].diff,null);assert.ok(!JSON.stringify(audit).includes(snapshot.customer.phone));
+test('order detail includes full contact and keeps it out of the snapshot',async()=>{
+  const order=await create();
+  const detail=await orders.detailOrder(admin, order.id);
+  assert.equal(detail.customer.phone,snapshot.customer.phone);
+  assert.equal(detail.customer.plate,snapshot.customer.plate);
+  assert.ok(!('customer' in detail.snapshot));
 });
 test('db failure mid-transition leaves no partial state',async()=>{
   const order=await create();

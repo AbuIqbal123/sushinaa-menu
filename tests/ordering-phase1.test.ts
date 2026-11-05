@@ -202,7 +202,7 @@ test('reading the order list or detail does not purge anything', async () => {
   await orders.transitionOrder(admin, order.id, { expected: 'placed', to: 'cancelled', reason: 'duplicate' }, ctx, at);
   const phone = (await row(order.id)).customer_phone;
   await orders.listOrders(admin, orderQuery.parse({ limit: 100 }));
-  await orders.detailOrder(admin, order.id, false, ctx);
+  await orders.detailOrder(admin, order.id);
   assert.equal((await row(order.id)).customer_phone, phone);
 });
 
@@ -265,7 +265,7 @@ test('every published branch accepts customer orders', async () => {
 
 test("branch user reading another branch's order by id gets 404", async () => {
   const order = await place('west-bay');
-  await rejected(orders.detailOrder(downTown, order.id, false, ctx), 'NOT_FOUND');
+  await rejected(orders.detailOrder(downTown, order.id), 'NOT_FOUND');
 });
 
 test("branch user listing with ?branch= override gets only their own branch", async () => {
@@ -354,7 +354,7 @@ test('admin branch filter returns the right orders', async () => {
 });
 
 test('every order query has a branch predicate', () => {
-  const exempt = new Set(['payMock', 'purgeOrders', 'summary', 'maskPhone', 'maskPlate']);
+  const exempt = new Set(['payMock', 'purgeOrders', 'summary']);
   for (const file of ['src/ordering/orders.ts', 'src/ordering/printing.ts']) {
     const source = readFileSync(file, 'utf8');
     for (const chunk of source.split(/\n(?=(?:export )?(?:async )?function )/)) {
@@ -605,6 +605,6 @@ test('ticket shows the order time in Asia/Qatar', async () => {
   const order = await place();
   await db.execute({ sql: 'UPDATE orders SET created_at=? WHERE id=?', args: ['2026-06-21T20:00:00.000Z', order.id] });
   const model = ticketModel(await row(order.id));
-  assert.equal(model.placed, '2026-06-21 23:00');
+  assert.equal(model.placed, '2026-06-21 11:00 pm');
 });
 });
