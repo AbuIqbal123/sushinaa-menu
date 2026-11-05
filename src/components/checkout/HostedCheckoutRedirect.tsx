@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent, useRef } from 'react';
 
 type Launch = { action: string; method: 'POST'; fields: Record<string, string> };
 
@@ -16,29 +16,36 @@ export function HostedCheckoutRedirect({
   onError: (message: string) => void;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
+  const submittedFor = useRef<string | null>(null);
   const text = (en: string, ar: string) => (lang === 'ar' ? ar : en);
+  const fail = useEffectEvent((message: string) => onError(message));
 
   useEffect(() => {
+    const launchKey = `${launch.action}:${launch.fields.ORDER_ID ?? ''}:${launch.fields.signature ?? ''}`;
+    if (submittedFor.current === launchKey) return;
+
     let cancelled = false;
     // Defer past React Strict Mode's mount→cleanup→remount so submit runs on the live form.
     const id = window.setTimeout(() => {
       if (cancelled) return;
       const form = formRef.current;
       if (!form) {
-        onError(lang === 'ar' ? 'تعذّر فتح صفحة الدفع.' : 'Could not open the payment page.');
+        fail(lang === 'ar' ? 'تعذّر فتح صفحة الدفع.' : 'Could not open the payment page.');
         return;
       }
+      submittedFor.current = launchKey;
       try {
         form.submit();
       } catch {
-        onError(lang === 'ar' ? 'تعذّر فتح صفحة الدفع.' : 'Could not open the payment page.');
+        submittedFor.current = null;
+        fail(lang === 'ar' ? 'تعذّر فتح صفحة الدفع.' : 'Could not open the payment page.');
       }
     }, 0);
     return () => {
       cancelled = true;
       window.clearTimeout(id);
     };
-  }, [lang, onError, launch.action]);
+  }, [lang, launch.action, launch.fields.ORDER_ID, launch.fields.signature]);
 
   return (
     <div className="ordering-page" data-step="payment" dir={lang === 'ar' ? 'rtl' : 'ltr'}>

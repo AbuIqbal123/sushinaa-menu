@@ -14,7 +14,6 @@ export type CheckoutIntent = {
   amountMinor: number;
   currency: 'QAR';
   mobileDigits: string;
-  payerEmail?: string;
   language: 'en' | 'ar';
   line: { reference: string; amountMinor: number; quantity: number };
   txnAt: Date;

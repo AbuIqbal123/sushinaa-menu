@@ -16,7 +16,8 @@ const csp = [
   "connect-src 'self' https://vitals.vercel-insights.com https://va.vercel-scripts.com",
   "frame-ancestors 'self' https://abuiqbal.com https://*.abuiqbal.com http://localhost:3000 http://127.0.0.1:3000",
   "base-uri 'self'",
-  "form-action 'self'",
+  // Hosted Sadad WebCheckout posts the browser to this origin (see vendors/sadad/begin.ts).
+  "form-action 'self' https://sadadqa.com",
   // Safari upgrades http://localhost assets to https when this is set, so the
   // dev menu loses its stylesheet and photos. Production stays on HTTPS.
   ...(isDev || localHttpPreview ? [] : ["upgrade-insecure-requests"]),

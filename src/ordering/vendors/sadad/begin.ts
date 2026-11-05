@@ -28,8 +28,6 @@ export function buildSadadLaunch(intent: CheckoutIntent, config: SadadConfig): C
     merchant_id: config.merchantId,
     txnDate: formatTxnDate(intent.txnAt),
   };
-  const email = intent.payerEmail?.trim();
-  if (email) fields.EMAIL = email;
 
   const signature = sadadSignature(config.secretKey, fields);
   return {

@@ -79,9 +79,10 @@ test('rejects changed prices, hidden dishes, invalid choices, duplicate extras a
   assert.equal(checkoutSchema.safeParse({ ...input, totalMinor: 1 }).success, false);
   assert.equal(checkoutSchema.safeParse({ ...input, lines: [{ ...input.lines[0], selection: { ...selection, extras: ['x', 'x'] } }] }).success, false);
 });
-test('collection details reject email — pickup UI does not collect it', () => {
-  assert.equal(customerSchema.safeParse({ ...customer, email: 'guest@example.com' }).success, false);
-  assert.equal(customerSchema.safeParse({ ...customer, email: '' }).success, false);
+test('collection details strip a legacy email key — pickup UI does not collect it', () => {
+  const withEmail = customerSchema.parse({ ...customer, email: 'guest@example.com' });
+  assert.equal('email' in withEmail, false);
+  assert.equal(customerSchema.parse({ ...customer, email: '' }).phone, '97455551234');
 });
 
 test('all complete menu selections remain valid after the real basket serialization round trip', () => {

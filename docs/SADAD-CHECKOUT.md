@@ -52,6 +52,10 @@ Production must not use explicit `mock` (env guard). Local/CI: leave unset or `m
 
 Sadad accepts omitting `EMAIL` on WebCheckout. We do not collect email in the customer UI and do not send the field.
 
+## CSP
+
+Hosted checkout POSTs the browser to `https://sadadqa.com/webpurchase`. `next.config.ts` must keep that origin on `form-action` (with `'self'`). Without it, auto-submit and Continue stay on our page with no thrown error.
+
 ## Callback vs webhook
 
 - **Callback** (`POST /api/payments/callback`): browser return after pay; verify signature; apply fact; 303 to `/{branch}?paid={orderId}` (pickup receipt recovery via session).

@@ -25,14 +25,21 @@ export const normalizePhone = (value: string) => {
   return n;
 };
 const optionalText = (max: number) => z.string().trim().max(max).default('');
-export const customerSchema = z.object({
+const customerFields = z.object({
   name: z.string().trim().min(1).max(100),
   phone: z.string().max(30).transform(normalizePhone).pipe(z.string().regex(/^974[3567]\d{7}$/)),
   plate: z.string().transform(s => digits(s).trim().toUpperCase()).pipe(z.string().regex(/^[QTR]\d{3,6}$/)),
   brand: z.enum(CAR_BRANDS.map(brand => brand.id)),
   colour: optionalText(50), car: optionalText(80), instructions: optionalText(400),
 }).strict();
-export type Customer = z.infer<typeof customerSchema>;
+/** Pickup UI does not collect email; strip a legacy key so an old tab still places. */
+export const customerSchema = z.preprocess((value) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  if (!('email' in value)) return value;
+  const { email: _ignored, ...rest } = value as Record<string, unknown>;
+  return rest;
+}, customerFields);
+export type Customer = z.infer<typeof customerFields>;
 const option = z.string().min(1).max(100);
 export const selectionSchema = z.object({
   protein: option.optional(), pieces: z.union([z.literal(4), z.literal(6), z.literal(8), z.literal(12), z.literal(24)]).optional(),
