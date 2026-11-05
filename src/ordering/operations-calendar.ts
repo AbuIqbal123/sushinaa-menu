@@ -1,5 +1,5 @@
 import type { BranchId } from '@/branches/branches';
-import { OrderError } from './http';
+import { OrderError } from './errors';
 import type { BranchScope } from './scope';
 import type { OperationsQuery } from './operations-contracts';
 
