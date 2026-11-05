@@ -271,7 +271,6 @@
 @media(max-width:510px){.ops-order-queue{grid-template-columns:minmax(0,1fr)}.ops-order-card{padding:16px!important}.ops-metric>strong{font-size:21px}.ops-card-top>strong{font-size:14px}.ops-card-customer strong{font-size:16px}.ops-card-item>span{font-size:12px}.ops-card-bottom>strong{font-size:13px}.ops-global-branch>svg{display:none}.ops-order-timing{gap:5px}.ops-order-timing>div{padding:8px;font-size:8px}.ops-order-detail-pane .kitchen-facts{gap:10px!important}.ops-sidebar-bottom{padding-top:20px}.ops-data-note{overflow-wrap:anywhere}}
 @media(prefers-reduced-motion:no-preference){.ops-live-dot{animation:ops-live-breathe 2.8s ease-in-out infinite}.ops-loading-dot{animation:ops-live-breathe 1.3s ease-in-out infinite}@keyframes ops-live-breathe{50%{opacity:.45}}}
 @media(prefers-reduced-motion:reduce){.admin-workspace *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
-.ops-demo-badge { font-size:9px; color:#947147; background:#f7ebd4; border:1px solid #e5cfa9; border-radius:5px; padding:3px 7px; white-space:nowrap; }
 .ops-payment-badge { display:block; font-size:9px; color:#948978!important; font-weight:400; margin-bottom:3px; text-align:end; }
 @media(max-width:760px){
   .admin-workspace .admin-sidebar{visibility:hidden;transition:transform .2s,visibility .2s}

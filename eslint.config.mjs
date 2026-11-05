@@ -9,7 +9,7 @@ const eslintConfig = defineConfig([
     files: ["src/**/*.{ts,tsx}"],
     rules: { "no-console": ["error", { allow: ["warn", "error"] }] },
   },
-  globalIgnores([".next/**", ".next-operations-preview/**", "out/**", "build/**", "next-env.d.ts"]),
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
 ]);
 
 export default eslintConfig;
