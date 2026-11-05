@@ -6,7 +6,7 @@ import type { Role } from '@/cms/permissions';
 import type { Dish, Selection } from '@/catalog/types';
 import { useLocale } from '@/i18n/locale';
 import { useNotify } from './Notices';
-import { applyEdits, editPreview, editReasonLabels, editReasons, orderTotals, type EditReason, type EditPreview, type OrderTotals, type ResolvedEdit, type WorkingLine } from '@/ordering/edits';
+import { applyEdits, editableStatuses, editPreview, editReasonLabels, editReasons, orderTotals, type EditReason, type EditPreview, type OrderTotals, type ResolvedEdit, type WorkingLine } from '@/ordering/edits';
 import { formatMinor, signedMinorAmount } from '@/lib/money';
 import { defaultSelection, preferredPieces, unitPrice } from '@/ordering/price';
 import type { OrderDetailData } from '@/ordering/contracts';
@@ -15,8 +15,6 @@ import { useModal } from './Fields';
 
 type Line = OrderDetailData['currentLines'][number];
 type SheetKind = 'qty' | 'price' | 'modifier' | 'discount' | 'add';
-
-const editable = ['placed', 'paid', 'accepted', 'preparing', 'ready'];
 
 export function OrderEditPanel({ id, data, role, menu, onSaved, onReprint }: {
   id: string;
@@ -38,7 +36,7 @@ export function OrderEditPanel({ id, data, role, menu, onSaved, onReprint }: {
   const [busy, setBusy] = useState(false);
   const line = data.currentLines.find((item) => item.id === selectedId) ?? null;
   const dish = line ? dishes.find((item) => item.id === line.dishId) : undefined;
-  const canEdit = editable.includes(data.status);
+  const canEdit = (editableStatuses as readonly string[]).includes(data.status);
   const cancelled = data.status === 'cancelled';
   const lineOn = Boolean(line && canEdit && !cancelled && !line.voided);
   const money = (minor: number) => formatMinor(minor, lang);

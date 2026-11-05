@@ -1,4 +1,4 @@
-import type { InStatement } from "@libsql/client";
+import type { SqlStatement } from "./sql";
 import type { MenuData } from "./schema";
 
 // Append-only activity log. Rows are only ever inserted, in the same
@@ -31,7 +31,7 @@ export function auditContext(request: Request, actor: string | null): AuditConte
   };
 }
 
-export function auditInsert(ctx: AuditContext, entry: AuditEntry): InStatement {
+export function auditInsert(ctx: AuditContext, entry: AuditEntry): SqlStatement {
   return {
     sql: "INSERT INTO audit (at,actor,action,entity_type,entity_id,label,diff,ip,user_agent) VALUES (?,?,?,?,?,?,?,?,?)",
     args: [

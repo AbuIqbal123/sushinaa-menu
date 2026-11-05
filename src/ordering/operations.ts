@@ -1,31 +1,19 @@
-import type { InStatement, Row } from '@libsql/client';
+import type { DbRow, SqlStatement } from '@/cms/sql';
 import { db } from '@/cms/db';
 import { initOrders } from './checkout/repository';
 import { branchClause, type BranchScope } from './scope';
-import { KITCHEN_VISIBLE } from './orders';
-import { OrderError } from './http';
+import { KITCHEN_VISIBLE } from './visibility';
 import type { BranchId } from '@/branches/branches';
 import type { OperationsData, OperationsQuery } from './operations-contracts';
+import { activeStatuses, staffGroups, statusInSql } from './status';
+import { operationRange, operationScope, qatarDate } from './operations-calendar';
+
+export { operationRange, operationScope, qatarDate } from './operations-calendar';
 
 const DAY = 86400000;
-export function qatarDate(at:Date) { return new Date(at.getTime()+3*3600000).toISOString().slice(0,10); }
-export function operationRange(query:OperationsQuery, now=new Date()) {
-  const today=qatarDate(now);const midnight=Date.parse(`${today}T00:00:00+03:00`);
-  let from:string,to:string;
-  if(query.period==='custom'){from=query.from!;to=query.to!;}
-  else if(query.period==='yesterday'){from=to=qatarDate(new Date(midnight-1));}
-  else {to=today;from=qatarDate(new Date(midnight-(query.period==='7d'?6:query.period==='30d'?29:0)*DAY));}
-  const start=new Date(`${from}T00:00:00+03:00`),end=new Date(Date.parse(`${to}T00:00:00+03:00`)+DAY);
-  if(!Number.isFinite(start.getTime())||!Number.isFinite(end.getTime())||end<=start||end.getTime()-start.getTime()>92*DAY)throw new OrderError('INVALID',400);
-  return {from,to,start:start.toISOString(),end:end.toISOString(),hourly:from===to};
-}
-export function operationScope(scope:BranchScope, branch?:BranchId){
-  if(scope.kind==='branch'&&branch&&branch!==scope.branchId)throw new OrderError('FORBIDDEN',403);
-  return scope.kind==='all'&&branch?{kind:'branch' as const,branchId:branch}:scope;
-}
-const n=(row:Row|undefined,key:string)=>Number(row?.[key]??0);
-const minutes=(row:Row|undefined,key:string)=>row?.[key]==null?null:Math.round(Number(row[key])*10)/10;
-const active="status IN ('placed','paid','accepted','preparing','ready')";
+const n=(row:DbRow|undefined,key:string)=>Number(row?.[key]??0);
+const minutes=(row:DbRow|undefined,key:string)=>row?.[key]==null?null:Math.round(Number(row[key])*10)/10;
+const active=statusInSql(activeStatuses);
 const valid="status NOT IN ('cancelled','refunded')";
 const paid=`paid_at IS NOT NULL AND ${valid}`;
 
@@ -36,15 +24,15 @@ export async function operations(scope:BranchScope,query:OperationsQuery,now=new
   const where=`${live} AND created_at>=? AND created_at<?`;
   const args=[...branch.args,range.start,range.end];
   const bucket=range.hourly?"strftime('%H',datetime(created_at,'+3 hours'))":"strftime('%Y-%m-%d',datetime(created_at,'+3 hours'))";
-  const requests:InStatement[]=[
+  const requests:SqlStatement[]=[
     {sql:`SELECT COUNT(*) orders, SUM(status='completed') completed, SUM(status IN ('cancelled','refunded')) cancelled,
       SUM(CASE WHEN ${paid} THEN total_minor ELSE 0 END) sales,
       SUM(CASE WHEN ${valid} AND paid_at IS NULL THEN total_minor ELSE 0 END) unpaid,
       AVG(CASE WHEN ${valid} THEN total_minor END) average FROM orders WHERE ${where}`,args},
-    {sql:`SELECT branch_id, SUM(status IN ('placed','paid')) received, SUM(status IN ('accepted','preparing')) preparing,
+    {sql:`SELECT branch_id, SUM(${statusInSql(staffGroups.received)}) received, SUM(${statusInSql(staffGroups.preparing)}) preparing,
       SUM(status='ready') ready, SUM(${active}) active,
       SUM(print_count=0 AND ${active}) unprinted,
-      MIN(CASE WHEN status IN ('placed','paid') THEN COALESCE(paid_at,created_at) END) oldest_received,
+      MIN(CASE WHEN ${statusInSql(staffGroups.received)} THEN COALESCE(paid_at,created_at) END) oldest_received,
       MIN(CASE WHEN status='ready' THEN COALESCE((SELECT MAX(at) FROM audit WHERE entity_type='order' AND entity_id=orders.id AND action='order.status' AND json_extract(diff,'$.status.to')='ready'),updated_at) END) oldest_ready FROM orders WHERE ${live} GROUP BY branch_id`,args:branch.args},
     {sql:`SELECT ${bucket} bucket,COUNT(*) orders,SUM(CASE WHEN ${paid} THEN total_minor ELSE 0 END) sales FROM orders WHERE ${where} GROUP BY bucket ORDER BY bucket`,args},
     {sql:`SELECT branch_id,COUNT(*) orders,SUM(CASE WHEN ${paid} THEN total_minor ELSE 0 END) sales FROM orders WHERE ${where} GROUP BY branch_id`,args},

@@ -16,6 +16,7 @@ import { imageFor,selectionForDiet } from '@/ordering/price';
 import { findCarBrand,carBrandName } from '@/ordering/car-brands';
 import { CarBrandLogo } from '@/components/checkout/CarBrandPicker';
 import { ago,OpsIcon,useAdminClock,useOperations } from './OperationsUI';
+import { qatarDate } from '@/ordering/operations-calendar';
 import type { OrderIntent } from './Dashboard';
 
 type List={rows:OrderSummary[];more:boolean;newCount:number;unprintedCount?:number};
@@ -49,7 +50,7 @@ export function Orders({active,onUnread,role,menu,branch='',view='active',intent
     <OrderWorkspace key={`${view}:${branch}:${intent.key??0}`} view={view} branch={branch} role={role} menu={menu} revision={revision} refresh={refresh} intent={intent}/>
   </section>;
 }
-function historyDate(offset=0){return new Date(Date.now()+3*3600000+offset*86400000).toISOString().slice(0,10);}
+function historyDate(offset=0){return qatarDate(new Date(Date.now()+offset*86400000));}
 function OrderWorkspace({view,branch,role,menu,revision,refresh,intent}:{view:'active'|'history';branch:string;role:Role;menu:MenuData;revision:number;refresh:()=>void;intent:OrderIntent}){
   const {lang}=useLocale();const ar=lang==='ar';const text=(en:string,arabic:string)=>ar?arabic:en;const branches=configuredBranches(menu.branches);
   const history=view==='history';const [status,setStatus]=useState(intent.status??''),[unprinted,setUnprinted]=useState(Boolean(intent.unprinted));

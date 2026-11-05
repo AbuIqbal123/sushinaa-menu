@@ -1,4 +1,4 @@
-import type { Client } from "@libsql/client";
+import type { DbClient } from "./sql";
 import {
   databaseHost,
   isProductionDeployment,
@@ -37,7 +37,7 @@ export function guardProblems(facts: GuardFacts): string[] {
   return problems;
 }
 
-async function readMarker(client: Client): Promise<string | null> {
+async function readMarker(client: DbClient): Promise<string | null> {
   try {
     const result = await client.execute(
       "SELECT environment FROM env_marker WHERE id = 1",
@@ -62,7 +62,7 @@ export function assertPaymentProviderAllowed() {
     throw new Error("Production must not use a mock payment provider.");
 }
 
-export async function assertDatabaseAllowed(client: Client) {
+export async function assertDatabaseAllowed(client: DbClient) {
   assertPaymentProviderAllowed();
   const problems = guardProblems({
     production: isProductionDeployment(),

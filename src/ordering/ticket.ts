@@ -1,4 +1,4 @@
-import type { Row } from '@libsql/client';
+import type { DbRow } from '@/cms/sql';
 import type { Copy } from '@/i18n/copy';
 import { carBrandName } from './car-brands';
 import { BRANCHES } from '@/branches/branches';
@@ -93,7 +93,7 @@ function options(line: StoredLine) {
   );
 }
 
-export function ticketModel(row: Row, edits: ResolvedEdit[] = []): TicketModel {
+export function ticketModel(row: DbRow, edits: ResolvedEdit[] = []): TicketModel {
   const snapshot = JSON.parse(String(row.snapshot)) as {
     version?: number;
     branchName?: string;

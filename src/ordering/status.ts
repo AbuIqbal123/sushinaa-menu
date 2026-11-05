@@ -24,8 +24,16 @@ export const staffLabels: Record<StaffStatus, { en: string; ar: string }> = {
   cancelled: { en: 'Cancelled', ar: 'ملغي' },
 };
 export const printableStatuses = ['paid', 'accepted', 'preparing', 'ready', 'completed'] as const;
+/** Live kitchen queue: still being worked, not yet terminal. */
+export const activeStatuses = ['placed', 'paid', 'accepted', 'preparing', 'ready'] as const;
+/** Finished collection outcomes. */
+export const terminalStatuses = ['completed', 'cancelled', 'refunded'] as const;
 export function isPrintable(status: string) {
   return (printableStatuses as readonly string[]).includes(status);
+}
+/** SQL `status IN (...)` for a fixed status list we own. */
+export function statusInSql(list: readonly string[]) {
+  return `status IN (${list.map((status) => `'${status}'`).join(',')})`;
 }
 export function staffStatus(status: OrderStatus): StaffStatus {
   return (Object.keys(staffGroups) as StaffStatus[]).find(k => (staffGroups[k] as readonly string[]).includes(status))!;

@@ -1,0 +1,20 @@
+---
+description: Global coding principles for structure and coupling
+alwaysApply: true
+---
+
+# Coding principles
+
+Follow `docs/engineering/coding-principles.md` on every change.
+
+- **DRY** — one owner for each rule, shape, or decision; callers reuse it.
+- **Orthogonal, modular code** — small modules, one job, narrow surface, loose coupling.
+- **Layers of abstraction** — each layer uses only the layer below; never reach past a neighbour into deeper internals.
+- **Change blast radius** — prefer designs where a requirement shift hits one module, or a few at the same layer.
+- **Do not rely on what you cannot control** — no undocumented library behaviour, platform quirks, or foreign internals; depend on contracts we own or vendors formally guarantee.
+- **Shy code** — no unnecessary revelation; talk only through public interfaces.
+- **Testability as a coupling check** — if a unit test must import most of the system, fix the boundary.
+- **Third-party vendors behind our abstractions** — hide SDKs and persistence products behind our own seams.
+- **Flexibility where it matters** — keep flexibility at architecture, deployment, and vendor seams; do not scatter those details through business modules.
+
+When refactoring to these principles, preserve behaviour. Prefer structure and boundary changes over functional changes.

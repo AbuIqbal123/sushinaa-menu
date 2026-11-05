@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { databaseUrl, db, initDb } from "./db";
 import { orderDatabaseAllowed } from "@/ordering/guard";
-import type { InStatement } from "@libsql/client";
+import type { SqlStatement } from "./sql";
 import { auditInsert, type AuditContext } from "./audit";
 import { hashPassword, verifyPassword } from "./passwords";
 import type { Role } from "./permissions";
@@ -126,7 +126,7 @@ export async function authenticated() {
   return (await currentStaff()) !== null;
 }
 /** Starts a fresh session; any session this browser already had is ended. */
-export async function login(audit: AuditContext, also: InStatement[] = [], username?: string) {
+export async function login(audit: AuditContext, also: SqlStatement[] = [], username?: string) {
   await initDb();
   if (!orderDatabaseAllowed(databaseUrl)) {
     const jar = await cookies();

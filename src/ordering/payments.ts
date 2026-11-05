@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { InStatement } from '@libsql/client';
+import type { SqlStatement } from '@/cms/sql';
 import { db } from '@/cms/db';
 import { auditInsert } from '@/cms/audit';
 import { initOrders } from './checkout/repository';
@@ -50,7 +50,7 @@ export async function settlePayment(
 }
 
 /** Statements for a pay-at-pickup collection. The caller runs them in the status batch, after changes()=1. */
-export function counterSettlementStatements(orderId: string, at: string): InStatement[] {
+export function counterSettlementStatements(orderId: string, at: string): SqlStatement[] {
   return [
     {
       sql: `UPDATE orders SET paid_at=COALESCE(paid_at, ?) WHERE id=? AND payment_method='pay_at_pickup' AND changes()=1`,
