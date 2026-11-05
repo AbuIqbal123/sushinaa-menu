@@ -22,7 +22,7 @@ function stored(snapshot: unknown, totalMinor: number): DbRow {
     amended_at: null,
     instructions: '',
     snapshot: JSON.stringify(snapshot),
-  } as DbRow;
+  } as unknown as DbRow;
 }
 
 const roll = { name: 'Salmon roll', nameAr: 'سلمون', quantity: 1, unitMinor: 1000, note: '', categoryName: 'Rolls', categoryOrder: 1 };

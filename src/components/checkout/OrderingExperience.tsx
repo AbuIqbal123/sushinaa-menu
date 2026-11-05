@@ -213,9 +213,6 @@ function Experience({
       document.removeEventListener('visibilitychange', pull); window.removeEventListener('online', pull);
     };
   }, [step, receipt?.id, receipt?.status]);
-  useEffect(() => {
-    setAppliedCoupon(current => current && current.subtotalMinor !== Math.round(cart.totalQar * 100) ? null : current);
-  }, [cart.totalQar]);
   function go(next: Step) {
     if (next === 'menu' && returnMode) {
       router.replace(`/${branchId}`);

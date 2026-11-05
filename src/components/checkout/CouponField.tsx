@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 
 export type AppliedCoupon = {
   code: string;
@@ -51,8 +51,6 @@ export function CouponField({
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
-  const subtotalRef = useRef(subtotalMinor);
-  subtotalRef.current = subtotalMinor;
 
   function failureCopy(code: string | undefined) {
     if (code === 'SESSION_REQUIRED') return text('Refresh the page, then apply the code.', 'حدّث الصفحة ثم طبّق الرمز.');
@@ -80,7 +78,6 @@ export function CouponField({
         setMessage(failureCopy(typeof data.code === 'string' ? data.code : undefined));
         return;
       }
-      if (subtotalRef.current !== quotedSubtotal) return;
       onApplied(quote);
     } catch {
       setMessage(text('Could not apply that code.', 'تعذّر تطبيق هذا الرمز.'));

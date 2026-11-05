@@ -11,7 +11,7 @@ import type { Coupon } from '../src/ordering/coupons/types';
 
 if (process.env.ADMIN_COUPONS_MOCKS !== '1') {
   test('admin coupon http', () => {
-    const env = { ...process.env, ADMIN_COUPONS_MOCKS: '1' };
+    const env: NodeJS.ProcessEnv = { ...process.env, ADMIN_COUPONS_MOCKS: '1' };
     for (const key of Object.keys(env)) {
       if (key === 'NODE_CHANNEL_FD' || key.startsWith('NODE_TEST_')) delete env[key];
     }
@@ -49,7 +49,7 @@ delete process.env.CMS_PUBLIC_MENU_SOURCE_URL;
 let session: string | undefined = ADMIN;
 
 mock.module('next/headers', {
-  exports: {
+  namedExports: {
     cookies: async () => ({
       get: () => (session === undefined ? undefined : { value: session }),
       set: () => undefined,
