@@ -34,7 +34,7 @@ test('signature is secret + alphabetically sorted field values, excluding produc
   assert.equal(signaturesMatch(expected, expected.slice(0, -1) + '0'), false);
 });
 
-test('buildSadadLaunch posts to WebCheckout with optional EMAIL only when present', () => {
+test('buildSadadLaunch posts to WebCheckout and omits EMAIL by default', () => {
   const at = new Date('2026-11-03T12:00:00');
   const without = buildSadadLaunch({
     orderId: 'SU-abc',
@@ -51,18 +51,17 @@ test('buildSadadLaunch posts to WebCheckout with optional EMAIL only when presen
   assert.equal(without.fields.EMAIL, undefined);
   assert.ok(without.fields.signature);
 
-  const withEmail = buildSadadLaunch({
+  const arabic = buildSadadLaunch({
     orderId: 'SU-abc',
     amountMinor: 2550,
     currency: 'QAR',
     mobileDigits: '97455551234',
-    payerEmail: 'guest@example.com',
     language: 'ar',
     line: { reference: 'SU-abc', amountMinor: 2550, quantity: 1 },
     txnAt: at,
   }, config);
-  assert.equal(withEmail.fields.EMAIL, 'guest@example.com');
-  assert.equal(withEmail.fields.SADAD_WEBCHECKOUT_PAGE_LANGUAGE, 'arb');
+  assert.equal(arabic.fields.EMAIL, undefined);
+  assert.equal(arabic.fields.SADAD_WEBCHECKOUT_PAGE_LANGUAGE, 'arb');
 });
 
 test('format helpers stay pure', () => {

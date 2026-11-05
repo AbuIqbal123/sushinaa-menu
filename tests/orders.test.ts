@@ -18,7 +18,7 @@ let db: (typeof import('../src/cms/db'))['db'];
 let dir: string;
 const ctx = { actor: 'test-staff', ip: null, userAgent: null };
 const admin = { kind: 'all' as const };
-const snapshot: OrderSnapshot = { branchId:'down-town', branchName:'Down Town',collection:'car',customer:{name:'Test customer',email:'',phone:'97455551234',brand: 'toyota', plate:'Q123456',colour:'silver',car:'test car',instructions:'test instructions'},lines:[],totalMinor:1234,currency:'QAR' };
+const snapshot: OrderSnapshot = { branchId:'down-town', branchName:'Down Town',collection:'car',customer:{name:'Test customer',phone:'97455551234',brand: 'toyota', plate:'Q123456',colour:'silver',car:'test car',instructions:'test instructions'},lines:[],totalMinor:1234,currency:'QAR' };
 before(async () => {
   dir = mkdtempSync(join(tmpdir(),'sn-order-suite-'));
   process.env.CMS_DATABASE_URL = `file:${dir}/orders.db`; process.env.CMS_DATABASE_AUTH_TOKEN = '';
