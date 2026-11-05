@@ -3,7 +3,7 @@ import { branchId } from './contracts';
 import type { BranchId } from '@/branches/branches';
 
 export const operationsQuery = z.object({
-  branch: branchId.optional(), period: z.enum(['today','yesterday','7d','30d','custom']).default('today'),
+  branch: branchId.optional(), period: z.enum(['today','yesterday','7d','30d','custom']).default('7d'),
   from: z.iso.date().optional(), to: z.iso.date().optional(),
 }).strict().refine(q => q.period !== 'custom' || Boolean(q.from && q.to && q.from <= q.to), 'Choose a valid date range');
 export type OperationsQuery = z.infer<typeof operationsQuery>;

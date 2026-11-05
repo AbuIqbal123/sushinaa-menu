@@ -32,7 +32,7 @@ const paths={
 };
 export type OpsIconName=keyof typeof paths;
 export function OpsIcon({name,size=20}:{name:OpsIconName;size?:number}){return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name]}/></svg>;}
-export function useOperations(branch:string,period='today',from='',to='',active=true){
+export function useOperations(branch:string,period='7d',from='',to='',active=true){
   const router=useRouter();const query=new URLSearchParams({period});if(branch)query.set('branch',branch);if(period==='custom'){if(from)query.set('from',from);if(to)query.set('to',to);}
   const key=query.toString();const valid=period!=='custom'||Boolean(from&&to&&from<=to&&(Date.parse(to)-Date.parse(from))/86400000<92);
   const [result,setResult]=useState<{key:string;data:OperationsData}|null>(null);const [failed,setFailed]=useState(false);const [refresh,setRefresh]=useState(0);

@@ -84,6 +84,12 @@ export const PRINT_SQL = [
   `CREATE INDEX IF NOT EXISTS orders_branch_printed ON orders(branch_id, printed_at)`,
 ];
 
+/** Keep identical to db/migrations/0008_customer_arrived.sql. */
+export const ARRIVED_SQL = [
+  `ALTER TABLE orders ADD COLUMN customer_arrived_at TEXT`,
+];
+
+
 /** Keep identical to db/migrations/0007_payment_events.sql. */
 export const PAYMENT_EVENTS_SQL = [
   `CREATE TABLE IF NOT EXISTS payment_events (

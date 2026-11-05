@@ -28,7 +28,11 @@ const securityHeaders = [
   ...(isProductionDeployment()
     ? []
     : [{ key: "X-Robots-Tag", value: "noindex, nofollow" }]),
-  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+  // Never HSTS on local HTTP — Safari caches it and then upgrades CSS/JS to
+  // https://localhost, which fails and leaves the admin unstyled.
+  ...(!isDev && !localHttpPreview
+    ? [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }]
+    : []),
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {

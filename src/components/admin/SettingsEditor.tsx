@@ -81,9 +81,9 @@ export function SettingsEditor({
           onChange={setTab}
         />
         {tab === "Restaurant" && (
-          <div className="admin-card">
-            {Object.entries(draft.settings).map(([key, value]) =>
-              key === "logo" || key === "documentLogo" ? (
+          <div className="admin-card admin-settings-restaurant">
+            <div className="admin-settings-logos">
+              {(["logo", "documentLogo"] as const).map((key) => (
                 <ImageField
                   key={key}
                   label={key === "logo" ? "Menu logo" : "Document logo"}
@@ -92,7 +92,7 @@ export function SettingsEditor({
                     url: "/brand/logo.svg",
                     label: "Use the Sushinaa logo",
                   }}
-                  value={value as string}
+                  value={String(draft.settings[key] ?? "")}
                   onChange={(v) =>
                     setDraft({
                       ...draft,
@@ -100,26 +100,31 @@ export function SettingsEditor({
                     })
                   }
                 />
-              ) : (
-                <TextField
-                  key={key}
-                  label={settingLabels[key] ?? key}
-                  path={`settings.${key}`}
-                  value={Array.isArray(value) ? value.join("\n") : value}
-                  multiline={Array.isArray(value) || key === "addressLine"}
-                  lang={key.endsWith("Ar") ? "ar" : undefined}
-                  onChange={(v) =>
-                    setDraft({
-                      ...draft,
-                      settings: {
-                        ...draft.settings,
-                        [key]: Array.isArray(value) ? v.split("\n") : v,
-                      },
-                    })
-                  }
-                />
-              ),
-            )}
+              ))}
+            </div>
+            <div className="admin-grid">
+              {Object.entries(draft.settings)
+                .filter(([key]) => key !== "logo" && key !== "documentLogo")
+                .map(([key, value]) => (
+                  <TextField
+                    key={key}
+                    label={settingLabels[key] ?? key}
+                    path={`settings.${key}`}
+                    value={Array.isArray(value) ? value.join("\n") : value}
+                    multiline={Array.isArray(value) || key === "addressLine"}
+                    lang={key.endsWith("Ar") ? "ar" : undefined}
+                    onChange={(v) =>
+                      setDraft({
+                        ...draft,
+                        settings: {
+                          ...draft.settings,
+                          [key]: Array.isArray(value) ? v.split("\n") : v,
+                        },
+                      })
+                    }
+                  />
+                ))}
+            </div>
           </div>
         )}
         {tab === "Menu wording" && (

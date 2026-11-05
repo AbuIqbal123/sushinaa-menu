@@ -4,12 +4,6 @@ import { initOrders } from './checkout/repository';
 import type { PaymentStatus } from './payment-gateway/types';
 import type { BranchId } from '@/branches/branches';
 
-function maskPhone(phone: unknown) {
-  return typeof phone === 'string' && phone.length >= 4
-    ? `+974 •••• ${phone.slice(-4, -2)} ${phone.slice(-2)}`
-    : '—';
-}
-
 export type PaymentEventKind = 'launch' | 'callback' | 'webhook' | 'settled' | 'failed';
 
 export type LedgerEventInput = {
@@ -142,12 +136,12 @@ export async function listPayments(query: PaymentListQuery = {}) {
     reference: row.reference == null ? null : String(row.reference),
     recordedAt: String(row.attempt_updated || row.created_at),
     customerName: String(row.customer_name || '—'),
-    customerPhone: maskPhone(row.customer_phone),
+    customerPhone: String(row.customer_phone || '—'),
   }));
   return { rows: mapped, more };
 }
 
-export async function paymentDetail(orderId: string, revealContact: boolean) {
+export async function paymentDetail(orderId: string) {
   await initOrders();
   const order = (await db.execute({ sql: 'SELECT * FROM orders WHERE id=?', args: [orderId] })).rows[0];
   if (!order) return null;
@@ -166,8 +160,8 @@ export async function paymentDetail(orderId: string, revealContact: boolean) {
     provider: String(attempt?.provider || order.payment_method),
     reference: attempt?.reference == null ? null : String(attempt.reference),
     recordedAt: String(attempt?.updated_at || order.created_at),
-    customerName: revealContact ? String(order.customer_name || '') : '—',
-    customerPhone: revealContact ? String(order.customer_phone || '') : maskPhone(order.customer_phone),
+    customerName: String(order.customer_name || '—'),
+    customerPhone: String(order.customer_phone || '—'),
     history: events.map((e) => ({
       kind: String(e.kind),
       status: String(e.our_status),

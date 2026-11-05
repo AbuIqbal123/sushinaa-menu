@@ -51,16 +51,11 @@ for (const lang of ['en','ar']) {
     // No reload: the new card arrives from the visible-tab polling loop.
     const card = staff.locator(`[data-order-id="${order.id}"]`);
     await expect(card).toBeVisible({timeout:25000});
-    await expect(card).not.toContainText('97455551234');
     await staff.getByLabel('Order branch').selectOption('west-bay');await expect(card).toHaveCount(0);
     await staff.getByLabel('Order branch').selectOption('down-town');
     await staff.getByLabel('Order status').selectOption('received');await expect(card).toBeVisible();
     await card.click();
-    await expect(staff.locator('.staff-contact')).not.toContainText('97455551234');
-    await staff.getByRole('button',{name:'Show contact',exact:true}).click();
-    await expect(staff.locator('.staff-contact')).toContainText('97455551234');
-    const activity = await (await staff.request.get('/api/admin/activity?area=orders')).json();
-    expect(activity.rows.some((r:{action:string;entityId:string})=>r.action==='order.contact_viewed' && r.entityId===order.id)).toBe(true);
+    await expect(staff.getByText('5555 1234')).toBeVisible();
     for(const name of ['Accept order','Preparing','Ready','Collected']) {
       await staff.getByRole('button',{name,exact:true}).click();
       await expect(staff.getByRole('button',{name,exact:true})).toHaveCount(0);

@@ -18,8 +18,6 @@ import { KITCHEN_VISIBLE } from './visibility';
 import { isProductionDeployment } from '@/lib/deploy-env';
 
 export { KITCHEN_VISIBLE } from './visibility';
-export const maskPhone = (phone: unknown) => typeof phone === 'string' && phone.length >= 4 ? `+974 •••• ${phone.slice(-4, -2)} ${phone.slice(-2)}` : '—';
-export const maskPlate = (plate: unknown) => typeof plate === 'string' && plate.length >= 4 ? `${plate[0]} ••• ${plate.slice(-2)}` : '—';
 const text = (v: unknown) => typeof v === 'string' ? v : '';
 const nullable = (v: unknown) => typeof v === 'string' ? v : null;
 
@@ -40,8 +38,11 @@ export async function orderEditMeta(orderId: string) {
   return { edits, owedBackMinor: Number(owed?.n ?? 0) };
 }
 const printableSql = statusInSql(printableStatuses);
+/** Last kitchen status change; falls back to paid/created for rows without audit. */
+const STATUS_AT_SQL = `COALESCE((SELECT MAX(at) FROM audit WHERE entity_type='order' AND entity_id=orders.id AND action='order.status'),paid_at,created_at)`;
+const LIVE_SORT_SQL = 'COALESCE(paid_at, created_at)';
 
-export function summary(row: DbRow, contact: 'staff' | 'masked' = 'masked'): OrderSummary {
+export function summary(row: DbRow): OrderSummary {
   const name = typeof row.customer_name === 'string' && row.customer_name ? String(row.customer_name) : '—';
   const phone = typeof row.customer_phone === 'string' && row.customer_phone ? String(row.customer_phone) : '—';
   const plate = typeof row.car_plate === 'string' && row.car_plate ? String(row.car_plate) : '—';
@@ -49,10 +50,9 @@ export function summary(row: DbRow, contact: 'staff' | 'masked' = 'masked'): Ord
     branchId: row.branch_id as BranchId, status: row.status as OrderStatus,
     paymentMethod: row.payment_method as OrderSummary['paymentMethod'], paidAt: nullable(row.paid_at),
     totalMinor: Number(row.total_minor), currency: 'QAR', createdAt: String(row.created_at),
-    name: contact === 'staff' ? name : '—',
-    phone: contact === 'staff' ? phone : maskPhone(row.customer_phone),
-    plate: contact === 'staff' ? plate : maskPlate(row.car_plate),
-    printCount: Number(row.print_count ?? 0), printedAt: nullable(row.printed_at) };
+    name, phone, plate,
+    printCount: Number(row.print_count ?? 0), printedAt: nullable(row.printed_at),
+    arrivedAt: nullable(row.customer_arrived_at) };
 }
 
 async function unprintedCount(scope: BranchScope) {
@@ -78,8 +78,9 @@ export async function listOrders(scope: BranchScope, query: OrderQuery) {
     where.push(`status IN (${states.map(() => '?').join(',')})`);
     args.push(...states);
   }
-  if (query.from) { where.push('created_at>=?'); args.push(new Date(`${query.from}T00:00:00+03:00`).toISOString()); }
-  if (query.to) { where.push('created_at<?'); args.push(new Date(Date.parse(`${query.to}T00:00:00+03:00`) + 86400000).toISOString()); }
+  const dateColumn = query.view === 'history' ? STATUS_AT_SQL : 'created_at';
+  if (query.from) { where.push(`${dateColumn}>=?`); args.push(new Date(`${query.from}T00:00:00+03:00`).toISOString()); }
+  if (query.to) { where.push(`${dateColumn}<?`); args.push(new Date(Date.parse(`${query.to}T00:00:00+03:00`) + 86400000).toISOString()); }
   if (query.q) {
     if (query.q.startsWith('SU-') && /^SU-[0-9a-f-]{36}$/.test(query.q)) { where.push('id=?'); args.push(query.q); }
     else {
@@ -93,30 +94,38 @@ export async function listOrders(scope: BranchScope, query: OrderQuery) {
   let followCursor = false;
   if (query.since) {
     const cursor = (await db.execute({
-      sql: `SELECT COALESCE(paid_at, created_at) AS sort_at, id FROM orders WHERE id=? AND ${branch.sql}`,
+      sql: `SELECT ${LIVE_SORT_SQL} AS sort_at, id FROM orders WHERE id=? AND ${branch.sql}`,
       args: [query.since, ...branch.args],
     })).rows[0];
     if (cursor) {
       followCursor = true;
-      where.push('(COALESCE(paid_at, created_at)>? OR (COALESCE(paid_at, created_at)=? AND id>?))');
+      where.push(`(${LIVE_SORT_SQL}>? OR (${LIVE_SORT_SQL}=? AND id>?))`);
       args.push(String(cursor.sort_at), String(cursor.sort_at), query.since);
     } else {
       page = 1;
     }
   }
   const predicate = where.join(' AND ');
+  // Live + history both newest-first. Live uses kitchen arrival (paid/created); history uses last status change.
+  const orderBy = query.view === 'history' ? STATUS_AT_SQL : LIVE_SORT_SQL;
   const rows = await db.execute({
-    sql: `SELECT id,branch_id,status,payment_method,paid_at,total_minor,created_at,updated_at,snapshot,instructions,customer_name,customer_phone,car_plate,order_number,print_count,printed_at, COALESCE((SELECT MAX(at) FROM audit WHERE entity_type='order' AND entity_id=orders.id AND action='order.status'),paid_at,created_at) status_at FROM orders WHERE ${branch.sql} AND ${predicate} ORDER BY COALESCE(paid_at, created_at) ${query.view === 'active' ? 'ASC' : 'DESC'}, id ${query.view === 'active' ? 'ASC' : 'DESC'} LIMIT ? OFFSET ?`,
+    sql: `SELECT id,branch_id,status,payment_method,paid_at,total_minor,created_at,updated_at,snapshot,instructions,customer_name,customer_phone,car_plate,order_number,print_count,printed_at,customer_arrived_at, ${STATUS_AT_SQL} status_at FROM orders WHERE ${branch.sql} AND ${predicate} ORDER BY ${orderBy} DESC, order_number DESC, id DESC LIMIT ? OFFSET ?`,
     args: [...branch.args, ...args, query.limit + 1, (page - 1) * query.limit],
   });
   const count = followCursor ? Number((await db.execute({ sql: `SELECT COUNT(*) AS n FROM orders WHERE ${branch.sql} AND ${predicate}`, args: [...branch.args, ...args] })).rows[0].n) : 0;
+  const arrivedCount = query.arrivedSince
+    ? Number((await db.execute({
+      sql: `SELECT COUNT(*) AS n FROM orders WHERE ${KITCHEN_VISIBLE} AND ${branch.sql} AND customer_arrived_at>?`,
+      args: [...branch.args, query.arrivedSince],
+    })).rows[0].n)
+    : 0;
   const cutoff = new Date(Date.now() - AUTO_PRINT_WINDOW_MS).toISOString();
   const autoPrint = (await db.execute({
-    sql: `SELECT id,branch_id,status,payment_method,paid_at,total_minor,created_at,customer_name,customer_phone,car_plate,order_number,print_count,printed_at
+    sql: `SELECT id,branch_id,status,payment_method,paid_at,total_minor,created_at,customer_name,customer_phone,car_plate,order_number,print_count,printed_at,customer_arrived_at
       FROM orders WHERE ${KITCHEN_VISIBLE} AND ${branch.sql} AND print_count=0 AND print_claimed_at IS NULL AND ${printableSql}
-      AND COALESCE(paid_at, created_at)>=? ORDER BY COALESCE(paid_at, created_at), id`,
+      AND ${LIVE_SORT_SQL}>=? ORDER BY ${LIVE_SORT_SQL}, id`,
     args: [...branch.args, cutoff],
-  })).rows.map(row => summary(row, 'staff'));
+  })).rows.map(row => summary(row));
   const visible = rows.rows.slice(0, query.limit);
   const edits = new Map<string, ResolvedEdit[]>();
   if (visible.length) {
@@ -126,19 +135,18 @@ export async function listOrders(scope: BranchScope, query: OrderQuery) {
   const summaries = visible.map(row=>{
     const snapshot = JSON.parse(String(row.snapshot));
     const lines = applyEdits(linesFromSnapshot(snapshot.lines??[]),edits.get(String(row.id))??[]).lines.filter(line=>!line.voided);
-    return {...summary(row,'staff'),updatedAt:String(row.updated_at??row.created_at),statusAt:String(row.status_at??row.created_at),brandId:String(snapshot.customer?.brand??''),
+    return {...summary(row),updatedAt:String(row.updated_at??row.created_at),statusAt:String(row.status_at??row.created_at),brandId:String(snapshot.customer?.brand??''),
       items:lines.slice(0,3).map(line=>({dishId:line.dishId,name:line.name,nameAr:line.nameAr,quantity:line.quantity,selection:line.selection})),
       itemCount:lines.reduce((sum,line)=>sum+line.quantity,0),hasNotes:lines.some(line=>Boolean(line.note))||Boolean(row.instructions)};
   });
-  return { rows: summaries, more: rows.rows.length > query.limit, page, newCount: count, unprintedCount: backlog, autoPrint };
+  return { rows: summaries, more: rows.rows.length > query.limit, page, newCount: count, arrivedCount, unprintedCount: backlog, autoPrint };
 }
 
-export async function detailOrder(scope: BranchScope, id: string, reveal: boolean, ctx: AuditContext): Promise<OrderDetailData> {
+export async function detailOrder(scope: BranchScope, id: string): Promise<OrderDetailData> {
   await initOrders();
   const branch = branchClause(scope);
   const row = (await db.execute({ sql: `SELECT * FROM orders WHERE id=? AND ${branch.sql} AND ${KITCHEN_VISIBLE}`, args: [id, ...branch.args] })).rows[0];
   if (!row) throw new OrderError('NOT_FOUND', 404);
-  if (reveal) await db.execute(auditInsert(ctx, { action: 'order.contact_viewed', entityType: 'order', entityId: id }));
   const history = (await db.execute({ sql: "SELECT at,diff,label FROM audit WHERE entity_type='order' AND entity_id=? AND action='order.status' ORDER BY at DESC, id DESC", args: [id] })).rows;
   const snapshot = JSON.parse(String(row.snapshot));
   const brandId = text(snapshot.customer?.brand);
@@ -148,9 +156,9 @@ export async function detailOrder(scope: BranchScope, id: string, reveal: boolea
   const { storedEdits } = await import('./order-edits');
   const projected = applyEdits(linesFromSnapshot(snapshot.lines ?? []), await storedEdits(id));
   const meta = await orderEditMeta(id);
-  return { ...summary(row), brandId, contactRevealed: reveal, snapshot, amendedAt: nullable(row.amended_at), originalTotalMinor: Number(snapshot.totalMinor ?? row.total_minor), currentLines: projected.lines, discounts: projected.discounts, edits: meta.edits, owedBackMinor: meta.owedBackMinor,
-    customer: { name: text(row.customer_name), phone: reveal ? text(row.customer_phone) : maskPhone(row.customer_phone),
-      plate: reveal ? text(row.car_plate) : maskPlate(row.car_plate), colour: text(row.car_colour), brand, car: text(row.car_model), instructions: text(row.instructions) },
+  return { ...summary(row), brandId, contactRevealed: true, snapshot, amendedAt: nullable(row.amended_at), originalTotalMinor: Number(snapshot.totalMinor ?? row.total_minor), currentLines: projected.lines, discounts: projected.discounts, edits: meta.edits, owedBackMinor: meta.owedBackMinor,
+    customer: { name: text(row.customer_name), phone: text(row.customer_phone),
+      plate: text(row.car_plate), colour: text(row.car_colour), brand, car: text(row.car_model), instructions: text(row.instructions) },
     history: history.map(h => ({ at: String(h.at), ...JSON.parse(String(h.diff)).status, reason: nullable(h.label) })),
   };
 }

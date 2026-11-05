@@ -25,7 +25,8 @@ export function OrderProgress({ status, lang }: { status: string; lang: Lang }) 
     ready:{en:'Your order is ready',ar:'طلبك جاهز'},collected:{en:'Order collected',ar:'تم تسليم طلبك'},cancelled:{en:'Order cancelled',ar:'تم إلغاء الطلب'}})[phase][lang];
   const description = ({received:{en:'Waiting for the kitchen to begin. Keep this page open for updates.',ar:'بانتظار بدء التحضير في المطبخ. أبقِ هذه الصفحة مفتوحة لمتابعة طلبك.'},
     preparing:{en:'The kitchen is preparing your food. This page will update when it’s ready.',ar:'المطبخ يُحضّر طلبك الآن. ستتحدّث هذه الصفحة عندما يصبح جاهزاً.'},
-    ready:{en:'Ready for collection. Please stay in your car—we’ll bring your order to you.',ar:'طلبك جاهز للاستلام. يرجى البقاء في سيارتك، وسنُحضر طلبك إليك.'},
+    ready:{en:'Ready for collection. Please stay in your car. We’ll bring your order to you.',ar:'طلبك جاهز للاستلام. يرجى البقاء في سيارتك، وسنُحضر طلبك إليك.'},
+
     collected:{en:'Thank you for ordering with Sushinaa.',ar:'شكراً لطلبك من سوشينا.'},
     cancelled:{en:'Please contact your branch if you need help.',ar:'يرجى الاتصال بالفرع إذا احتجت إلى المساعدة.'}})[phase][lang];
   const index = phase === 'ready' || phase === 'collected' ? 2 : phase === 'preparing' ? 1 : 0;

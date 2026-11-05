@@ -12,7 +12,7 @@ Prices, availability and branch opening hours are checked server-side. Duplicate
 
 ## Staff orders
 
-The existing authenticated `/admin` shell has an Orders section with branch/status/date/search filters, 25-row pages, masked contact, an audited contact-reveal action, the paper receipt and status history. Status writes use a conditional update and audit in one transaction; competing writes return `409 STALE_STATUS`. Pickup collection records payment in that same request. Cancellation uses fixed reason codes to keep personal information out of the audit label.
+The existing authenticated `/admin` shell has an Orders section with branch/status/date/search filters, 25-row pages, full customer contact for kitchen staff, the paper receipt and status history. Status writes use a conditional update and audit in one transaction; competing writes return `409 STALE_STATUS`. Pickup collection records payment in that same request. Cancellation uses fixed reason codes to keep personal information out of the audit label.
 
 Orders poll every 15 seconds while the tab is visible, including while another admin section is open. A badge counts unread orders. Staff can enable a bundled notification sound; their preference is stored locally. Browser autoplay restrictions may require enabling sound again after opening a new session. Existing menu-management flows are unchanged.
 

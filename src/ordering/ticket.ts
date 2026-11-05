@@ -65,12 +65,12 @@ export function qatarTime(iso: string) {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-    hour: '2-digit',
+    hour: 'numeric',
     minute: '2-digit',
-    hourCycle: 'h23',
+    hourCycle: 'h12',
   }).formatToParts(new Date(iso));
   const pick = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '';
-  return `${pick('year')}-${pick('month')}-${pick('day')} ${pick('hour')}:${pick('minute')}`;
+  return `${pick('year')}-${pick('month')}-${pick('day')} ${pick('hour')}:${pick('minute')} ${pick('dayPeriod').toLowerCase()}`;
 }
 
 export function receiptReference(iso: string, branchId: string, number: string) {

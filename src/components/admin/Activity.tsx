@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useLocale } from "@/i18n/locale";
+import { formatQatarDateTime } from "@/lib/datetime";
 import { useNotify } from "./Notices";
 
 type Row = {
@@ -171,12 +172,7 @@ export function Activity() {
             <div className="activity-line">
               <strong>{describe(row, lang)}</strong>
               <time dateTime={row.at} title={`${row.at} UTC`}>
-                {new Date(row.at).toLocaleString("en-GB", {
-                  day: "numeric",
-                  month: "short",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {formatQatarDateTime(row.at)}
               </time>
             </div>
             <details>

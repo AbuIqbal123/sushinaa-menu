@@ -99,22 +99,21 @@ test('order list shows staff the name, phone, and plate',async()=>{
   await create();const result=await orders.listOrders(admin, orderQuery.parse({limit:100}));const raw=JSON.stringify(result);
   assert.equal(result.rows[0]?.name,snapshot.customer.name);
   assert.ok(raw.includes(snapshot.customer.phone));assert.ok(raw.includes(snapshot.customer.plate));
-  assert.equal(orders.maskPhone(snapshot.customer.phone),'+974 •••• 12 34');assert.equal(orders.maskPlate(snapshot.customer.plate),'Q ••• 56');
 });
 test('order history is latest first',async()=>{
   const order=await create();
   await orders.transitionOrder(admin, order.id,{expected:'placed',to:'accepted'},ctx);
   await orders.transitionOrder(admin, order.id,{expected:'accepted',to:'preparing'},ctx);
-  const detail=await orders.detailOrder(admin, order.id,true,ctx);
+  const detail=await orders.detailOrder(admin, order.id);
   assert.equal(detail.history[0]?.to,'preparing');
   assert.equal(detail.history.at(-1)?.to,'accepted');
 });
-test('contact reveal is audited and the snapshot cannot leak hidden contact',async()=>{
-  const order=await create();const hidden=await orders.detailOrder(admin, order.id,false,ctx);
-  assert.ok(!JSON.stringify(hidden).includes(snapshot.customer.phone));assert.ok(!('customer' in hidden.snapshot));
-  const revealed=await orders.detailOrder(admin, order.id,true,ctx);assert.equal(revealed.customer.phone,snapshot.customer.phone);
-  const audit=(await db.execute({sql:'SELECT * FROM audit WHERE entity_id=?',args:[order.id]})).rows;
-  assert.equal(audit[0].action,'order.contact_viewed');assert.equal(audit[0].diff,null);assert.ok(!JSON.stringify(audit).includes(snapshot.customer.phone));
+test('order detail includes full contact and keeps it out of the snapshot',async()=>{
+  const order=await create();
+  const detail=await orders.detailOrder(admin, order.id);
+  assert.equal(detail.customer.phone,snapshot.customer.phone);
+  assert.equal(detail.customer.plate,snapshot.customer.plate);
+  assert.ok(!('customer' in detail.snapshot));
 });
 test('db failure mid-transition leaves no partial state',async()=>{
   const order=await create();
@@ -158,6 +157,30 @@ test('rate limits are atomic per IP and scope and recover after their window',as
 });
 test('strict query and cancellation validation reject unknown fields and PII reasons',()=>{
   for(const query of [{status:'bad'},{page:0},{limit:101},{branch:'fake'},{from:'2026-02-30'},{from:'2026-10-25',to:'2026-10-24'},{q:'x'.repeat(81)},{q:'   '},{unknown:'x'}]) assert.equal(orderQuery.safeParse(query).success,false);
-  for(const query of [{q:'3'},{q:'1234'},{q:'1234567'},{q:'55551234'},{q:'101100001'},{q:'Guest'}]) assert.equal(orderQuery.safeParse(query).success,true);
+  for(const query of [{q:'3'},{q:'1234'},{q:'1234567'},{q:'55551234'},{q:'101100001'},{q:'Guest'},{arrivedSince:'2026-11-05T12:00:00.000Z'}]) assert.equal(orderQuery.safeParse(query).success,true);
   assert.equal(statusBody.safeParse({to:'cancelled',expected:'placed',reason:'Call 55551234'}).success,false);
 });
+test('customer arrival is ready-only, session-gated, and idempotent', async () => {
+  const session = randomUUID();
+  const order = await repository.persistPendingOrder(session, randomUUID(), 'same', snapshot, 1, 'pay_at_pickup');
+  await rejected(repository.markCustomerArrived(order.id, session), 'INVALID');
+  await rejected(repository.markCustomerArrived(order.id, 'other-session'), 'NOT_FOUND');
+  for (const [expected, to] of [['placed', 'accepted'], ['accepted', 'preparing'], ['preparing', 'ready']] as [OrderStatus, OrderStatus][]) {
+    await orders.transitionOrder(admin, order.id, { expected, to }, ctx);
+  }
+  const at = new Date('2026-11-05T15:00:00.000Z');
+  const first = await repository.markCustomerArrived(order.id, session, at);
+  assert.equal(first.arrivedAt, at.toISOString());
+  assert.equal(first.status, 'ready');
+  const again = await repository.markCustomerArrived(order.id, session, new Date('2026-11-05T16:00:00.000Z'));
+  assert.equal(again.arrivedAt, at.toISOString());
+  const listed = await orders.listOrders(admin, orderQuery.parse({ view: 'active', limit: 100, arrivedSince: '2026-11-05T14:00:00.000Z' }));
+  const rowSummary = listed.rows.find((item) => item.id === order.id);
+  assert.equal(rowSummary?.arrivedAt, at.toISOString());
+  assert.equal(listed.arrivedCount, 1);
+  const before = await orders.listOrders(admin, orderQuery.parse({ view: 'active', limit: 1, arrivedSince: at.toISOString() }));
+  assert.equal(before.arrivedCount, 0);
+  const receipt = await repository.customerOrder(order.id, session);
+  assert.equal(receipt.arrivedAt, at.toISOString());
+});
+

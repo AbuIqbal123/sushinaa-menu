@@ -12,8 +12,10 @@ export const orderQuery = z.object({
   view: z.enum(['active','history']).optional(), unprinted: z.literal('1').optional(),
   page: z.coerce.number().int().min(1).max(1000).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(25), since: orderId.optional(),
+  arrivedSince: z.iso.datetime().optional(),
 }).strict().refine(v => !v.from || !v.to || v.from <= v.to);
 export type OrderQuery = z.infer<typeof orderQuery>;
+
 // Fixed reason codes keep arbitrary names/phones out of immutable audit labels.
 export const cancellationReasons = ['customer_request', 'unavailable', 'duplicate', 'branch_closed'] as const;
 export const statusBody = z.object({ to: z.enum(statuses), expected: z.enum(statuses),
@@ -22,7 +24,7 @@ export const statusBody = z.object({ to: z.enum(statuses), expected: z.enum(stat
 export type StatusInput = z.infer<typeof statusBody>;
 export type OrderSummary = { id: string; orderNumber: number | null; branchId: BranchId; status: OrderStatus; paymentMethod: PaymentMethod;
   paidAt: string | null; totalMinor: number; currency: 'QAR'; createdAt: string; name: string; phone: string; plate: string;
-  printCount: number; printedAt: string | null; updatedAt?: string; statusAt?:string; brandId?: string;
+  printCount: number; printedAt: string | null; arrivedAt: string | null; updatedAt?: string; statusAt?:string; brandId?: string;
   items?: {dishId:string;name:string;nameAr:string;quantity:number;selection?:OrderSnapshot['lines'][number]['selection']}[]; itemCount?:number; hasNotes?:boolean };
 export type OrderDetailData = OrderSummary & { customer: { name: string; phone: string; plate: string; colour: string; brand: string; car: string; instructions: string };
   snapshot: Omit<OrderSnapshot, 'customer'> & { version: number; menuRevision: number };

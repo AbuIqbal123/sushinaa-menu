@@ -53,9 +53,17 @@ export function Admin({ initial, role, branchId }: { initial: MenuSnapshot; role
   const [snapshot, setSnapshot] = useState(initial);
   const params = useSearchParams();
   // A filtered menu link (?category=&show=&q=) opens straight on the Menu.
-  const sections = role === "admin"
-    ? ["Dashboard", "Orders", "History", "Payments", "Menu", "Categories", "Branches", "Users", "Settings", "Activity"]
-    : ["Dashboard", "Orders", "History"];
+  const navGroups = role === "admin"
+    ? [
+        { id: "dashboard", label: ["Dashboard", "لوحة التحكم"] as const, items: ["Dashboard"] },
+        { id: "orders", label: ["Orders", "الطلبات"] as const, items: ["Orders", "History", "Payments"] },
+        { id: "menu", label: ["Menu", "القائمة"] as const, items: ["Menu", "Categories"] },
+        { id: "admin", label: ["Admin", "الإدارة"] as const, items: ["Branches", "Users", "Settings", "Activity"] },
+      ]
+    : [
+        { id: "dashboard", label: ["Dashboard", "لوحة التحكم"] as const, items: ["Dashboard"] },
+        { id: "orders", label: ["Orders", "الطلبات"] as const, items: ["Orders", "History"] },
+      ];
   const [section, setSection] = useState(() =>
     role !== "admin" ? "Orders" : ["category", "show", "q"].some((k) => params.has(k)) ? "Menu" : "Dashboard",
   );
@@ -140,11 +148,13 @@ export function Admin({ initial, role, branchId }: { initial: MenuSnapshot; role
       {mobileNav&&<button className="ops-nav-backdrop" aria-label={text('Close navigation','إغلاق التنقل')} onClick={()=>setMobileNav(false)}/>}
       <aside ref={sidebar} className="admin-sidebar" aria-label={text('Administration navigation','التنقل الإداري')}>
         <div className="ops-sidebar-brand"><span><Image src={menu.settings.logo} alt="" width={48} height={48} unoptimized/></span><div><strong>{ar?menu.settings.nameAr:menu.settings.name}</strong><small>{text('OPERATIONS','إدارة العمليات')}</small></div><button className="ops-mobile-close" aria-label={text('Close navigation','إغلاق التنقل')} onClick={()=>setMobileNav(false)}><OpsIcon name="close"/></button></div>
-        <span className="ops-sidebar-label">{text('YOUR WORKSPACE','مساحة العمل')}</span>
-        <nav>{sections.map(s=><button key={s} className={section===s?'active':''} aria-current={section===s?'page':undefined} aria-label={labels[s][ar?1:0]} onClick={()=>navigate(s)}>
-          <OpsIcon name={labels[s][2]}/><span>{labels[s][ar?1:0]}</span>{s==='Orders'&&<span className={unreadOrders?'staff-unread':'ops-nav-live'} aria-hidden="true">{unreadOrders||text('Live','مباشر')}</span>}
-        </button>)}</nav>
-        <div className="ops-sidebar-bottom"><span className="ops-workspace-role"><span className="ops-role-avatar">{role==='admin'?'S':'B'}</span><span>{role==='admin'?text('Owner workspace','مساحة المالك'):text('Branch workspace','مساحة الفرع')}<small>{text('Car collection','الاستلام بالسيارة')}</small></span></span>
+        <nav className="ops-sidebar-nav">{navGroups.map(group=><div key={group.id} className="ops-nav-group">
+          {group.id!=='dashboard'?<span className="ops-sidebar-label">{text(group.label[0],group.label[1])}</span>:null}
+          {group.items.map(s=><button key={s} className={section===s?'active':''} aria-current={section===s?'page':undefined} aria-label={labels[s][ar?1:0]} onClick={()=>navigate(s)}>
+            <OpsIcon name={labels[s][2]}/><span>{labels[s][ar?1:0]}</span>{s==='Orders'&&<span className={unreadOrders?'staff-unread':'ops-nav-live'} aria-hidden="true">{unreadOrders||text('Live','مباشر')}</span>}
+          </button>)}
+        </div>)}</nav>
+        <div className="ops-sidebar-bottom">
           <a href="/" target="_blank" rel="noreferrer"><OpsIcon name="menu" size={17}/>{text('View public menu','عرض قائمة العملاء')}<OpsIcon name="arrow" size={15}/></a>
           <button onClick={async()=>{if(!confirmDiscard())return;try{const r=await fetch('/api/admin/session',{method:'DELETE'});if(!r.ok)throw Error('Unable to sign out');router.push('/admin/login');router.refresh();}catch(e){notify({tone:'error',text:e instanceof Error?e.message:'Unable to sign out'});}}}><OpsIcon name="logout" size={17}/>{text('Sign out','تسجيل الخروج')}</button>
         </div>
@@ -156,7 +166,7 @@ export function Admin({ initial, role, branchId }: { initial: MenuSnapshot; role
         </div></header>
         <main className="admin-content">
           <div className="admin-heading">
-            <div><span className="ops-eyebrow">{text('SUSHINAA OPERATIONS','عمليات سوشينا')}</span><h1>{section==='Menu'?text('Your menu','قائمتك'):section==='Orders'?text('Live orders','الطلبات المباشرة'):labels[section][ar?1:0]}</h1></div>
+            <div><h1>{section==='Menu'?text('Your menu','قائمتك'):section==='Orders'?text('Live orders','الطلبات المباشرة'):labels[section][ar?1:0]}</h1></div>
             {section === "Menu" && (
               <button className="primary" onClick={() => newItem()}>
                 {text("Add item","إضافة صنف")}
