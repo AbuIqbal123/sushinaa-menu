@@ -49,7 +49,7 @@ delete process.env.CMS_PUBLIC_MENU_SOURCE_URL;
 let session: string | undefined = ADMIN;
 
 mock.module('next/headers', {
-  exports: {
+  namedExports: {
     cookies: async () => ({
       get: () => (session === undefined ? undefined : { value: session }),
       set: () => undefined,
