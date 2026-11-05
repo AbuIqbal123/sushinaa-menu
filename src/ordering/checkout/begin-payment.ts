@@ -1,7 +1,6 @@
 import { db } from '@/cms/db';
 import { OrderError } from '@/ordering/http';
 import { hash, initOrders } from './repository';
-import type { OrderSnapshot } from './validation';
 import { gateway } from '@/ordering/payment-gateway/resolve';
 import type { CheckoutIntent, CheckoutLaunch } from '@/ordering/payment-gateway/types';
 import { appendPaymentEvent, latestAttempt } from '@/ordering/ledger';
@@ -28,16 +27,11 @@ export async function beginHostedCheckout(
   const method = String(row.payment_method);
   if (method !== 'sadad' && method !== 'mock') throw new OrderError('INVALID_PAYMENT', 409);
 
-  const snapshot = JSON.parse(String(row.snapshot)) as Partial<OrderSnapshot>;
-  const email = snapshot.customer && 'email' in snapshot.customer
-    ? String((snapshot.customer as { email?: string }).email || '').trim()
-    : '';
   const intent: CheckoutIntent = {
     orderId,
     amountMinor: Number(row.total_minor),
     currency: 'QAR',
     mobileDigits: String(row.customer_phone || '').replace(/\D/g, ''),
-    payerEmail: email || undefined,
     language,
     line: {
       reference: orderId,

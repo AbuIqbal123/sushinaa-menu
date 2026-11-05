@@ -18,7 +18,7 @@ Staff Orders flow and collection details are unchanged. Refunds: Sadad portal on
 
 | Layer | Role | Where |
 | --- | --- | --- |
-| UI | Pickup UX + optional email + hosted redirect | `OrderingExperience`, `HostedCheckoutRedirect` |
+| UI | Pickup UX + hosted redirect | `OrderingExperience`, `HostedCheckoutRedirect` |
 | HTTP | Begin / browser return / webhook / admin ledger | `api/orders/[id]/pay/begin`, `api/payments/callback`, `api/payments/webhook`, `api/admin/payments` |
 | App | Launch + settle orchestration | `checkout/begin-payment`, `payments.settlePayment` / `applyVerifiedFact`, `ledger` |
 | Port | Vendor-agnostic gateway | `payment-gateway/port`, `types`, `resolve` |
@@ -50,7 +50,7 @@ Production must not use explicit `mock` (env guard). Local/CI: leave unset or `m
 
 ## EMAIL
 
-Optional on collection details today (`customerSchema` + form). Sent to Sadad only when non-empty. To require it later: flip validation to required — same field, same plumbing. Do not invent a second email path.
+Sadad accepts omitting `EMAIL` on WebCheckout. We do not collect email in the customer UI and do not send the field.
 
 ## Callback vs webhook
 
