@@ -350,12 +350,12 @@ function Experience({
     <div className="ordering-content" inert={Boolean(editing)}>
       <header className="ordering-header"><button type="button" className="ordering-logo" onClick={() => go('menu')} aria-label={text('Back to the menu', 'العودة إلى القائمة')}><Image src={menu.settings.logo} width={59} height={55} alt={t.brand} unoptimized /></button><LangButton /></header>
       <>
-        <div className="checkout-navigation">
-          <button type="button" className="text-action" disabled={busy || redirecting} onClick={() => go(step === 'receipt' || step === 'details' ? 'menu' : step === 'review' ? 'details' : 'review')}>
-            <span className="back-arrow" aria-hidden="true">←</span> {step === 'receipt' ? text('Back to menu', 'العودة للقائمة') : text('Back', 'رجوع')}
+        {step !== 'receipt' && <div className="checkout-navigation">
+          <button type="button" className="text-action" disabled={busy || redirecting} onClick={() => go(step === 'details' ? 'menu' : step === 'review' ? 'details' : 'review')}>
+            <span className="back-arrow" aria-hidden="true">←</span> {text('Back', 'رجوع')}
           </button>
           {(['details', 'review'] as Step[]).includes(step) && <span aria-label={text(`Step ${['details', 'review'].indexOf(step) + 1} of 2`, `الخطوة ${['details', 'review'].indexOf(step) + 1} من ٢`)}>{['details', 'review'].indexOf(step) + 1} / 2</span>}
-        </div>
+        </div>}
         <main id="main" className={`checkout-main${step === 'details' || step === 'review' || step === 'receipt' ? ' has-step-action' : ''}`}>
           {/*
             Keep the fixed CTA outside `.checkout-step`. Step enter/back animations use
