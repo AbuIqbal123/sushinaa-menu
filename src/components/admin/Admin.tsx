@@ -26,7 +26,7 @@ import { Activity } from "./Activity";
 import type { Role } from "@/cms/permissions";
 import { confirmDiscard } from "./Fields";
 import { useNotify } from "./Notices";
-export function Admin({ initial, role, branchId, demo=false }: { initial: MenuSnapshot; role: Role; branchId?: string; demo?:boolean }) {
+export function Admin({ initial, role, branchId }: { initial: MenuSnapshot; role: Role; branchId?: string }) {
   const { lang } = useLocale();
   const ar=lang==='ar';const text=(en:string,arabic:string)=>ar?arabic:en;
   const [branch,setBranch]=useState(role==='admin'?'':branchId??'');
@@ -149,7 +149,7 @@ export function Admin({ initial, role, branchId, demo=false }: { initial: MenuSn
         </div>
       </aside>
       <div className="admin-main">
-        <header className="ops-topbar"><div><button className="ops-mobile-menu" aria-label={text('Open navigation','فتح التنقل')} aria-expanded={mobileNav} onClick={()=>setMobileNav(true)}><OpsIcon name="hamburger"/></button>{demo&&<span className="ops-demo-badge">{text('Demo data','بيانات تجريبية')}</span>}<span className="ops-breadcrumb">{ar?menu.settings.nameAr:menu.settings.name}<span>/</span><strong>{labels[section][ar?1:0]}</strong></span></div><div className="ops-topbar-controls">
+        <header className="ops-topbar"><div><button className="ops-mobile-menu" aria-label={text('Open navigation','فتح التنقل')} aria-expanded={mobileNav} onClick={()=>setMobileNav(true)}><OpsIcon name="hamburger"/></button><span className="ops-breadcrumb">{ar?menu.settings.nameAr:menu.settings.name}<span>/</span><strong>{labels[section][ar?1:0]}</strong></span></div><div className="ops-topbar-controls">
           {role==='admin'?<label className="ops-global-branch"><OpsIcon name="branches" size={18}/><select aria-label={text('Order branch','فرع الطلب')} value={branch} onChange={e=>{if(confirmDiscard())setBranch(e.target.value);}}><option value="">{text('All branches','جميع الفروع')}</option>{branchRows.map(b=><option value={b.slug} key={b.slug}>{ar?b.nameAr:b.name}</option>)}</select></label>:<span className="ops-branch-fixed"><OpsIcon name="branches" size={17}/>{selectedBranch?(ar?selectedBranch.nameAr:selectedBranch.name):text('Your branch','فرعك')}</span>}
           <LangButton tone="light"/>
         </div></header>
