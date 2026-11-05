@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { OrderSnapshot } from '../src/ordering/checkout/validation';
+import type { OrderSnapshot } from '../src/ordering/checkout/quote';
 test('concurrent retries create one pending order; changed body conflicts; another session cannot reuse it', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'sushinaa-orders-'));
   process.env.CMS_DATABASE_URL = `file:${join(dir, 'orders.db')}`;

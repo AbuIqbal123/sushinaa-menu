@@ -1,6 +1,7 @@
 import { readMenu } from '@/cms/repository';
 import { auditContext } from '@/cms/audit';
-import { checkoutSchema, quoteOrder } from '@/ordering/checkout/validation';
+import { checkoutSchema } from '@/ordering/checkout/validation';
+import { quoteOrder } from '@/ordering/checkout/quote';
 import { checkoutRequestHash, existingOrder, persistPendingOrder, customerOrder } from '@/ordering/checkout/repository';
 import { orderingEnabled } from '@/ordering/config';
 import { reply, failure, provider, writeAccess, jsonBody, OrderError } from '@/ordering/http';

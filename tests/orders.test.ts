@@ -6,7 +6,8 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { statuses, canTransition, staffStatus, staffLabels, type OrderStatus } from '../src/ordering/status';
 import { orderQuery, statusBody } from '../src/ordering/contracts';
-import { checkoutSchema, quoteOrder, type OrderSnapshot } from '../src/ordering/checkout/validation';
+import { checkoutSchema } from '../src/ordering/checkout/validation';
+import { quoteOrder, type OrderSnapshot } from '../src/ordering/checkout/quote';
 import { menuSchema } from '../src/cms/schema';
 import { defaultSelection, unitPrice } from '../src/ordering/price';
 

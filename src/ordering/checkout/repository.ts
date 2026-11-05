@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { CheckoutError, couponCheckoutError, type CheckoutInput, type OrderSnapshot } from './validation';
+import { CheckoutError, type CheckoutInput } from './validation';
+import { couponCheckoutError, type OrderSnapshot } from './quote';
 import type { CustomerReceiptDetails } from '../contracts';
 import { claimCouponOn } from '@/ordering/coupons/repository';
 import { CouponError } from '@/ordering/coupons/types';

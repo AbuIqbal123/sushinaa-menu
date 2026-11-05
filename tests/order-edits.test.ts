@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { menuSchema } from '../src/cms/schema';
 import { defaultSelection, unitPrice } from '../src/ordering/price';
-import { quoteOrder } from '../src/ordering/checkout/validation';
+import { quoteOrder } from '../src/ordering/checkout/quote';
 import { parseEditBody } from '../src/ordering/edits';
 
 let repository: typeof import('../src/ordering/checkout/repository');

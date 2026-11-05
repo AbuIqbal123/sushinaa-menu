@@ -7,7 +7,8 @@ import {menuSchema} from '../src/cms/schema';
 import {configuredBranches,BRANCHES} from '../src/branches/branches';
 import {branchListSchema} from '../src/branches/schema';
 import {branchStatus} from '../src/branches/hours';
-import {checkoutSchema,quoteOrder} from '../src/ordering/checkout/validation';
+import { checkoutSchema } from '../src/ordering/checkout/validation';
+import { quoteOrder } from '../src/ordering/checkout/quote';
 import {defaultSelection,unitPrice} from '../src/ordering/price';
 const legacy=()=>JSON.parse(readFileSync('data/initial-menu.json','utf8'));
 test('older menus retain all four branch defaults; editing details preserves routing/maps/codes',()=>{
