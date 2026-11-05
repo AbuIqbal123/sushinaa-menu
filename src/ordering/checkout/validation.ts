@@ -27,6 +27,8 @@ export const normalizePhone = (value: string) => {
 const optionalText = (max: number) => z.string().trim().max(max).default('');
 export const customerSchema = z.object({
   name: z.string().trim().min(1).max(100),
+  // Optional today; flip to required if Sadad requires EMAIL — same field, same plumbing.
+  email: z.union([z.literal(''), z.string().trim().email().max(200)]).default(''),
   phone: z.string().max(30).transform(normalizePhone).pipe(z.string().regex(/^974[3567]\d{7}$/)),
   plate: z.string().transform(s => digits(s).trim().toUpperCase()).pipe(z.string().regex(/^[QTR]\d{3,6}$/)),
   brand: z.enum(CAR_BRANDS.map(brand => brand.id)),
@@ -43,7 +45,7 @@ export const selectionSchema = z.object({
 }).strict();
 export const checkoutSchema = z.object({
   branchId,
-  paymentMethod: z.enum(['mock', 'pay_at_pickup']).optional(),
+  paymentMethod: z.enum(['mock', 'pay_at_pickup', 'sadad']).optional(),
   customer: customerSchema,
   lines: z.array(z.object({ dishId: option, selection: selectionSchema, quantity: z.number().int().min(1).max(20), note: optionalText(400), expectedUnitMinor: z.number().int().min(0) }).strict()).min(1).max(100),
 }).strict();

@@ -4,9 +4,9 @@ import { currentStaff, sameOrigin, type StaffPrincipal } from '@/cms/auth';
 import { allows, type Permission } from '@/cms/permissions';
 import { assertPaymentProviderAllowed } from '@/cms/env-guard';
 import { db, databaseUrl } from '@/cms/db';
-import { isProductionDeployment } from '@/lib/deploy-env';
 import { assertOrderDatabaseAllowed, OrderingUnavailable } from './guard';
 import { CheckoutError } from './checkout/validation';
+import { resolvePaymentProvider } from './payment-gateway/resolve';
 import { OrderError } from './errors';
 export { OrderError } from './errors';
 export const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
@@ -20,9 +20,7 @@ export function failure(error: unknown) {
 export function provider() {
   assertOrderDatabaseAllowed(databaseUrl);
   assertPaymentProviderAllowed();
-  const p = process.env.PAYMENT_PROVIDER || (isProductionDeployment() ? 'counter' : 'mock');
-  if (p !== 'mock' && p !== 'counter') throw new OrderingUnavailable();
-  return p;
+  return resolvePaymentProvider();
 }
 export async function requireStaff(request: Request | undefined, permission: Permission): Promise<StaffPrincipal> {
   const user = await currentStaff();

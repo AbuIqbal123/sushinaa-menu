@@ -6,7 +6,6 @@ import { branchStatus, qatarClock } from '../src/branches/hours';
 import { checkoutSchema, customerSchema, quoteOrder, validCheckoutSelection, type CheckoutInput } from '../src/ordering/checkout/validation';
 import { defaultSelection, serializeSelection, parseSelection, isSelectionComplete, unitPrice } from '../src/ordering/price';
 import { menuSchema, publicMenu } from '../src/cms/schema';
-import { beginHostedPayment } from '../src/ordering/checkout/payment';
 const menu = menuSchema.parse(JSON.parse(readFileSync('data/initial-menu.json', 'utf8')));
 const at = (date: string) => new Date(`${date}+03:00`);
 const open = (id: string, date: string) => branchStatus(branches.find(b => b.slug === id)!.hours, qatarClock(at(date))).open;
@@ -80,8 +79,11 @@ test('rejects changed prices, hidden dishes, invalid choices, duplicate extras a
   assert.equal(checkoutSchema.safeParse({ ...input, totalMinor: 1 }).success, false);
   assert.equal(checkoutSchema.safeParse({ ...input, lines: [{ ...input.lines[0], selection: { ...selection, extras: ['x', 'x'] } }] }).success, false);
 });
-test('payment adapter cannot return a fake checkout URL or mark an order paid', async () => {
-  assert.deepEqual(await beginHostedPayment('anything?paid=true'), { available: false, code: 'PAYMENT_NOT_CONNECTED' });
+test('collection email stays optional for pickup checkout', () => {
+  assert.equal(customerSchema.parse({ ...customer }).email, '');
+  assert.equal(customerSchema.parse({ ...customer, email: '' }).email, '');
+  assert.equal(customerSchema.parse({ ...customer, email: 'guest@example.com' }).email, 'guest@example.com');
+  assert.equal(customerSchema.safeParse({ ...customer, email: 'not-an-email' }).success, false);
 });
 
 test('all complete menu selections remain valid after the real basket serialization round trip', () => {

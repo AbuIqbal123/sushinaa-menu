@@ -1,6 +1,6 @@
 # Car collection — Stage 2 preview
 
-Work stays on `feature/curbside-ordering`; pull requests target `dev`. Real Sadad charging and webhooks remain out of scope.
+Work stays on feature branches; pull requests target `dev`. The product is **car-collection / pickup ordering**. Customers still order for pickup; online pay (Sadad WebCheckout) replaces mock / pay-at-pickup for that pickup order — it is not delivery or dine-in.
 
 ## Customer journey
 
@@ -22,7 +22,7 @@ Orders use the existing CMS database and credentials. `0002_orders.sql` is addit
 
 Before any order bootstrap/access, the live database hostname is rejected with `503 ORDERING_UNAVAILABLE`; no order tables are created there. CMS behaviour is preserved. Migrations also refuse the live host. Lazy clients allow route imports during a preview build without connecting to the database. A read-only public menu source still runs the environment guard first.
 
-`PAYMENT_PROVIDER` selects `mock` or `counter`. When unset it defaults to mock locally/in preview, and counter in production. Explicit production mock configuration fails at startup/request time, and the mock payment endpoint always returns 404 in production. No Vercel environment variables were added or changed. The old client-only demo switches have been removed; the root never redirects to ordering.
+`PAYMENT_PROVIDER` selects `mock`, `pay_at_pickup`, or `sadad` (hosted WebCheckout before pickup). When unset it defaults to mock locally/in preview (or sadad if `SADAD_*` are complete), and `pay_at_pickup` in production until a live Sadad cutover. Explicit production mock fails at startup/request time; the mock payment endpoint returns 404 in production. See `.env.example` for `SADAD_SECRET_KEY`, `SADAD_MERCHANT_ID`, and `SADAD_PUBLIC_ORIGIN`. Collection details, kitchen visibility after `paid_at`, and staff Orders stay as before. Admin **Payments** is a read-only online-pay ledger (no refund UI).
 
 Order APIs use no-store responses, strict validation and stable error codes. Admin writes require authentication and same-origin JSON. Checkout and staff status writes use database-backed IP rate limits; checkout also has a per-session limit. Customer lookup is scoped to an HttpOnly session cookie. Contact is excluded from audit diffs and error responses.
 
@@ -57,7 +57,7 @@ Playwright runs the local server with a test-only clock during shared branch ope
 - WhatsApp confirmations and ready notifications are on hold at the owner’s request. Before implementation, confirm the number’s Business Platform/API setup, approved bilingual templates and customer opt-in; send only from server-confirmed order/payment/status events. Do not activate messaging yet.
 - Confirmation call buttons use the confirmed order’s branch contact from `src/branches/branches.ts`: Down Town +974 5507 5933, Al-Thumama +974 5505 5424, West Bay +974 3999 8918 and Al-Khor +974 7115 0001. These voice-call numbers do not configure or register WhatsApp senders.
 
-- Real Sadad adapter and signed webhooks; outbound order delivery worker.
+- Production Sadad cutover (live merchant key on `sushinaa-menu` only after sandbox sign-off on test-dev); outbound order delivery worker.
 - `TODO(owner)`: confirm the 90-day retention period and arrange scheduled purging before production ordering.
 - `TODO(ar)`: owner/native reviewer approval of the translated staff and privacy copy.
 - Per-branch stock and prices.

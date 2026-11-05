@@ -4,7 +4,7 @@ import { dirname } from "node:path";
 import { AUDIT_SCHEMA } from "./audit";
 import type { DbClient } from "./sql";
 export type { DbClient, DbRow, SqlStatement } from "./sql";
-import { EDIT_SQL, ORDER_NUMBER_SQL, ORDER_SCHEMA, PRINT_SQL, STAFF_SCHEMA } from "@/ordering/schema";
+import { EDIT_SQL, ORDER_NUMBER_SQL, ORDER_SCHEMA, PAYMENT_EVENTS_SQL, PRINT_SQL, STAFF_SCHEMA } from "@/ordering/schema";
 import { orderDatabaseAllowed } from "@/ordering/guard";
 // Capture configuration once, but create no connection or files during route imports.
 export const databaseUrl = process.env.CMS_DATABASE_URL || "file:./data/menu.db";
@@ -64,7 +64,7 @@ async function ensureOrderColumns() {
     return column ? !have.has(column) : false;
   });
   if (alters.length) await db.batch(alters, "write");
-  const creates = [...ORDER_NUMBER_SQL, ...PRINT_SQL, ...EDIT_SQL].filter((sql) => sql.startsWith("CREATE"));
+  const creates = [...ORDER_NUMBER_SQL, ...PRINT_SQL, ...EDIT_SQL, ...PAYMENT_EVENTS_SQL].filter((sql) => sql.startsWith("CREATE"));
   if (creates.length) await db.batch(creates, "write");
   // XXYYABC repeats on the same day next month, so the guest number cannot stay unique forever.
   await db.batch([

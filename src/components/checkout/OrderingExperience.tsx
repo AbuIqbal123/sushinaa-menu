@@ -17,20 +17,24 @@ import { selectionLabel } from '@/ordering/price';
 import { pickName } from '@/i18n/localize';
 import type { PaymentStatus } from '@/ordering/checkout/payment';
 import { MockSadadGateway } from './MockSadadGateway';
+import { HostedCheckoutRedirect } from './HostedCheckoutRedirect';
 import { CarBrandPicker, CarBrandLogo } from './CarBrandPicker';
 import { carBrandName, findCarBrand } from '@/ordering/car-brands';
 import { OrderProgress, orderPhase, orderTrackingLabel } from './OrderProgress';
 
-const emptyCustomer: Customer = { name: '', phone: '', plate: 'Q', brand: '', colour: '', car: '', instructions: '' };
+const emptyCustomer: Customer = { name: '', email: '', phone: '', plate: 'Q', brand: '', colour: '', car: '', instructions: '' };
 type Step = 'menu' | 'details' | 'review' | 'payment' | 'receipt';
-type Receipt = { id: string; orderNumber?: number | null; paymentStatus: PaymentStatus; totalMinor: number; paymentMethod: 'mock' | 'pay_at_pickup'; status: string; details?: CustomerReceiptDetails };
+type PaymentMethodUi = 'mock' | 'pay_at_pickup' | 'sadad';
+type Receipt = { id: string; orderNumber?: number | null; paymentStatus: PaymentStatus; totalMinor: number; paymentMethod: PaymentMethodUi; status: string; details?: CustomerReceiptDetails };
+type Launch = { action: string; method: 'POST'; fields: Record<string, string> };
 export function OrderingExperience({ initialNow, branchId }: { initialNow: string; branchId: BranchId }) {
   return <CartProvider storageKey="sushinaa-curbside-basket-v1"><Experience initialNow={initialNow} branchId={branchId} /></CartProvider>;
 }
 function Experience({ initialNow, branchId: initialBranch }: { initialNow: string; branchId: BranchId }) {
   const { lang, t } = useLocale();
-  const [paymentProvider, setPaymentProvider] = useState<'mock' | 'counter' | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<'mock' | 'pay_at_pickup'>('mock');
+  const [paymentProvider, setPaymentProvider] = useState<'mock' | 'pay_at_pickup' | 'sadad' | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodUi>('mock');
+  const [launch, setLaunch] = useState<Launch | null>(null);
   const text = (en: string, ar: string) => lang === 'ar' ? ar : en;
   const menu = useMenu();
   const branches = configuredBranches(menu.branches);
@@ -63,7 +67,14 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
   const ticketMoney = (qar: number) => formatQar(qar, lang, menu.settings);
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 15000);
-    void fetch('/api/orders').then(async r => { if (!r.ok) return; const data = await r.json(); setPaymentProvider(data.paymentProvider); if (data.paymentProvider === 'counter') setPaymentMethod('pay_at_pickup'); }).catch(() => {});
+    void fetch('/api/orders').then(async r => {
+      if (!r.ok) return;
+      const data = await r.json() as { paymentProvider?: 'mock' | 'pay_at_pickup' | 'sadad' };
+      setPaymentProvider(data.paymentProvider ?? null);
+      if (data.paymentProvider === 'pay_at_pickup') setPaymentMethod('pay_at_pickup');
+      else if (data.paymentProvider === 'sadad') setPaymentMethod('sadad');
+      else if (data.paymentProvider === 'mock') setPaymentMethod('mock');
+    }).catch(() => {});
     return () => window.clearInterval(timer);
   }, []);
   useEffect(() => {
@@ -71,8 +82,31 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
     previousStep.current = step;
   }, [step]);
   useEffect(() => {
-    let stored: string | null = null;
-    try { stored = localStorage.getItem(orderKey) || sessionStorage.getItem(orderKey); } catch { return; }
+    let paidId: string | null = null;
+    let payFailed = false;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const paid = params.get('paid');
+      if (paid && /^SU-[0-9a-f-]{36}$/.test(paid)) paidId = paid;
+      payFailed = params.get('pay') === 'failed';
+      if (paidId || payFailed) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('paid');
+        url.searchParams.delete('pay');
+        window.history.replaceState({}, '', url.pathname + url.search);
+      }
+    } catch { /* Keep recovery via localStorage. */ }
+    let failTimer: number | undefined;
+    if (payFailed) {
+      failTimer = window.setTimeout(() => {
+        setError(text('Payment was not completed. Your pickup details are still here — try again when ready.', 'لم يكتمل الدفع. بيانات الاستلام ما زالت هنا — حاول مجدداً عندما تكون جاهزاً.'));
+      }, 0);
+    }
+    const storedFromPay = paidId;
+    let stored: string | null = storedFromPay;
+    if (!stored) {
+      try { stored = localStorage.getItem(orderKey) || sessionStorage.getItem(orderKey); } catch { return; }
+    }
     if (!stored || !/^SU-[0-9a-f-]{36}$/.test(stored)) return;
     let cancel = false;
     void fetch(`/api/orders/${stored}`, { cache: 'no-store' }).then(async (response) => {
@@ -86,10 +120,19 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
       const saved = await response.json() as Receipt;
       if (cancel) return;
       setReceipt(saved);
-      if (saved.paymentStatus === 'paid' || saved.paymentMethod === 'pay_at_pickup') setStep('receipt');
-      else if (saved.paymentStatus === 'awaiting_payment' && saved.paymentMethod === 'mock') setStep('payment');
+      try { localStorage.setItem(orderKey, saved.id); } catch { /* Keep tracking in memory. */ }
+      if (saved.paymentStatus === 'paid' || saved.paymentMethod === 'pay_at_pickup') {
+        cart.clear();
+        attempt.current = null;
+        setStep('receipt');
+      } else if (saved.paymentStatus === 'awaiting_payment' && (saved.paymentMethod === 'mock' || saved.paymentMethod === 'sadad')) {
+        setStep(payFailed ? 'review' : 'payment');
+      }
     }).catch(() => {});
-    return () => { cancel = true; };
+    return () => {
+      cancel = true;
+      if (failTimer !== undefined) window.clearTimeout(failTimer);
+    };
   }, []);
   useEffect(() => {
     if (!['receipt', 'menu'].includes(step) || !receipt?.id) return;
@@ -116,6 +159,26 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
       document.removeEventListener('visibilitychange', pull); window.removeEventListener('online', pull);
     };
   }, [step, receipt?.id, receipt?.status]);
+  useEffect(() => {
+    if (step !== 'payment' || !receipt || receipt.paymentMethod !== 'sadad' || launch) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch(`/api/orders/${receipt.id}/pay/begin`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ language: lang === 'ar' ? 'ar' : 'en' }),
+        });
+        const data = await response.json() as Launch & { code?: string };
+        if (cancelled) return;
+        if (!response.ok) { setError(errorMessage(data.code || 'NETWORK')); go('review'); return; }
+        setLaunch(data);
+      } catch {
+        if (!cancelled) { setError(errorMessage('NETWORK')); go('review'); }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [step, receipt, launch, lang]);
   function go(next: Step) {
     const order: Step[] = ['menu', 'details', 'review', 'payment', 'receipt'];
     setMotion(order.indexOf(next) < order.indexOf(step) ? 'back' : 'forward');
@@ -179,9 +242,9 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
     : step === 'review' ? text('Review your order', 'راجع طلبك')
     : step === 'receipt' ? text('Your order', 'طلبك') : text('Payment', 'الدفع');
   const count = cart.itemCount;
-  const demoOpen = paymentProvider === 'mock';
-  const canPlace = Boolean(status?.open || demoOpen);
-  const closedNotice = status && !status.open ? <div className="checkout-notice" role="status"><strong>{text('This branch is currently closed', 'هذا الفرع مغلق حالياً')}</strong><p>{demoOpen ? text('You can still place this order.', 'يمكنك إتمام هذا الطلب.') : text('Come back when this branch is open. Your basket is saved.', 'عُد عندما يفتح هذا الفرع. سلتك محفوظة.')}</p></div> : null;
+  const onlinePayOpen = paymentProvider === 'mock' || paymentProvider === 'sadad';
+  const canPlace = Boolean(status?.open || onlinePayOpen);
+  const closedNotice = status && !status.open ? <div className="checkout-notice" role="status"><strong>{text('This branch is currently closed', 'هذا الفرع مغلق حالياً')}</strong><p>{onlinePayOpen ? text('You can still place this pickup order.', 'يمكنك إتمام طلب الاستلام.') : text('Come back when this branch is open. Your basket is saved.', 'عُد عندما يفتح هذا الفرع. سلتك محفوظة.')}</p></div> : null;
   function ticket(editable: boolean, canEditBasket = false, serverMinor?: number) { return <section className="ticket checkout-ticket" aria-label={t.yourTicket}>
     <div className="ticket-scallop" aria-hidden="true" />
     <header className="ticket-head"><div><p className="ticket-kicker">{t.brand}</p><h2 className="ticket-title">{t.yourTicket}</h2></div>{canEditBasket ? <button type="button" className="ticket-edit" onClick={() => go('menu')}>{text('Edit items', 'تعديل الأصناف')}</button> : <span className="ticket-count">{count} {text(count === 1 ? 'item' : 'items', 'صنف')}</span>}</header>
@@ -197,9 +260,15 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
     {ticket(false, editable, serverMinor)}
     <details className="customer-fold review-details">
       <summary><span>{text('Your details', 'بياناتك')}</span>{editable && <button type="button" className="text-action" onClick={event => { event.preventDefault(); event.stopPropagation(); go('details'); }}>{text('Edit', 'تعديل')}</button>}</summary>
-      <div className="customer-fold-body"><p className="order-who"><strong>{customer.name}</strong><span dir="ltr" className="review-phone">{displayPhone(customer.phone)}</span></p><div className="vehicle-pair"><QatarPlate plate={customer.plate} /><p className="review-vehicle"><CarBrandLogo brand={findCarBrand(customer.brand)} /><span>{[customer.colour, carBrandName(customer.brand, lang)].filter(Boolean).join(' · ')}</span></p></div>{customer.instructions && <p className="checkout-note">{customer.instructions}</p>}</div>
+      <div className="customer-fold-body"><p className="order-who"><strong>{customer.name}</strong><span dir="ltr" className="review-phone">{displayPhone(customer.phone)}</span></p>{customer.email.trim() && <p className="review-email" dir="ltr">{customer.email}</p>}<div className="vehicle-pair"><QatarPlate plate={customer.plate} /><p className="review-vehicle"><CarBrandLogo brand={findCarBrand(customer.brand)} /><span>{[customer.colour, carBrandName(customer.brand, lang)].filter(Boolean).join(' · ')}</span></p></div>{customer.instructions && <p className="checkout-note">{customer.instructions}</p>}</div>
     </details>
   </>;
+  if (step === 'payment' && receipt && receipt.paymentMethod === 'sadad') {
+    if (!launch) {
+      return <>{menuStage}<div className="ordering-page" data-step="payment"><main className="checkout-main"><p>{text('Preparing payment…', 'جارٍ تجهيز الدفع…')}</p></main></div></>;
+    }
+    return <>{menuStage}<HostedCheckoutRedirect launch={launch} lang={lang === 'ar' ? 'ar' : 'en'} onBack={() => { setLaunch(null); go('review'); }} onError={(message) => { setError(message); go('review'); }} /></>;
+  }
   if (step === 'payment' && receipt && receipt.paymentMethod === 'mock') return <>{menuStage}<MockSadadGateway amount={money(receipt.totalMinor)} lang={lang} onBack={() => go('review')} onComplete={() => go('receipt')} onPay={async () => {
     const response = await fetch(`/api/orders/${receipt.id}/mock-pay`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
     const result = await response.json();
@@ -219,10 +288,14 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
           {step !== 'receipt' && cart.unavailableCount > 0 && <div className="checkout-notice" role="alert"><strong>{text('Your basket needs an update', 'تحتاج سلتك إلى تحديث')}</strong><p>{text(`${cart.unavailableCount} serving(s) or their choices are no longer available. Remove them before continuing.`, `${cart.unavailableCount} حصة أو خياراتها لم تعد متوفرة. احذفها قبل المتابعة.`)}</p><button type="button" className="text-action" onClick={cart.discardUnavailable}>{text('Remove unavailable selections', 'حذف الخيارات غير المتوفرة')}</button></div>}
           {step === 'details' && <>
             <form onSubmit={validateDetails} noValidate>
-            <div className="checkout-fields">{(['name', 'phone', 'brand', 'plate'] as const).map(key => {
+            <div className="checkout-fields">{(['name', 'email', 'phone', 'brand', 'plate'] as const).map(key => {
               if (key === 'brand') return <CarBrandPicker key={key} value={customer.brand} lang={lang} invalid={errors.includes('brand')} onChange={brand => { setCustomer({ ...customer, brand }); setErrors(errors.filter(field => field !== 'brand')); }} />;
-              const label = { name: text('Your name', 'اسمك'), phone: text('Mobile number', 'رقم الجوال'), plate: text('Qatar plate number', 'رقم اللوحة القطرية'), colour: text('Car colour', 'لون السيارة'), car: text('Car model', 'طراز السيارة'), instructions: text('Collection instructions', 'تعليمات الاستلام') }[key];
+              const label = { name: text('Your name', 'اسمك'), email: text('Email (optional)', 'البريد الإلكتروني (اختياري)'), phone: text('Mobile number', 'رقم الجوال'), plate: text('Qatar plate number', 'رقم اللوحة القطرية'), colour: text('Car colour', 'لون السيارة'), car: text('Car model', 'طراز السيارة'), instructions: text('Collection instructions', 'تعليمات الاستلام') }[key];
               const invalid = errors.includes(key);
+              if (key === 'email') return <label key={key} className="checkout-field field-email" htmlFor="collection-email"><span>{label}</span>
+                <input id="collection-email" type="email" autoComplete="email" maxLength={200} value={customer.email} aria-invalid={invalid} aria-describedby={invalid ? 'hint-email' : undefined} onChange={e => { setCustomer({ ...customer, email: e.target.value }); setErrors(errors.filter(x => x !== 'email')); }} />
+                {invalid && <small id="hint-email" className="field-error">{text('Enter a valid email, or leave it blank.', 'أدخل بريداً صالحاً، أو اتركه فارغاً.')}</small>}
+              </label>;
               if (key === 'plate') return <div key={key} className="checkout-field field-plate"><label htmlFor="collection-plate">{label}</label>
                 <div className="plate-entry" dir="ltr"><span className="plate-country"><span className="plate-flag" aria-hidden="true">🇶🇦</span><span>QATAR<br /><span lang="ar">قطر</span></span></span><input id="collection-plate" type="text" inputMode="numeric" autoComplete="off" required minLength={3} maxLength={6} pattern="[0-9]{3,6}" placeholder="000000" value={customer.plate.slice(1)} aria-label={text('Plate number, 3 to 6 digits', 'رقم اللوحة، من ٣ إلى ٦ أرقام')} aria-invalid={invalid} aria-describedby={invalid ? 'hint-plate' : undefined} onChange={e => { const number = digits(e.target.value).replace(/\D/g, '').slice(0, 6); setCustomer({ ...customer, plate: `${customer.plate[0] || 'Q'}${number}` }); setErrors(errors.filter(x => x !== 'plate')); }} /><strong className="plate-current-series" aria-hidden="true">{customer.plate[0] || 'Q'}</strong></div>
                 <div className="plate-series" role="group" aria-label={text('Plate letter', 'حرف اللوحة')}>{(['Q', 'T', 'R'] as const).map(series => <button key={series} type="button" className={customer.plate[0] === series ? 'selected' : ''} aria-pressed={customer.plate[0] === series} onClick={() => { setCustomer({ ...customer, plate: `${series}${customer.plate.slice(1)}` }); setErrors(errors.filter(x => x !== 'plate')); }}>{series}</button>)}</div>
@@ -245,7 +318,7 @@ function Experience({ initialNow, branchId: initialBranch }: { initialNow: strin
           </>}
           {step === 'receipt' && receipt && <div data-order-id={receipt.id}>
             <header className="order-status">
-              <p className="order-confirmed" role="status">{receipt.paymentMethod === 'mock' ? text('Payment confirmed', 'تم تأكيد الدفع') : text('Order received', 'تم استلام الطلب')}</p>
+              <p className="order-confirmed" role="status">{receipt.paymentMethod === 'pay_at_pickup' ? text('Order received', 'تم استلام الطلب') : text('Payment confirmed', 'تم تأكيد الدفع')}</p>
               {receipt.orderNumber != null && <p className="order-number" dir="ltr"><span>{text('Order number', 'رقم الطلب')}</span>{formatOrderNumber(receipt.orderNumber)}</p>}
             </header>
             <OrderProgress status={receipt.status} lang={lang} />

@@ -21,6 +21,7 @@ import { CategoryList } from "./CategoryList";
 import { MenuList } from "./MenuList";
 import { Dashboard } from "./Dashboard";
 import { Orders } from "./Orders";
+import { Payments } from "./Payments";
 import { StaffPanel } from "./StaffPanel";
 import { Activity } from "./Activity";
 import type { Role } from "@/cms/permissions";
@@ -47,13 +48,13 @@ export function Admin({ initial, role, branchId }: { initial: MenuSnapshot; role
     return()=>{document.removeEventListener('keydown',keys);document.body.style.overflow=overflow;previous?.focus();};
   },[mobileNav]);
   const [orderIntent,setOrderIntent]=useState<OrderIntent&{key:number}>({key:0});
-  const labels:Record<string,[string,string,OpsIconName]>={Dashboard:['Dashboard','لوحة التحكم','dashboard'],Orders:['Orders','الطلبات المباشرة','orders'],History:['Order history','سجل الطلبات','history'],Menu:['Menu','القائمة','menu'],Categories:['Categories','التصنيفات','categories'],Branches:['Branches','الفروع','branches'],Users:['Users','المستخدمون','users'],Settings:['Settings','الإعدادات','settings'],Activity:['Activity','النشاط','activity']};
+  const labels:Record<string,[string,string,OpsIconName]>={Dashboard:['Dashboard','لوحة التحكم','dashboard'],Orders:['Orders','الطلبات المباشرة','orders'],History:['Order history','سجل الطلبات','history'],Payments:['Payments','المدفوعات','money'],Menu:['Menu','القائمة','menu'],Categories:['Categories','التصنيفات','categories'],Branches:['Branches','الفروع','branches'],Users:['Users','المستخدمون','users'],Settings:['Settings','الإعدادات','settings'],Activity:['Activity','النشاط','activity']};
   const [unreadOrders, setUnreadOrders] = useState(0);
   const [snapshot, setSnapshot] = useState(initial);
   const params = useSearchParams();
   // A filtered menu link (?category=&show=&q=) opens straight on the Menu.
   const sections = role === "admin"
-    ? ["Dashboard", "Orders", "History", "Menu", "Categories", "Branches", "Users", "Settings", "Activity"]
+    ? ["Dashboard", "Orders", "History", "Payments", "Menu", "Categories", "Branches", "Users", "Settings", "Activity"]
     : ["Dashboard", "Orders", "History"];
   const [section, setSection] = useState(() =>
     role !== "admin" ? "Orders" : ["category", "show", "q"].some((k) => params.has(k)) ? "Menu" : "Dashboard",
@@ -211,6 +212,7 @@ export function Admin({ initial, role, branchId }: { initial: MenuSnapshot; role
             />
           )}
           <Orders active={section === "Orders" || section === "History"} view={section==='History'?'history':'active'} branch={branch} intent={orderIntent} onUnread={setUnreadOrders} role={role} menu={menu} />
+          {role === "admin" && <Payments active={section === "Payments"} />}
           {section === "Users" && role === "admin" && <StaffPanel menu={menu} creating={creatingUser} onCreating={setCreatingUser} />}
           {section === "Branches" && role === "admin" && <BranchEditor menu={menu} onSave={save} />}
           {section === "Activity" && <Activity />}

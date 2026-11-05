@@ -19,3 +19,5 @@ Read `docs/environments.md` before touching a database, an env var, or a deploym
 Production is https://sushinaa-menu.vercel.app (`main`, project `sushinaa-menu`, live Turso database). Do not write to it, repoint it, redeploy it, or migrate it. Do not push or merge to `main`.
 
 Dev is https://test-dev-abu-iqbal-projects.vercel.app (project `test-dev`, dev Turso database). Local work uses `data/menu.db` or that dev database. Pull requests go into `dev`.
+
+Sadad / online pickup payment: read and update `docs/SADAD-CHECKOUT.md` when changing payment checkout, gateway, or ledger code.

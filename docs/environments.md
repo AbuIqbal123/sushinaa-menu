@@ -48,11 +48,26 @@ The dev hostname starts with `sushinaa-cms-dev-`. The dev database has an `env_m
 
 `test-dev` has `CMS_DATABASE_URL`, `CMS_DATABASE_AUTH_TOKEN`, and `CMS_ENV_GUARD=enforce` for the dev database only. It has no admin password, so its CMS sign-in fails closed. The dev admin password lives in the Development environment of `sushinaa-menu`, not in git.
 
+### Sadad (online pay before pickup)
+
+Product remains car-collection pickup. Sadad only replaces pay-at-pickup/mock for that order.
+
+On **`test-dev` Production** (dev database), set each variable separately when the sandbox merchant is ready:
+
+| Variable | Purpose |
+| --- | --- |
+| `PAYMENT_PROVIDER` | `sadad` |
+| `SADAD_SECRET_KEY` | Sandbox secret from Sadad |
+| `SADAD_MERCHANT_ID` | Sandbox merchant id |
+| `SADAD_PUBLIC_ORIGIN` | `https://test-dev-abu-iqbal-projects.vercel.app` (no trailing slash) |
+
+Register with Sadad: callback `…/api/payments/callback`, webhook `…/api/payments/webhook`. Do not put a live key on `sushinaa-menu` Production until sandbox sign-off. Local/CI keeps `PAYMENT_PROVIDER` unset or `mock`.
+
 ## Guard
 
 `src/instrumentation.ts` and `initDb()` check the database once at startup.
 
-- Production (`VERCEL_ENV=production`) must use the live hostname and must not use a mock payment provider.
+- Production (`VERCEL_ENV=production`) must use the live hostname and must not use a mock payment provider. Online Sadad (`PAYMENT_PROVIDER=sadad` + `SADAD_*`) is for paying a **pickup** order before collection — enable on `test-dev` with the sandbox key first; do not put a live Sadad secret on production until cutover is approved.
 - Anything else must not use the live hostname and must see the `development` marker.
 - `CMS_ENV_GUARD=enforce` refuses to start. Any other value, including unset, only logs. The log prefix is `cms-env-guard` and it does not include URLs or tokens.
 - The flag is `enforce` on dev and on the production variable. The live deployment has not been rebuilt, so the running site does not enforce yet. That starts when `dev` is released to `main`.
