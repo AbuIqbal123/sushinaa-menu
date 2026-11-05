@@ -9,7 +9,7 @@ Product stays **car-collection / pickup**. Customers still order for pickup (nam
 1. Customer builds a pickup basket → collection details → review.
 2. Order is persisted `placed` / `awaiting_payment` with `payment_method=sadad` (or `mock` locally).
 3. Browser begins hosted checkout → auto-POST form to Sadad WebCheckout → customer pays off-site.
-4. Return path: browser **callback** redirects to the branch URL with `?paid=…`. Kitchen visibility still depends on `paid_at`.
+4. Return path: browser **callback** redirects to `/{branch}/order?paid=…` (not the menu shell — avoids a homepage flash). Kitchen visibility still depends on `paid_at`.
 5. Authoritative settle: **webhook** (and/or verified callback) → `applyVerifiedFact` → `settlePayment` (sole paid write).
 
 Staff Orders flow and collection details are unchanged. Refunds: Sadad portal only — not in CMS.
@@ -79,7 +79,7 @@ Payment logs use `console.warn` / `console.error` (eslint-safe). `next.config.ts
 
 ## Callback vs webhook
 
-- **Callback** (`POST /api/payments/callback`): browser return after pay; verify signature; apply fact; respond **200 HTML** that navigates to absolute `{origin}/{branch}?paid={orderId}` (pickup receipt recovery via session). Unexpected `GET` is logged and treated as failed return. Do not use relative `Location` — sandbox returns have left the browser on `payment.sadadqa.com`.
+- **Callback** (`POST /api/payments/callback`): browser return after pay; verify signature; apply fact; respond **200 HTML** that navigates to absolute `{origin}/{branch}/order?paid={orderId}` (pickup receipt recovery via session). Unexpected `GET` is logged and treated as failed return. Do not use relative `Location` — sandbox returns have left the browser on `payment.sadadqa.com`.
 - **Webhook** (`POST /api/payments/webhook`): authoritative server notification; verify; `applyVerifiedFact`; ACK `{ status: 'success' }`. Prefer webhook for settlement certainty; callback is UX + best-effort settle.
 
 Both feed the same ledger/`settlePayment` path. Amount must match `orders.total_minor`.
