@@ -1,7 +1,12 @@
 "use client";
+import Image from "next/image";
+import { configuredBranches } from "@/branches/branches";
+import { OpsIcon, type OpsIconName } from "./OperationsUI";
+import { LangButton } from "@/i18n/locale";
+import type { OrderIntent } from "./Dashboard";
 import { useLocale } from "@/i18n/locale";
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   type MenuSnapshot,
   type MenuData,
@@ -21,15 +26,35 @@ import { Activity } from "./Activity";
 import type { Role } from "@/cms/permissions";
 import { confirmDiscard } from "./Fields";
 import { useNotify } from "./Notices";
-export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) {
+export function Admin({ initial, role, branchId, demo=false }: { initial: MenuSnapshot; role: Role; branchId?: string; demo?:boolean }) {
   const { lang } = useLocale();
+  const ar=lang==='ar';const text=(en:string,arabic:string)=>ar?arabic:en;
+  const [branch,setBranch]=useState(role==='admin'?'':branchId??'');
+  const [mobileNav,setMobileNav]=useState(false);
+  const sidebar=useRef<HTMLElement>(null);
+  const router=useRouter();
+  useEffect(()=>{
+    if(!mobileNav)return;
+    const previous=document.activeElement as HTMLElement|null;
+    const overflow=document.body.style.overflow;document.body.style.overflow='hidden';
+    const controls=()=>Array.from(sidebar.current?.querySelectorAll<HTMLElement>('button,a[href]')??[]).filter(el=>el.getClientRects().length);
+    controls()[0]?.focus();
+    const keys=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'){event.preventDefault();setMobileNav(false);}
+      if(event.key==='Tab'){const items=controls(),first=items[0],last=items.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}}
+    };
+    document.addEventListener('keydown',keys);
+    return()=>{document.removeEventListener('keydown',keys);document.body.style.overflow=overflow;previous?.focus();};
+  },[mobileNav]);
+  const [orderIntent,setOrderIntent]=useState<OrderIntent&{key:number}>({key:0});
+  const labels:Record<string,[string,string,OpsIconName]>={Dashboard:['Dashboard','لوحة التحكم','dashboard'],Orders:['Orders','الطلبات المباشرة','orders'],History:['Order history','سجل الطلبات','history'],Menu:['Menu','القائمة','menu'],Categories:['Categories','التصنيفات','categories'],Branches:['Branches','الفروع','branches'],Users:['Users','المستخدمون','users'],Settings:['Settings','الإعدادات','settings'],Activity:['Activity','النشاط','activity']};
   const [unreadOrders, setUnreadOrders] = useState(0);
   const [snapshot, setSnapshot] = useState(initial);
   const params = useSearchParams();
   // A filtered menu link (?category=&show=&q=) opens straight on the Menu.
   const sections = role === "admin"
-    ? ["Dashboard", "Orders", "Menu", "Categories", "Branches", "Users", "Settings", "Activity"]
-    : ["Orders"];
+    ? ["Dashboard", "Orders", "History", "Menu", "Categories", "Branches", "Users", "Settings", "Activity"]
+    : ["Dashboard", "Orders", "History"];
   const [section, setSection] = useState(() =>
     role !== "admin" ? "Orders" : ["category", "show", "q"].some((k) => params.has(k)) ? "Menu" : "Dashboard",
   );
@@ -39,6 +64,10 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
   const [creatingUser, setCreatingUser] = useState(false);
   const notify = useNotify();
   const { menu } = snapshot;
+  const branchRows=configuredBranches(menu.branches);
+  const selectedBranch=branchRows.find(b=>b.slug===branch);
+  function openOrders(intent:OrderIntent={},nextBranch?:string){if(!confirmDiscard())return;if(nextBranch!==undefined)setBranch(nextBranch);setOrderIntent(previous=>({...intent,key:previous.key+1}));setSection('Orders');}
+  function navigate(next:string){if(next===section){setMobileNav(false);return;}if(!confirmDiscard())return;setSection(next);setCreatingUser(false);setMobileNav(false);if(next==='Orders'||next==='History')setOrderIntent(previous=>({key:previous.key+1}));}
   const categories = [...menu.categories].sort((a, b) => a.order - b.order);
   async function save(next: MenuData) {
     if (busy) throw new Error("Please wait for the current save.");
@@ -106,51 +135,30 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
       .filter((d) => d.section === id)
       .sort((a, b) => a.order - b.order);
   return (
-    <>
-      <aside className="admin-sidebar">
-        <div className="admin-brand">{menu.settings.name}</div>
-        {sections.map((s) => (
-          <button
-            key={s}
-            className={section === s ? "active" : ""}
-            aria-current={section === s ? "page" : undefined}
-            onClick={() => {
-              if (s === section || !confirmDiscard()) return;
-              setSection(s);
-              setCreatingUser(false);
-            }}
-          >
-            {s === "Branches" && lang === "ar" ? "الفروع" : s === "Users" && lang === "ar" ? "المستخدمون" : s}{s === "Orders" && unreadOrders > 0 && <span className="staff-unread">{unreadOrders}</span>}
-          </button>
-        ))}
-        <a className="bottom" href="/" target="_blank" rel="noreferrer">
-          View public menu ↗
-        </a>
-        <button
-          onClick={async () => {
-            if (!confirmDiscard()) return;
-            try {
-              const r = await fetch("/api/admin/session", { method: "DELETE" });
-              if (!r.ok) throw new Error("Unable to sign out");
-              window.location.assign("/admin/login");
-            } catch (e) {
-              notify({
-                tone: "error",
-                text: e instanceof Error ? e.message : "Unable to sign out",
-              });
-            }
-          }}
-        >
-          Sign out
-        </button>
+    <div className={`admin-workspace${mobileNav?' nav-open':''}`} dir={ar?'rtl':'ltr'} lang={lang}>
+      {mobileNav&&<button className="ops-nav-backdrop" aria-label={text('Close navigation','إغلاق التنقل')} onClick={()=>setMobileNav(false)}/>}
+      <aside ref={sidebar} className="admin-sidebar" aria-label={text('Administration navigation','التنقل الإداري')}>
+        <div className="ops-sidebar-brand"><span><Image src={menu.settings.logo} alt="" width={48} height={48} unoptimized/></span><div><strong>{ar?menu.settings.nameAr:menu.settings.name}</strong><small>{text('OPERATIONS','إدارة العمليات')}</small></div><button className="ops-mobile-close" aria-label={text('Close navigation','إغلاق التنقل')} onClick={()=>setMobileNav(false)}><OpsIcon name="close"/></button></div>
+        <span className="ops-sidebar-label">{text('YOUR WORKSPACE','مساحة العمل')}</span>
+        <nav>{sections.map(s=><button key={s} className={section===s?'active':''} aria-current={section===s?'page':undefined} aria-label={labels[s][ar?1:0]} onClick={()=>navigate(s)}>
+          <OpsIcon name={labels[s][2]}/><span>{labels[s][ar?1:0]}</span>{s==='Orders'&&<span className={unreadOrders?'staff-unread':'ops-nav-live'} aria-hidden="true">{unreadOrders||text('Live','مباشر')}</span>}
+        </button>)}</nav>
+        <div className="ops-sidebar-bottom"><span className="ops-workspace-role"><span className="ops-role-avatar">{role==='admin'?'S':'B'}</span><span>{role==='admin'?text('Owner workspace','مساحة المالك'):text('Branch workspace','مساحة الفرع')}<small>{text('Car collection','الاستلام بالسيارة')}</small></span></span>
+          <a href="/" target="_blank" rel="noreferrer"><OpsIcon name="menu" size={17}/>{text('View public menu','عرض قائمة العملاء')}<OpsIcon name="arrow" size={15}/></a>
+          <button onClick={async()=>{if(!confirmDiscard())return;try{const r=await fetch('/api/admin/session',{method:'DELETE'});if(!r.ok)throw Error('Unable to sign out');router.push('/admin/login');router.refresh();}catch(e){notify({tone:'error',text:e instanceof Error?e.message:'Unable to sign out'});}}}><OpsIcon name="logout" size={17}/>{text('Sign out','تسجيل الخروج')}</button>
+        </div>
       </aside>
       <div className="admin-main">
+        <header className="ops-topbar"><div><button className="ops-mobile-menu" aria-label={text('Open navigation','فتح التنقل')} aria-expanded={mobileNav} onClick={()=>setMobileNav(true)}><OpsIcon name="hamburger"/></button>{demo&&<span className="ops-demo-badge">{text('Demo data','بيانات تجريبية')}</span>}<span className="ops-breadcrumb">{ar?menu.settings.nameAr:menu.settings.name}<span>/</span><strong>{labels[section][ar?1:0]}</strong></span></div><div className="ops-topbar-controls">
+          {role==='admin'?<label className="ops-global-branch"><OpsIcon name="branches" size={18}/><select aria-label={text('Order branch','فرع الطلب')} value={branch} onChange={e=>{if(confirmDiscard())setBranch(e.target.value);}}><option value="">{text('All branches','جميع الفروع')}</option>{branchRows.map(b=><option value={b.slug} key={b.slug}>{ar?b.nameAr:b.name}</option>)}</select></label>:<span className="ops-branch-fixed"><OpsIcon name="branches" size={17}/>{selectedBranch?(ar?selectedBranch.nameAr:selectedBranch.name):text('Your branch','فرعك')}</span>}
+          <LangButton tone="light"/>
+        </div></header>
         <main className="admin-content">
           <div className="admin-heading">
-            <h1>{section === "Menu" ? "Your menu" : section === "Orders" ? "Orders" : section === "Users" && lang === "ar" ? "المستخدمون" : section === "Branches" && lang === "ar" ? "الفروع" : section}</h1>
+            <div><span className="ops-eyebrow">{text('SUSHINAA OPERATIONS','عمليات سوشينا')}</span><h1>{section==='Menu'?text('Your menu','قائمتك'):section==='Orders'?text('Live orders','الطلبات المباشرة'):labels[section][ar?1:0]}</h1></div>
             {section === "Menu" && (
               <button className="primary" onClick={() => newItem()}>
-                Add item
+                {text("Add item","إضافة صنف")}
               </button>
             )}
             {section === "Categories" && (
@@ -167,7 +175,7 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
                   })
                 }
               >
-                Add category
+                {text("Add category","إضافة تصنيف")}
               </button>
             )}
             {section === "Users" && role === "admin" && (
@@ -181,6 +189,7 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
               menu={menu}
               onEdit={setItem}
               onMenu={() => setSection("Menu")}
+              onOrders={openOrders} onBranches={()=>setSection('Branches')} branch={branch} role={role}
             />
           )}
           {section === "Menu" && (
@@ -201,7 +210,7 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
               onChange={run}
             />
           )}
-          <Orders active={section === "Orders"} onUnread={setUnreadOrders} role={role} menu={menu} />
+          <Orders active={section === "Orders" || section === "History"} view={section==='History'?'history':'active'} branch={branch} intent={orderIntent} onUnread={setUnreadOrders} role={role} menu={menu} />
           {section === "Users" && role === "admin" && <StaffPanel menu={menu} creating={creatingUser} onCreating={setCreatingUser} />}
           {section === "Branches" && role === "admin" && <BranchEditor menu={menu} onSave={save} />}
           {section === "Activity" && <Activity />}
@@ -248,6 +257,6 @@ export function Admin({ initial, role }: { initial: MenuSnapshot; role: Role }) 
           }}
         />
       )}
-    </>
+    </div>
   );
 }

@@ -1,4 +1,5 @@
 import "./admin.css";
+import "./operations.css";
 import { Notices } from "@/components/admin/Notices";
 export const metadata = {
   title: "Menu administration",

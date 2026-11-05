@@ -1,4 +1,5 @@
 import { carBrandName } from './car-brands';
+import { applyEdits, linesFromSnapshot, type ResolvedEdit } from './edits';
 import type { Row } from '@libsql/client';
 import { db } from '@/cms/db';
 import { auditInsert, type AuditContext } from '@/cms/audit';
@@ -62,9 +63,12 @@ async function unprintedCount(scope: BranchScope) {
 
 export async function listOrders(scope: BranchScope, query: OrderQuery) {
   await initOrders();
-  const branch = branchClause(scope);
+  const selectedScope: BranchScope = scope.kind === 'all' && query.branch ? {kind:'branch',branchId:query.branch} : scope;
+  const branch = branchClause(selectedScope);
   const where = [KITCHEN_VISIBLE, branch.sql];
+  if (query.view) where.push(query.view === 'active' ? "status IN ('placed','paid','accepted','preparing','ready')" : "status IN ('completed','cancelled','refunded')");
   const args: (string | number)[] = [...branch.args];
+  if (query.unprinted) where.push('print_count=0');
   if (query.status) {
     const states: readonly string[] = query.status in staffGroups ? staffGroups[query.status as StaffStatus] : [query.status];
     where.push(`status IN (${states.map(() => '?').join(',')})`);
@@ -74,11 +78,14 @@ export async function listOrders(scope: BranchScope, query: OrderQuery) {
   if (query.from) { where.push('created_at>=?'); args.push(new Date(`${query.from}T00:00:00+03:00`).toISOString()); }
   if (query.to) { where.push('created_at<?'); args.push(new Date(Date.parse(`${query.to}T00:00:00+03:00`) + 86400000).toISOString()); }
   if (query.q) {
-    if (query.q.startsWith('SU-')) { where.push('id=?'); args.push(query.q); }
-    else if (/^\d+$/.test(query.q)) { where.push(query.q.length === 4 ? '(order_number=? OR substr(customer_phone,-4)=?)' : 'order_number=?'); args.push(query.q.length === 4 ? query.q : Number(query.q), ...(query.q.length === 4 ? [query.q] : [])); }
-    else { where.push('substr(customer_phone,-4)=?'); args.push(query.q); }
+    if (query.q.startsWith('SU-') && /^SU-[0-9a-f-]{36}$/.test(query.q)) { where.push('id=?'); args.push(query.q); }
+    else {
+      const number = /^\d+$/.test(query.q) && Number.isSafeInteger(Number(query.q)) ? Number(query.q) : -1;
+      where.push("(order_number=? OR instr(lower(COALESCE(customer_name,'')),lower(?))>0 OR instr(COALESCE(customer_phone,''),?)>0 OR instr(lower(COALESCE(car_plate,'')),lower(?))>0)");
+      args.push(number,query.q,query.q,query.q);
+    }
   }
-  const backlog = await unprintedCount(scope);
+  const backlog = await unprintedCount(selectedScope);
   let page = query.page;
   let followCursor = false;
   if (query.since) {
@@ -96,7 +103,7 @@ export async function listOrders(scope: BranchScope, query: OrderQuery) {
   }
   const predicate = where.join(' AND ');
   const rows = await db.execute({
-    sql: `SELECT id,branch_id,status,payment_method,paid_at,total_minor,created_at,customer_name,customer_phone,car_plate,order_number,print_count,printed_at FROM orders WHERE ${branch.sql} AND ${predicate} ORDER BY COALESCE(paid_at, created_at) DESC, id DESC LIMIT ? OFFSET ?`,
+    sql: `SELECT id,branch_id,status,payment_method,paid_at,total_minor,created_at,updated_at,snapshot,instructions,customer_name,customer_phone,car_plate,order_number,print_count,printed_at, COALESCE((SELECT MAX(at) FROM audit WHERE entity_type='order' AND entity_id=orders.id AND action='order.status'),paid_at,created_at) status_at FROM orders WHERE ${branch.sql} AND ${predicate} ORDER BY COALESCE(paid_at, created_at) ${query.view === 'active' ? 'ASC' : 'DESC'}, id ${query.view === 'active' ? 'ASC' : 'DESC'} LIMIT ? OFFSET ?`,
     args: [...branch.args, ...args, query.limit + 1, (page - 1) * query.limit],
   });
   const count = followCursor ? Number((await db.execute({ sql: `SELECT COUNT(*) AS n FROM orders WHERE ${branch.sql} AND ${predicate}`, args: [...branch.args, ...args] })).rows[0].n) : 0;
@@ -107,7 +114,20 @@ export async function listOrders(scope: BranchScope, query: OrderQuery) {
       AND COALESCE(paid_at, created_at)>=? ORDER BY COALESCE(paid_at, created_at), id`,
     args: [...branch.args, cutoff],
   })).rows.map(row => summary(row, 'staff'));
-  return { rows: rows.rows.slice(0, query.limit).map(row => summary(row, 'staff')), more: rows.rows.length > query.limit, page, newCount: count, unprintedCount: backlog, autoPrint };
+  const visible = rows.rows.slice(0, query.limit);
+  const edits = new Map<string, ResolvedEdit[]>();
+  if (visible.length) {
+    const result = await db.execute({sql:`SELECT order_id,payload FROM order_edits WHERE order_id IN (${visible.map(()=>'?').join(',')}) ORDER BY created_at,id`,args:visible.map(row=>String(row.id))});
+    for (const row of result.rows) {const id=String(row.order_id);edits.set(id,[...(edits.get(id)??[]),JSON.parse(String(row.payload)) as ResolvedEdit]);}
+  }
+  const summaries = visible.map(row=>{
+    const snapshot = JSON.parse(String(row.snapshot));
+    const lines = applyEdits(linesFromSnapshot(snapshot.lines??[]),edits.get(String(row.id))??[]).lines.filter(line=>!line.voided);
+    return {...summary(row,'staff'),updatedAt:String(row.updated_at??row.created_at),statusAt:String(row.status_at??row.created_at),brandId:String(snapshot.customer?.brand??''),
+      items:lines.slice(0,3).map(line=>({dishId:line.dishId,name:line.name,nameAr:line.nameAr,quantity:line.quantity,selection:line.selection})),
+      itemCount:lines.reduce((sum,line)=>sum+line.quantity,0),hasNotes:lines.some(line=>Boolean(line.note))||Boolean(row.instructions)};
+  });
+  return { rows: summaries, more: rows.rows.length > query.limit, page, newCount: count, unprintedCount: backlog, autoPrint };
 }
 
 export async function detailOrder(scope: BranchScope, id: string, reveal: boolean, ctx: AuditContext): Promise<OrderDetailData> {
@@ -118,13 +138,14 @@ export async function detailOrder(scope: BranchScope, id: string, reveal: boolea
   if (reveal) await db.execute(auditInsert(ctx, { action: 'order.contact_viewed', entityType: 'order', entityId: id }));
   const history = (await db.execute({ sql: "SELECT at,diff,label FROM audit WHERE entity_type='order' AND entity_id=? AND action='order.status' ORDER BY at DESC, id DESC", args: [id] })).rows;
   const snapshot = JSON.parse(String(row.snapshot));
-  const brand = carBrandName(snapshot.customer?.brand);
+  const brandId = text(snapshot.customer?.brand);
+  const brand = carBrandName(brandId);
   delete snapshot.customer;
   const { applyEdits, linesFromSnapshot } = await import('./edits');
   const { storedEdits } = await import('./order-edits');
   const projected = applyEdits(linesFromSnapshot(snapshot.lines ?? []), await storedEdits(id));
   const meta = await orderEditMeta(id);
-  return { ...summary(row), contactRevealed: reveal, snapshot, amendedAt: nullable(row.amended_at), originalTotalMinor: Number(snapshot.totalMinor ?? row.total_minor), currentLines: projected.lines, discounts: projected.discounts, edits: meta.edits, owedBackMinor: meta.owedBackMinor,
+  return { ...summary(row), brandId, contactRevealed: reveal, snapshot, amendedAt: nullable(row.amended_at), originalTotalMinor: Number(snapshot.totalMinor ?? row.total_minor), currentLines: projected.lines, discounts: projected.discounts, edits: meta.edits, owedBackMinor: meta.owedBackMinor,
     customer: { name: text(row.customer_name), phone: reveal ? text(row.customer_phone) : maskPhone(row.customer_phone),
       plate: reveal ? text(row.car_plate) : maskPlate(row.car_plate), colour: text(row.car_colour), brand, car: text(row.car_model), instructions: text(row.instructions) },
     history: history.map(h => ({ at: String(h.at), ...JSON.parse(String(h.diff)).status, reason: nullable(h.label) })),
