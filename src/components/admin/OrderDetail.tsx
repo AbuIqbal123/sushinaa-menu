@@ -1,4 +1,10 @@
 'use client';
+import Image from 'next/image';
+import { useLocale } from '@/i18n/locale';
+import { stageTimes } from '@/ordering/operations-time';
+import { carBrandName,findCarBrand } from '@/ordering/car-brands';
+import { CarBrandLogo } from '@/components/checkout/CarBrandPicker';
+import { useAdminClock,OpsIcon } from './OperationsUI';
 import { useEffect, useState } from 'react';
 import { configuredBranches } from '@/branches/branches';
 import { useMenu } from '@/cms/context';
@@ -8,7 +14,7 @@ import { allowedTransitions, staffStatus, staffLabels, type OrderStatus } from '
 import { formatMinor } from '@/lib/money';
 import { formatOrderNumber } from '@/ordering/order-number';
 import { nationalPhone } from '@/ordering/checkout/validation';
-import { selectionLabel } from '@/ordering/price';
+import { imageFor,selectionLabel } from '@/ordering/price';
 import type { Dish } from '@/catalog/types';
 import { printTicket } from './print-ticket';
 import { OrderEditPanel } from './OrderEditPanel';
@@ -27,12 +33,13 @@ function lineChoices(line: OrderDetailData['currentLines'][number], menu: MenuDa
   return selectionLabel({ kind: dish.kind, freeDips: dish.freeDips, extras: dish.extras }, line.selection, lang, t).split(' · ').map((part) => part.trim()).filter(Boolean);
 }
 
-export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; onBack: () => void; onChange: () => void; role: Role; menu: MenuData }) {
+export function OrderDetail({ id, onBack, onChange, role, menu, refreshKey=0 }: { id: string; onBack: () => void; onChange: () => void; role: Role; menu: MenuData; refreshKey?:number }) {
   const { copy } = useMenu();
   const branches = configuredBranches(menu.branches);
-  const lang = 'en' as const;
+  const {lang}=useLocale();
+  const now=useAdminClock();
   const t = strings(lang, copy);
-  const text = (en: string, _ar?: string) => en;
+  const text = (en: string, ar?: string) => lang==='ar'?(ar??en):en;
   const notify = useNotify();
   const reasons = { customer_request: text('Customer request', 'طلب العميل'), unavailable: text('Item unavailable', 'الصنف غير متوفر'), duplicate: text('Duplicate order', 'طلب مكرر'), branch_closed: text('Branch closed', 'الفرع مغلق') };
   const [data, setData] = useState<OrderDetailData | null>(null);
@@ -51,6 +58,13 @@ export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; 
     return () => { live = false; };
   // Refresh contact masking when the language changes.
   }, [id, lang]);
+  useEffect(()=>{
+    if(!refreshKey)return;let live=true;
+    fetch(`/api/admin/orders/${id}`,{cache:'no-store'}).then(async response=>{
+      if(!response.ok)throw Error('LOAD_FAILED');const latest=await response.json() as OrderDetailData;
+      if(live)setData(previous=>previous?{...latest,contactRevealed:previous.contactRevealed,customer:{...latest.customer,phone:previous.customer.phone,plate:previous.customer.plate}}:latest);
+    }).catch(()=>{if(live)setError('LOAD_FAILED');});return()=>{live=false;};
+  },[id,refreshKey]);
   useEffect(() => {
     if (data?.status !== 'accepted') return;
     let stop = false;
@@ -103,22 +117,25 @@ export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; 
     finally { setBusy(false); }
   }
   const branch = branches.find(b => b.slug === data?.branchId);
+  const times=data?stageTimes(data,now):null;
   return <section className="staff-order-detail" aria-busy={busy}>
     <button onClick={onBack}>← {text('Back to orders', 'العودة إلى الطلبات')}</button>
     {error && <p role="alert" className="staff-error">{error === 'STALE_STATUS' ? text('Another team member updated this order. The latest status is shown.', 'حدّث موظف آخر هذا الطلب. تظهر الحالة الأحدث الآن.') : error === 'LOAD_FAILED' ? text('Unable to load order. Please retry.', 'تعذّر تحميل الطلب. يرجى المحاولة مجدداً.') : error === 'PRINT_FAILED' ? text('Unable to print this ticket. Please retry.', 'تعذّرت طباعة التذكرة. يرجى المحاولة مجدداً.') : text('Unable to update this order. Please retry.', 'تعذّر تحديث الطلب. يرجى المحاولة مجدداً.')}</p>}
     {data && <>
+      <header className="ops-detail-heading"><div><span className="ops-eyebrow">{branch?(lang==='ar'?branch.nameAr:branch.name):text('Car collection','الاستلام بالسيارة')}</span><h2 dir="ltr">#{formatOrderNumber(data.orderNumber)}</h2></div><span className={`staff-status status-${staffStatus(data.status)}`}>{staffLabels[staffStatus(data.status)][lang]}</span></header>
+      <div className="ops-order-timing">{[[text('Acceptance','القبول'),times?.acceptance],[text('Preparation','التحضير'),times?.preparation],[text('Collection wait','انتظار الاستلام'),times?.collection]].map(([label,value])=><div key={String(label)}><OpsIcon name="clock" size={15}/><span>{label}</span><strong>{value==null?'—':`${value} ${text('min','د')}`}</strong></div>)}</div>
       <article className="kitchen-sheet">
         <section className="kitchen-who staff-detail-head">
-          <h3>{text('Who', 'من')}</h3>
+          <h3>{text('Collection details', 'بيانات الاستلام')}</h3>
           <dl className="kitchen-facts">
             <div><dt>{text('Order', 'الطلب')}</dt><dd>{data.orderNumber == null ? '—' : formatOrderNumber(data.orderNumber)}</dd></div>
             <div><dt>{text('Status', 'الحالة')}</dt><dd><span className={`staff-status status-${staffStatus(data.status)}`}>{staffLabels[staffStatus(data.status)][lang]}</span></dd></div>
             <div><dt>{text('Name', 'الاسم')}</dt><dd>{data.customer.name || '—'}</dd></div>
-            <div><dt>{text('Phone', 'الجوال')}</dt><dd dir="ltr">{spacedPhone(data.customer.phone) || '—'}</dd></div>
+            <div><dt>{text('Phone', 'الجوال')}</dt><dd dir="ltr">{nationalPhone(data.customer.phone).length===8?<a className="ops-customer-call" href={`tel:+974${nationalPhone(data.customer.phone)}`}>{spacedPhone(data.customer.phone)}<OpsIcon name="arrow" size={14}/></a>:spacedPhone(data.customer.phone)||'—'}</dd></div>
             <div><dt>{text('Plate', 'اللوحة')}</dt><dd dir="ltr">{data.customer.plate}</dd></div>
-            <div><dt>{text('Branch', 'الفرع')}</dt><dd>{branch?.name}</dd></div>
+            <div><dt>{text('Branch', 'الفرع')}</dt><dd>{lang==='ar'?branch?.nameAr:branch?.name}</dd></div>
             <div><dt>{text('Payment', 'الدفع')}</dt><dd>{data.paymentMethod === 'mock' || data.paidAt ? text('Paid', 'مدفوع') : text('Pay at pickup', 'الدفع عند الاستلام')}</dd></div>
-            {(data.customer.colour || data.customer.brand || data.customer.car) && <div><dt>{text('Vehicle', 'السيارة')}</dt><dd>{[data.customer.colour, data.customer.brand, data.customer.car].filter(Boolean).join(' ')}</dd></div>}
+            {(data.customer.colour || data.customer.brand || data.customer.car) && <div><dt>{text('Vehicle', 'السيارة')}</dt><dd><span className="ops-detail-car"><CarBrandLogo brand={findCarBrand(data.brandId??'')}/>{[data.customer.colour,carBrandName(data.brandId??'',lang)||data.customer.brand,data.customer.car].filter(Boolean).join(' ')}</span></dd></div>}
             {data.customer.instructions && <div><dt>{text('Instructions', 'التعليمات')}</dt><dd>{data.customer.instructions}</dd></div>}
           </dl>
         </section>
@@ -126,8 +143,10 @@ export function OrderDetail({ id, onBack, onChange, role, menu }: { id: string; 
           <h3>{text('Items', 'الأصناف')}</h3>
           <ul className="kitchen-items">{data.currentLines.map(line => {
             const choices = lineChoices(line, menu, lang, t);
+            const dish=menu.dishes.find(d=>d.id===line.dishId);
             return <li key={line.id} data-voided={line.voided || undefined}>
-              <p className="kitchen-item"><span>{line.quantity > 1 ? `${line.quantity} × ` : ''}{line.name}</span><span dir="ltr">{line.compliment ? text('Comp', 'هدية') : formatMinor(line.unitMinor * line.quantity, lang)}</span></p>
+              {dish&&<Image className="ops-detail-food" src={imageFor(dish,line.selection)} alt="" width={54} height={54} unoptimized/>}
+              <p className="kitchen-item"><span>{line.quantity} × {lang==='ar'?line.nameAr||line.name:line.name}</span><span dir="ltr">{line.compliment ? text('Comp', 'هدية') : formatMinor(line.unitMinor * line.quantity, lang)}</span></p>
               {choices.length > 0 && <p className="kitchen-detail"><span>{text('Choices', 'الخيارات')}</span><span>{choices.join(', ')}</span></p>}
               {line.note && <p className="kitchen-detail"><span>{text('Note', 'ملاحظة')}</span><span>{line.note}</span></p>}
             </li>;

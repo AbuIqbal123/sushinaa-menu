@@ -39,6 +39,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  // Keep owner-dashboard previews separate from the running customer-menu build.
+  distDir: process.env.SUSHINAA_OPERATIONS_PREVIEW === "1" && !process.env.VERCEL && !process.env.VERCEL_ENV ? ".next-operations-preview" : ".next",
   // Opt in to the exact LAN address used for local phone previews.
   allowedDevOrigins: process.env.SUSHINAA_PREVIEW_HOST
     ? [process.env.SUSHINAA_PREVIEW_HOST]

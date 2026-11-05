@@ -23,3 +23,6 @@ data/*.db*
 !.env.example
 test-results/
 playwright-report/
+
+# Isolated local operations dashboard preview
+.next-operations-preview/
