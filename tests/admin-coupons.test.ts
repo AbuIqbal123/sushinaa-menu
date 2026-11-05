@@ -28,8 +28,8 @@ if (process.env.ADMIN_COUPONS_MOCKS !== '1') {
     });
     const output = `${result.stdout}\n${result.stderr}`;
     assert.equal(result.status, 0, output);
-    assert.match(output, /ℹ tests 5/);
-    assert.match(output, /ℹ pass 5/);
+    assert.match(output, /# tests 5\b/);
+    assert.match(output, /# pass 5\b/);
   });
 } else {
 
@@ -49,7 +49,7 @@ delete process.env.CMS_PUBLIC_MENU_SOURCE_URL;
 let session: string | undefined = ADMIN;
 
 mock.module('next/headers', {
-  namedExports: {
+  exports: {
     cookies: async () => ({
       get: () => (session === undefined ? undefined : { value: session }),
       set: () => undefined,
