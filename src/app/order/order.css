@@ -59,6 +59,17 @@
 .ticket-count { color: #6a5640; font-size: 11px; white-space: nowrap; }
 .ticket-edit { min-height: 36px; padding: 0; border: 0; background: none; color: #8b2025; font-size: 15px !important; font-weight: 700; text-decoration: none; }
 .checkout-ticket .line-main .ticket-edit { margin-top: 4px; }
+.coupon-field { display: grid; gap: 6px; margin: 10px 0 0; }
+.coupon-field > label { font-size: 12px; font-weight: 650; }
+.coupon-entry { display: flex; gap: 8px; align-items: center; }
+.coupon-entry input { flex: 1; min-width: 0; height: 44px; padding: 0 12px; border: 1px solid #14110f24; border-radius: 7px; background: #fff; color: #14110f; font: inherit; font-size: 16px; letter-spacing: .06em; text-transform: uppercase; }
+.coupon-entry input[aria-invalid="true"] { border-color: #ee8271; }
+.coupon-entry button { flex: 0 0 auto; min-height: 44px; padding: 0 14px; border: 1px solid #14110f; border-radius: 7px; background: #14110f; color: #fbf4e6; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.coupon-entry button:disabled { opacity: .45; cursor: default; }
+.coupon-applied { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+.coupon-applied > span { font-weight: 700; letter-spacing: .06em; }
+.checkout-ticket .ticket-coupon-discount { border-top: 0; padding: 4px 0 0; }
+.order-coupon-code { margin: 0; color: #6b6258; font-size: 12px; letter-spacing: .06em; }
 .ticket-static-qty { display: inline-flex; align-items: baseline; justify-content: flex-start; gap: 0; color: #6a5640; font-size: 16px; font-weight: 700; line-height: 36px; white-space: nowrap; }
 .checkout-progress { display: flex; gap: 14px; padding: 12px 0 8px; margin: 0; list-style: none; }
 .checkout-progress li { display: flex; align-items: center; gap: 6px; color: #a99b89; font-size: 10px; }
