@@ -1,7 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto';
-import type { OrderSnapshot } from './validation';
+import { CheckoutError, couponCheckoutError, type CheckoutInput, type OrderSnapshot } from './validation';
 import type { CustomerReceiptDetails } from '../contracts';
-import { CheckoutError } from './validation';
+import { claimCouponOn } from '@/ordering/coupons/repository';
+import { CouponError } from '@/ordering/coupons/types';
 import { db, initDb, databaseUrl } from '@/cms/db';
 import { assertOrderDatabaseAllowed } from '@/ordering/guard';
 import type { PaymentMethod } from '@/ordering/status';
@@ -12,6 +13,9 @@ export async function initOrders() {
   await initDb();
 }
 export const hash = (value: string) => createHash('sha256').update(value).digest('hex');
+export function checkoutRequestHash(body: CheckoutInput, method: PaymentMethod) {
+  return hash(JSON.stringify({ ...body, paymentMethod: method }));
+}
 export async function existingOrder(session: string, key: string, requestHash: string) {
   await initOrders();
   const row = (await db.execute({ sql: 'SELECT * FROM orders WHERE session_hash=? AND idempotency_key=?', args: [hash(session), key] })).rows[0];
@@ -103,6 +107,14 @@ export async function persistPendingOrder(session: string, key: string, requestH
     const sequence = latest ? orderSequence(Number(latest.order_number)) + 1 : 1;
     if (sequence > 999) throw new CheckoutError('LIMIT');
     const orderNumber = composeOrderNumber(snapshot.branchId, day.month, day.day, sequence);
+    if (snapshot.coupon) {
+      try {
+        await claimCouponOn(tx, snapshot.coupon.code, id, new Date(now));
+      } catch (error) {
+        if (error instanceof CouponError) throw couponCheckoutError(error);
+        throw error;
+      }
+    }
     await tx.batch([
       { sql: 'INSERT INTO orders (id,session_hash,idempotency_key,request_hash,snapshot,branch_id,order_number,total_minor,currency,customer_name,customer_phone,car_plate,car_colour,car_model,instructions,created_at,updated_at,payment_method) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
         args: [id, sessionHash, key, requestHash, JSON.stringify({ version: 2, menuRevision: revision, ...snapshot }), snapshot.branchId, orderNumber, snapshot.totalMinor, snapshot.currency, snapshot.customer.name, snapshot.customer.phone, snapshot.customer.plate, snapshot.customer.colour, snapshot.customer.car, snapshot.customer.instructions, now, now, method] },

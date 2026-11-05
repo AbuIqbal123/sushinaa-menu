@@ -7,6 +7,7 @@ import { isSelectionComplete, unitPrice } from '@/ordering/price';
 import { configuredBranches } from '@/branches/branches';
 import { branchId } from '@/ordering/contracts';
 import { branchStatus, qatarClock } from '@/branches/hours';
+import { CouponError, type CouponErrorCode, type CouponSnapshot } from '@/ordering/coupons/types';
 
 export const digits = (value: string) => value.replace(/[٠-٩۰-۹]/g, c => String(c.charCodeAt(0) >= 1776 ? c.charCodeAt(0) - 1776 : c.charCodeAt(0) - 1632));
 export function nationalPhone(phone: string) {
@@ -51,12 +52,26 @@ export const selectionSchema = z.object({
 export const checkoutSchema = z.object({
   branchId,
   paymentMethod: z.enum(['mock', 'pay_at_pickup', 'sadad']).optional(),
+  couponCode: z.string().trim().min(1).max(32).optional(),
   customer: customerSchema,
   lines: z.array(z.object({ dishId: option, selection: selectionSchema, quantity: z.number().int().min(1).max(20), note: optionalText(400), expectedUnitMinor: z.number().int().min(0) }).strict()).min(1).max(100),
 }).strict();
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
 export class CheckoutError extends Error {
-  constructor(public code: 'CLOSED' | 'UNAVAILABLE' | 'OPTIONS' | 'PRICE_CHANGED' | 'LIMIT' | 'CONFLICT') { super(code); }
+  constructor(public code: 'CLOSED' | 'UNAVAILABLE' | 'OPTIONS' | 'PRICE_CHANGED' | 'LIMIT' | 'CONFLICT' | 'NOT_FOUND' | 'EXPIRED' | 'NON_POSITIVE' | 'INVALID_CODE') { super(code); }
+}
+const COUPON_CHECKOUT_CODE = {
+  INVALID_CODE: 'INVALID_CODE',
+  INVALID_VALUE: 'UNAVAILABLE',
+  EXPIRES_REQUIRED: 'UNAVAILABLE',
+  NOT_FOUND: 'NOT_FOUND',
+  UNAVAILABLE: 'UNAVAILABLE',
+  EXPIRED: 'EXPIRED',
+  NON_POSITIVE: 'NON_POSITIVE',
+  CONFLICT: 'CONFLICT',
+} as const satisfies Record<CouponErrorCode, CheckoutError['code']>;
+export function couponCheckoutError(error: CouponError) {
+  return new CheckoutError(COUPON_CHECKOUT_CODE[error.code]);
 }
 // The viewing menu tolerates legacy selections; checkout deliberately accepts only options belonging to this dish.
 export function validCheckoutSelection(dish: Dish, sel: Selection) {
@@ -78,7 +93,7 @@ export function validCheckoutSelection(dish: Dish, sel: Selection) {
   }
   return Object.keys(sel).every(key => sel[key as keyof Selection] === undefined || allowed.has(key)) && required.every(key => sel[key as keyof Selection] !== undefined);
 }
-export function quoteOrder(input: CheckoutInput, menu: MenuData, now = new Date(), options?: { allowClosed?: boolean }) {
+function quoteMenu(input: CheckoutInput, menu: MenuData, now = new Date(), options?: { allowClosed?: boolean }) {
   const branch = configuredBranches(menu.branches).find(b => b.slug === input.branchId)!;
   if (!options?.allowClosed && !branchStatus(branch.hours, qatarClock(now)).open) throw new CheckoutError('CLOSED');
   if (input.lines.reduce((n, line) => n + line.quantity, 0) > 100) throw new CheckoutError('LIMIT');
@@ -97,4 +112,17 @@ export function quoteOrder(input: CheckoutInput, menu: MenuData, now = new Date(
   return { branchId: branch.slug, branchName: branch.name, customer: input.customer, collection: 'car' as const, lines,
     totalMinor: lines.reduce((n, line) => n + line.totalMinor, 0), currency: 'QAR' as const };
 }
-export type OrderSnapshot = ReturnType<typeof quoteOrder>;
+export async function quoteOrder(input: CheckoutInput, menu: MenuData, now = new Date(), options?: { allowClosed?: boolean }): Promise<ReturnType<typeof quoteMenu> & { coupon?: CouponSnapshot }> {
+  const order = quoteMenu(input, menu, now, options);
+  if (!input.couponCode) return order;
+  // Load the coupon table only when a code is present. A static import would capture CMS_DATABASE_URL before tests point it at a temporary file.
+  const { previewCoupon } = await import('@/ordering/coupons/repository');
+  try {
+    const preview = await previewCoupon(input.couponCode, order.totalMinor, now);
+    return { ...order, totalMinor: preview.totalMinor, coupon: preview.snapshot };
+  } catch (error) {
+    if (error instanceof CouponError) throw couponCheckoutError(error);
+    throw error;
+  }
+}
+export type OrderSnapshot = Awaited<ReturnType<typeof quoteOrder>>;

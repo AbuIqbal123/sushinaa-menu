@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { db, initDb } from '@/cms/db';
-import type { DbClient, DbRow } from '@/cms/sql';
+import type { DbRow, SqlStatement } from '@/cms/sql';
 import { validateManualCode } from './code';
 import { applyOrderDiscount, couponOffer } from './discount';
 import {
@@ -15,8 +15,12 @@ import {
 export const HOLD_TTL_MS = 2 * 60 * 60 * 1000;
 
 const COLUMNS = 'id, code, kind, value, expires_at, status, held_order_id, held_at, redeemed_order_id, redeemed_at, disabled_at, created_at, updated_at';
+const REDEEM_ASSIGN = `status='redeemed', redeemed_order_id=?, redeemed_at=?, held_order_id=NULL, held_at=NULL, updated_at=?`;
+const RELEASE_ASSIGN = `status='available', held_order_id=NULL, held_at=NULL, updated_at=?`;
 
-type Queryable = Pick<DbClient, 'execute'>;
+type Queryable = {
+  execute(statement: SqlStatement): Promise<{ rows: DbRow[]; rowsAffected: number }>;
+};
 
 function text(row: DbRow, key: string): string {
   const value = row[key];
@@ -177,36 +181,47 @@ export async function previewCoupon(code: string, subtotalMinor: number, now = n
   return { coupon, ...quote, snapshot };
 }
 
-export async function claimCoupon(code: string, orderId: string, now = new Date()): Promise<Coupon> {
-  await initDb();
+export async function claimCouponOn(executor: Queryable, code: string, orderId: string, now = new Date()): Promise<Coupon> {
   const normalized = validateManualCode(code);
   const at = now.toISOString();
-  return withWrite(async (tx) => {
-    await releaseHeld(tx, now, HOLD_TTL_MS, normalized);
-    const other = (await tx.execute({
-      sql: `SELECT code FROM coupons WHERE status='held' AND held_order_id=? AND code<>?`,
-      args: [orderId, normalized],
-    })).rows[0];
-    if (other) throw new CouponError('CONFLICT');
-    const claimed = (await tx.execute({
-      sql: `UPDATE coupons SET status='held', held_order_id=?, held_at=?, updated_at=?
-        WHERE code=? AND status='available' AND expires_at>?
-        RETURNING ${COLUMNS}`,
-      args: [orderId, at, at, normalized, at],
-    })).rows[0];
-    if (claimed) return couponFrom(claimed);
-    const current = await readWhere(tx, 'code=?', [normalized]);
-    if (current?.status === 'held' && current.heldOrderId === orderId) return current;
-    throw rejection(current, at);
-  });
+  await releaseHeld(executor, now, HOLD_TTL_MS, normalized);
+  const other = (await executor.execute({
+    sql: `SELECT code FROM coupons WHERE status='held' AND held_order_id=? AND code<>?`,
+    args: [orderId, normalized],
+  })).rows[0];
+  if (other) throw new CouponError('CONFLICT');
+  const claimed = (await executor.execute({
+    sql: `UPDATE coupons SET status='held', held_order_id=?, held_at=?, updated_at=?
+      WHERE code=? AND status='available' AND expires_at>?
+      RETURNING ${COLUMNS}`,
+    args: [orderId, at, at, normalized, at],
+  })).rows[0];
+  if (claimed) return couponFrom(claimed);
+  const current = await readWhere(executor, 'code=?', [normalized]);
+  if (current?.status === 'held' && current.heldOrderId === orderId) return current;
+  throw rejection(current, at);
+}
+
+export async function claimCoupon(code: string, orderId: string, now = new Date()): Promise<Coupon> {
+  await initDb();
+  return withWrite((tx) => claimCouponOn(tx, code, orderId, now));
+}
+
+/** Last statement in a paid batch. A missing payment attempt updates zero rows, so this does not read changes(). */
+export function redeemHeldCouponStatement(orderId: string, at: string): SqlStatement {
+  return {
+    sql: `UPDATE coupons SET ${REDEEM_ASSIGN}
+      WHERE status='held' AND held_order_id=?
+      AND EXISTS (SELECT 1 FROM orders WHERE id=? AND paid_at IS NOT NULL)`,
+    args: [orderId, at, at, orderId, orderId],
+  };
 }
 
 export async function redeemCouponForOrder(orderId: string, now = new Date()): Promise<Coupon> {
   await initDb();
   const at = now.toISOString();
   const updated = (await db.execute({
-    sql: `UPDATE coupons
-      SET status='redeemed', redeemed_order_id=?, redeemed_at=?, held_order_id=NULL, held_at=NULL, updated_at=?
+    sql: `UPDATE coupons SET ${REDEEM_ASSIGN}
       WHERE status='held' AND held_order_id=?
       RETURNING ${COLUMNS}`,
     args: [orderId, at, at, orderId],
@@ -217,13 +232,19 @@ export async function redeemCouponForOrder(orderId: string, now = new Date()): P
   throw new CouponError('NOT_FOUND');
 }
 
+/** A failed status write leaves changes() at 0, so a cancelled batch does not free a code it did not cancel. */
+export function releaseCouponStatement(orderId: string, at: string): SqlStatement {
+  return {
+    sql: `UPDATE coupons SET ${RELEASE_ASSIGN} WHERE status='held' AND held_order_id=? AND changes()=1`,
+    args: [at, orderId],
+  };
+}
+
 export async function releaseCouponForOrder(orderId: string, now = new Date()): Promise<Coupon | null> {
   await initDb();
   const at = now.toISOString();
   const updated = (await db.execute({
-    sql: `UPDATE coupons SET status='available', held_order_id=NULL, held_at=NULL, updated_at=?
-      WHERE status='held' AND held_order_id=?
-      RETURNING ${COLUMNS}`,
+    sql: `UPDATE coupons SET ${RELEASE_ASSIGN} WHERE status='held' AND held_order_id=? RETURNING ${COLUMNS}`,
     args: [at, orderId],
   })).rows[0];
   return updated ? couponFrom(updated) : null;

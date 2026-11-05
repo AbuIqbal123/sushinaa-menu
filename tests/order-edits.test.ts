@@ -25,13 +25,14 @@ const added = menu.dishes.find((item) => item.visible && item.available && item.
 const at = new Date('2026-10-23T15:00:00+03:00');
 const selection = defaultSelection(dish);
 const unit = Math.round(unitPrice(dish, selection) * 100);
-const snapshot = quoteOrder({
-  branchId: 'down-town',
-  customer: { name: 'Test customer', phone: '97455551234', brand: 'toyota', plate: 'Q123456', colour: 'silver', car: 'test car', instructions: '' },
-  lines: [{ dishId: dish.id, selection, quantity: 1, note: '', expectedUnitMinor: unit }],
-}, menu, at);
+let snapshot: Awaited<ReturnType<typeof quoteOrder>>;
 
 before(async () => {
+  snapshot = await quoteOrder({
+    branchId: 'down-town',
+    customer: { name: 'Test customer', phone: '97455551234', brand: 'toyota', plate: 'Q123456', colour: 'silver', car: 'test car', instructions: '' },
+    lines: [{ dishId: dish.id, selection, quantity: 1, note: '', expectedUnitMinor: unit }],
+  }, menu, at);
   dir = mkdtempSync(join(tmpdir(), 'sn-edit-suite-'));
   process.env.CMS_DATABASE_URL = `file:${dir}/orders.db`;
   process.env.CMS_DATABASE_AUTH_TOKEN = '';

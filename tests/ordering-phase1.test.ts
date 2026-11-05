@@ -47,9 +47,10 @@ const quoteInput = checkoutSchema.parse({
   customer: { name: 'Test customer', phone: '97455551234', brand: 'toyota', plate: 'Q123456', colour: 'silver', car: 'test car', instructions: 'gate note' },
   lines: [{ dishId: dish.id, selection: defaultSelection(dish), quantity: 1, note: 'line note', expectedUnitMinor: Math.round(unitPrice(dish, defaultSelection(dish)) * 100) }],
 });
-const snapshot: OrderSnapshot = quoteOrder(quoteInput, menu, when);
+let snapshot: OrderSnapshot;
 
 before(async () => {
+  snapshot = await quoteOrder(quoteInput, menu, when);
   dir = mkdtempSync(join(tmpdir(), 'sn-phase1-'));
   process.env.CMS_DATABASE_URL = `file:${dir}/orders.db`;
   process.env.CMS_DATABASE_AUTH_TOKEN = '';
