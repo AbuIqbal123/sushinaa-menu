@@ -176,6 +176,21 @@ html[dir="rtl"] .ticket-pickup.is-driving .pickup-car { animation-name: pickup-d
 .checkout-notice strong { font-size: 12px; font-weight: 500; }
 .checkout-notice p, .checkout-error p { font-size: 12px; line-height: 1.65; color: var(--order-muted); margin: 6px 0 0; }
 .checkout-error { border-color: #d96a5d; }
+.checkout-notice-fail {
+  border-color: #c45a4f;
+  border-inline-start-width: 4px;
+  background: #a3312c12;
+  box-shadow: 0 1px 0 #a3312c14;
+}
+.checkout-notice-fail strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #8f2a25;
+}
+.checkout-notice-fail p {
+  color: #5c4038;
+}
 .empty-basket { padding: 44px 0 8px; text-align: center; }
 .empty-basket > svg { width: 40px; height: 40px; color: #c5a27e; margin: auto; }
 .empty-basket h2 { font-family: var(--font-display); font-size: 25px; font-weight: 400; margin: 18px 0; }

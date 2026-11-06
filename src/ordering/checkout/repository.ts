@@ -68,7 +68,7 @@ export async function customerOrder(id: string, session: string | null) {
   const { storedEdits } = await import('../order-edits');
   const projected = applyEdits(linesFromSnapshot(snapshot.lines ?? []), await storedEdits(id));
   const lines: CustomerReceiptDetails['lines'] = projected.lines.filter(line => !line.voided).map(line => ({
-    id: line.id, name: line.name, nameAr: line.nameAr, quantity: line.quantity, note: line.note,
+    id: line.id, dishId: line.dishId, name: line.name, nameAr: line.nameAr, quantity: line.quantity, note: line.note,
     unitMinor: line.unitMinor, totalMinor: line.unitMinor * line.quantity, selection: line.selection,
     kind: line.kind as CustomerReceiptDetails['lines'][number]['kind'],
     freeDips: line.freeDips as CustomerReceiptDetails['lines'][number]['freeDips'],
@@ -113,6 +113,33 @@ export async function persistPendingOrder(session: string, key: string, requestH
     if (Number(count.count) >= 10) throw new CheckoutError('LIMIT');
     const id = `SU-${randomUUID()}`;
     const now = new Date().toISOString();
+    // Customer edited the basket after Continue to payment: cancel the unpaid online
+    // row for this session so pay/begin cannot charge the stale total, and free any held coupon.
+    const stale = (await tx.execute({
+      sql: `SELECT id FROM orders WHERE session_hash=? AND paid_at IS NULL AND status='placed' AND payment_method IN ('sadad','mock')`,
+      args: [sessionHash],
+    })).rows;
+    if (stale.length) {
+      const purgeAfter = new Date(Date.parse(now) + 90 * 86400000).toISOString();
+      for (const row of stale) {
+        const staleId = String(row.id);
+        await tx.execute({
+          sql: `UPDATE orders SET status='cancelled', updated_at=?, purge_after=?
+            WHERE id=? AND paid_at IS NULL AND status='placed' AND payment_method IN ('sadad','mock')`,
+          args: [now, purgeAfter, staleId],
+        });
+        await tx.execute({
+          sql: `UPDATE payment_attempts SET status='cancelled', updated_at=?
+            WHERE order_id=? AND status NOT IN ('paid', 'failed', 'cancelled')`,
+          args: [now, staleId],
+        });
+        await tx.execute({
+          sql: `UPDATE coupons SET status='available', held_order_id=NULL, held_at=NULL, updated_at=?
+            WHERE status='held' AND held_order_id=?`,
+          args: [now, staleId],
+        });
+      }
+    }
     const day = qatarDay(new Date(now));
     const latest = (await tx.execute({
       sql: 'SELECT order_number FROM orders WHERE branch_id=? AND created_at>=? AND created_at<? AND order_number>=? ORDER BY order_number DESC LIMIT 1',
