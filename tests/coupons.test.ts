@@ -204,3 +204,120 @@ test('disable refuses a held code', async () => {
   const row = (await coupons.listCoupons()).find((item) => item.code === 'KEEPHELD');
   assert.equal(row?.status, 'held');
 });
+
+const AT = NOW.toISOString();
+const PURGE_AT = new Date(NOW.getTime() + 90 * 86400000).toISOString();
+
+async function insertOrder(id: string, method: string, patch?: { status?: string; paidAt?: string | null }) {
+  await db.execute({
+    sql: `INSERT INTO orders (
+      id, branch_id, status, payment_method, paid_at, session_hash, idempotency_key,
+      request_hash, snapshot, total_minor, currency, created_at, updated_at
+    ) VALUES (?, 'down-town', ?, ?, ?, ?, ?, ?, '{}', 1000, 'QAR', ?, ?)`,
+    args: [
+      id,
+      patch?.status ?? 'placed',
+      method,
+      patch && 'paidAt' in patch ? patch.paidAt : null,
+      `session-${id}`,
+      id,
+      id,
+      AT,
+      AT,
+    ],
+  });
+}
+
+async function insertAttempt(orderId: string, provider: string, status: string) {
+  await db.execute({
+    sql: `INSERT INTO payment_attempts (id, order_id, provider, status, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?)`,
+    args: [`attempt-${orderId}`, orderId, provider, status, AT, AT],
+  });
+}
+
+async function orderOf(id: string) {
+  const row = (await db.execute({
+    sql: 'SELECT status, paid_at, purge_after FROM orders WHERE id=?',
+    args: [id],
+  })).rows[0];
+  assert.ok(row);
+  return row;
+}
+
+async function attemptStatus(orderId: string) {
+  const row = (await db.execute({
+    sql: 'SELECT status FROM payment_attempts WHERE order_id=?',
+    args: [orderId],
+  })).rows[0];
+  assert.ok(row);
+  return String(row.status);
+}
+
+test('releaseHeldCoupon frees a held code and cancels its unpaid sadad or mock order', async () => {
+  const sadad = await coupons.createCoupon({ code: 'FREESADAD', kind: 'amount', value: 100, expiresAt: LATER }, NOW);
+  await coupons.claimCoupon('FREESADAD', 'order-sadad-hold', NOW);
+  await insertOrder('order-sadad-hold', 'sadad');
+  await insertAttempt('order-sadad-hold', 'sadad', 'awaiting_payment');
+
+  const released = await coupons.releaseHeldCoupon(sadad.id, NOW);
+  assert.equal(released.status, 'available');
+  assert.equal(released.heldOrderId, null);
+  assert.equal(released.heldAt, null);
+  const sadadOrder = await orderOf('order-sadad-hold');
+  assert.equal(sadadOrder.status, 'cancelled');
+  assert.equal(sadadOrder.paid_at, null);
+  assert.equal(String(sadadOrder.purge_after), PURGE_AT);
+  assert.equal(await attemptStatus('order-sadad-hold'), 'cancelled');
+  const reclaimed = await coupons.claimCoupon('FREESADAD', 'order-sadad-next', NOW);
+  assert.equal(reclaimed.status, 'held');
+  assert.equal(reclaimed.heldOrderId, 'order-sadad-next');
+
+  const mock = await coupons.createCoupon({ code: 'FREEMOCK', kind: 'percent', value: 10, expiresAt: LATER }, NOW);
+  await coupons.claimCoupon('FREEMOCK', 'order-mock-hold', NOW);
+  await insertOrder('order-mock-hold', 'mock');
+  await insertAttempt('order-mock-hold', 'mock', 'failed');
+  const mockReleased = await coupons.releaseHeldCoupon(mock.id, NOW);
+  assert.equal(mockReleased.status, 'available');
+  assert.equal(mockReleased.heldOrderId, null);
+  assert.equal((await orderOf('order-mock-hold')).status, 'cancelled');
+  assert.equal(await attemptStatus('order-mock-hold'), 'failed');
+
+  const leftover = await coupons.createCoupon({ code: 'GONEHOLD', kind: 'amount', value: 25, expiresAt: LATER }, NOW);
+  await coupons.claimCoupon('GONEHOLD', 'order-already-cancelled', NOW);
+  await insertOrder('order-already-cancelled', 'sadad', { status: 'cancelled' });
+  const freed = await coupons.releaseHeldCoupon(leftover.id, NOW);
+  assert.equal(freed.status, 'available');
+  assert.equal(freed.heldOrderId, null);
+  assert.equal((await orderOf('order-already-cancelled')).status, 'cancelled');
+  assert.equal((await orderOf('order-already-cancelled')).purge_after, null);
+});
+
+test('releaseHeldCoupon leaves a paid order in place and disable of an available code is unchanged', async () => {
+  const paid = await coupons.createCoupon({ code: 'PAIDHOLD', kind: 'amount', value: 100, expiresAt: LATER }, NOW);
+  await coupons.claimCoupon('PAIDHOLD', 'order-paid-hold', NOW);
+  await insertOrder('order-paid-hold', 'sadad', { status: 'paid', paidAt: AT });
+  await assert.rejects(coupons.releaseHeldCoupon(paid.id, NOW), (error) => codeOf(error) === 'CONFLICT');
+  const paidOrder = await orderOf('order-paid-hold');
+  assert.equal(paidOrder.status, 'paid');
+  assert.equal(paidOrder.paid_at, AT);
+  assert.equal(paidOrder.purge_after, null);
+  const stillHeld = (await coupons.listCoupons()).find((row) => row.id === paid.id);
+  assert.equal(stillHeld?.status, 'held');
+  assert.equal(stillHeld?.heldOrderId, 'order-paid-hold');
+
+  const pickup = await coupons.createCoupon({ code: 'PICKHOLD', kind: 'amount', value: 50, expiresAt: LATER }, NOW);
+  await coupons.claimCoupon('PICKHOLD', 'order-pickup-hold', NOW);
+  await insertOrder('order-pickup-hold', 'pay_at_pickup');
+  await assert.rejects(coupons.releaseHeldCoupon(pickup.id, NOW), (error) => codeOf(error) === 'CONFLICT');
+  assert.equal((await orderOf('order-pickup-hold')).status, 'placed');
+  assert.equal((await coupons.listCoupons()).find((row) => row.id === pickup.id)?.status, 'held');
+
+  const open = await coupons.createCoupon({ code: 'STILLFREE', kind: 'amount', value: 50, expiresAt: LATER }, NOW);
+  const disabled = await coupons.disableCoupon(open.id, NOW);
+  assert.equal(disabled.status, 'disabled');
+  assert.ok(disabled.disabledAt);
+  await assert.rejects(coupons.releaseHeldCoupon(open.id, NOW), (error) => codeOf(error) === 'CONFLICT');
+  assert.equal((await coupons.listCoupons()).find((row) => row.id === open.id)?.status, 'disabled');
+  await assert.rejects(coupons.releaseHeldCoupon('missing-coupon', NOW), (error) => codeOf(error) === 'NOT_FOUND');
+});
