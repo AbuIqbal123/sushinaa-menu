@@ -248,6 +248,41 @@ test('disable turns an available code off and leaves a held or missing code alon
   assert.deepEqual(await absent.json(), { code: 'NOT_FOUND' });
 });
 
+test('release returns a held code and an empty body still disables an available code', async () => {
+  session = ADMIN;
+  const created = await listRoute.POST(post('http://localhost/api/admin/coupons', {
+    code: 'let-go', kind: 'percent', value: '10', expiresAt: LATER,
+  }));
+  const row = await created.json() as Coupon;
+  await coupons.claimCoupon(row.code, 'order-http-hold', new Date('2026-11-05T12:00:00.000Z'));
+  const released = await disableRoute.POST(
+    post(`http://localhost/api/admin/coupons/${row.id}`, { action: 'release' }),
+    { params: Promise.resolve({ id: row.id }) },
+  );
+  assert.equal(released.status, 200);
+  const releasedRow = await released.json() as Coupon;
+  assert.equal(releasedRow.status, 'available');
+  assert.equal(releasedRow.heldOrderId, null);
+
+  const again = await disableRoute.POST(
+    post(`http://localhost/api/admin/coupons/${row.id}`, { action: 'release' }),
+    { params: Promise.resolve({ id: row.id }) },
+  );
+  assert.equal(again.status, 409);
+  assert.deepEqual(await again.json(), { code: 'CONFLICT' });
+
+  const fresh = await listRoute.POST(post('http://localhost/api/admin/coupons', {
+    code: 'keep-off', kind: 'percent', value: '5', expiresAt: LATER,
+  }));
+  const freshRow = await fresh.json() as Coupon;
+  const disabled = await disableRoute.POST(
+    post(`http://localhost/api/admin/coupons/${freshRow.id}`, {}),
+    { params: Promise.resolve({ id: freshRow.id }) },
+  );
+  assert.equal(disabled.status, 200);
+  assert.equal((await disabled.json() as Coupon).status, 'disabled');
+});
+
 test('coupon routes require an admin session', async () => {
   session = undefined;
   const anonymous = await listRoute.GET();

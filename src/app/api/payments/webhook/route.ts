@@ -4,7 +4,7 @@ import { WEBHOOK_ACK } from '@/ordering/vendors/sadad';
 import { rateAllowed } from '@/ordering/rate-limit';
 import { auditContext } from '@/cms/audit';
 import { digestPayload, appendPaymentEvent } from '@/ordering/ledger';
-import { paymentLog } from '@/ordering/payment-log';
+import { paymentLog, sadadWebhookFields } from '@/ordering/payment-log';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -26,13 +26,19 @@ export async function POST(request: Request) {
     const fieldNames = raw && typeof raw === 'object' && !Array.isArray(raw)
       ? Object.keys(raw as object).sort()
       : [];
-    const orderHint = raw && typeof raw === 'object' && raw !== null && 'websiteRefNo' in raw
-      ? String((raw as { websiteRefNo?: unknown }).websiteRefNo || '')
-      : undefined;
+    const asStrings: Record<string, string | undefined> = {};
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+      for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+        if (value != null) asStrings[key] = String(value);
+      }
+    }
+    const gatewayNote = sadadWebhookFields(asStrings);
+    const orderHint = asStrings.websiteRefNo || undefined;
     paymentLog('info', {
       event: 'webhook.received',
       fieldNames,
-      orderId: orderHint || undefined,
+      orderId: orderHint,
+      ...gatewayNote,
     });
 
     let fact;
@@ -43,8 +49,9 @@ export async function POST(request: Request) {
       paymentLog('error', {
         event: 'webhook.verify_failed',
         reason,
-        orderId: orderHint || undefined,
+        orderId: orderHint,
         fieldNames,
+        ...gatewayNote,
       });
       if (orderHint) {
         await appendPaymentEvent({
@@ -67,7 +74,9 @@ export async function POST(request: Request) {
       outcome: fact.outcome,
       amountMinor: fact.amountMinor,
       settled: 'settled' in result ? Boolean(result.settled) : false,
+      alreadyPaid: 'alreadyPaid' in result ? Boolean(result.alreadyPaid) : undefined,
       reason: 'reason' in result ? String(result.reason) : undefined,
+      ...gatewayNote,
     });
     return ack();
   } catch (error) {

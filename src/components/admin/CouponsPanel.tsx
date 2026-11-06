@@ -92,25 +92,42 @@ export function CouponsPanel({ creating, onCreating }: { creating: boolean; onCr
     return () => { live = false; };
   }, []);
 
-  async function disable(id: string) {
+  function linkedOrderId(row: Coupon) {
+    if (row.status === 'held') return row.heldOrderId ?? '';
+    if (row.status === 'redeemed') return row.redeemedOrderId ?? '';
+    return '';
+  }
+
+  async function postCoupon(id: string, body: Record<string, string>, ok: string) {
     if (busy) return;
-    if (!window.confirm(text('Disable this unused code?', 'إيقاف هذا الرمز غير المستخدم؟'))) return;
     setBusy(true);
     setError('');
     try {
       const response = await fetch(`/api/admin/coupons/${id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify(body),
       });
       if (!response.ok) { setError(await failureCode(response)); return; }
-      notify({ tone: 'ok', text: text('Coupon disabled', 'تم إيقاف القسيمة') });
+      notify({ tone: 'ok', text: ok });
       await load();
     } catch {
       setError('save');
     } finally {
       setBusy(false);
     }
+  }
+
+  async function disable(id: string) {
+    if (busy) return;
+    if (!window.confirm(text('Disable this unused code?', 'إيقاف هذا الرمز غير المستخدم؟'))) return;
+    await postCoupon(id, {}, text('Coupon disabled', 'تم إيقاف القسيمة'));
+  }
+
+  async function release(id: string) {
+    if (busy) return;
+    if (!window.confirm(text('Release this code and cancel its unpaid order?', 'تحرير هذا الرمز وإلغاء طلبه غير المدفوع؟'))) return;
+    await postCoupon(id, { action: 'release' }, text('Coupon released', 'تم تحرير القسيمة'));
   }
 
   const offer = (row: Coupon) => row.kind === 'percent' ? `${row.value}%` : formatMinor(row.value, lang);
@@ -126,7 +143,7 @@ export function CouponsPanel({ creating, onCreating }: { creating: boolean; onCr
               <th>{text('Discount', 'الخصم')}</th>
               <th>{text('Status', 'الحالة')}</th>
               <th>{text('Expires', 'الانتهاء')}</th>
-              <th>{text('Redeemed order', 'طلب الاسترداد')}</th>
+              <th>{text('Order', 'الطلب')}</th>
               <th>{text('Action', 'إجراء')}</th>
             </tr>
           </thead>
@@ -144,11 +161,16 @@ export function CouponsPanel({ creating, onCreating }: { creating: boolean; onCr
                   </StatusBadge>
                 </td>
                 <td dir="ltr">{formatQatarDateTime(row.expiresAt)}</td>
-                <td dir="ltr">{row.redeemedOrderId ?? ''}</td>
+                <td dir="ltr">{linkedOrderId(row)}</td>
                 <td className="users-access">
                   {row.status === 'available' && (
                     <button type="button" className="danger" disabled={busy} onClick={() => void disable(row.id)}>
                       {text('Disable', 'إيقاف')}
+                    </button>
+                  )}
+                  {row.status === 'held' && (
+                    <button type="button" disabled={busy} onClick={() => void release(row.id)}>
+                      {text('Release', 'تحرير')}
                     </button>
                   )}
                 </td>

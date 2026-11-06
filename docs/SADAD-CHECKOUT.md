@@ -73,13 +73,13 @@ Runtime logs (Vercel → test-dev → Runtime Logs) emit one JSON line per payme
 | `callback.received` / `callback.verify_failed` / `callback.applied` | Browser return |
 | `webhook.received` / `webhook.verify_failed` / `webhook.applied` | Server notify |
 
-Never logged: secret key, checksum/signature values, full phone, card data. Durable trail remains `payment_events` + admin Payments.
+Callback and webhook lines include clipped gateway fields (`respCode`, `gatewayStatus`, `respMsg`) so a failed sandbox pay shows Sadad’s reason next to `outcome` / `settled` / `returnKind`. Never logged: secret key, checksum/signature values, full phone, card data. Durable trail remains `payment_events` + admin Payments.
 
 Payment logs use `console.warn` / `console.error` (eslint-safe). `next.config.ts` keeps those methods in production builds so they reach Vercel; plain `console.log` is still stripped.
 
 ## Callback vs webhook
 
-- **Callback** (`POST /api/payments/callback`): browser return after pay; verify signature; apply fact; respond **200 HTML** that navigates to absolute `{origin}/{branch}/order?paid={orderId}` only when the fact is paid and settled (or already paid). Failed/cancelled outcomes and amount mismatches go to `?pay=failed` so review resumes with the held coupon instead of a false success. Unexpected `GET` is logged and treated as failed return. Do not use relative `Location` — sandbox returns have left the browser on `payment.sadadqa.com`.
+- **Callback** (`POST /api/payments/callback`): browser return after pay; verify signature; apply fact; respond **200 HTML** that navigates to absolute `{origin}/{branch}/order?paid={orderId}` only when the fact is paid and settled (or already paid). Failed/cancelled outcomes and amount mismatches go to `?pay=failed` so review resumes with the held coupon instead of a false success. Coupons **Release** returns that held code to available and cancels the linked unpaid placed sadad or mock order. Unexpected `GET` is logged and treated as failed return. Do not use relative `Location` — sandbox returns have left the browser on `payment.sadadqa.com`.
 - **Webhook** (`POST /api/payments/webhook`): authoritative server notification; verify; `applyVerifiedFact`; ACK `{ status: 'success' }`. Prefer webhook for settlement certainty; callback is UX + best-effort settle.
 
 Both feed the same ledger/`settlePayment` path. Amount must match `orders.total_minor`.
