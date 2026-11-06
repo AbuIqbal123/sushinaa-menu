@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     const previous = await existingOrder(session, key, requestHash);
     if (previous) return reply({ ...await customerOrder(previous.id, session), reused: true });
     const { menu, revision } = await readMenu();
-    const snapshot = await quoteOrder(parsed, menu, new Date(), { allowClosed: method === 'mock' || method === 'sadad' });
+    const snapshot = await quoteOrder(parsed, menu, new Date());
     const order = await persistPendingOrder(session, key, requestHash, snapshot, revision, method);
     return reply({ ...await customerOrder(order.id, session), reused: order.reused }, order.reused ? 200 : 201);
   } catch (error) { return failure(error); }

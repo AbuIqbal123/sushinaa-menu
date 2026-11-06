@@ -7,7 +7,7 @@ Product stays **car-collection / pickup**. Customers still order for pickup (nam
 ## How it works
 
 1. Customer builds a pickup basket → collection details → review.
-2. Order is persisted `placed` / `awaiting_payment` with `payment_method=sadad` (or `mock` locally).
+2. Order is persisted `placed` / `awaiting_payment` with `payment_method=sadad` (or `mock` locally). A closed branch refuses that create (`CLOSED`) and also refuses `pay/begin` and mock pay. Customers can still fill the basket and collection details. Staff order updates are unchanged.
 3. Browser begins hosted checkout → auto-POST form to Sadad WebCheckout → customer pays off-site.
 4. Return path: browser **callback** redirects to `/{branch}/order?paid=…` (not the menu shell — avoids a homepage flash). Kitchen visibility still depends on `paid_at`.
 5. Authoritative settle: **webhook** (and/or verified callback) → `applyVerifiedFact` → `settlePayment` (sole paid write).

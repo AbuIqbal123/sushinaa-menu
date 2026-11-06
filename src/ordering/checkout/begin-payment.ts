@@ -1,5 +1,7 @@
 import { db } from '@/cms/db';
+import { readMenu } from '@/cms/repository';
 import { OrderError } from '@/ordering/http';
+import { assertBranchOpen } from './quote';
 import { hash, initOrders } from './repository';
 import { gateway } from '@/ordering/payment-gateway/resolve';
 import type { CheckoutIntent, CheckoutLaunch } from '@/ordering/payment-gateway/types';
@@ -25,6 +27,10 @@ export async function beginHostedCheckout(
   })).rows[0];
   if (!row) throw new OrderError('NOT_FOUND', 404);
   if (row.paid_at || row.status !== 'placed') throw new OrderError('INVALID_PAYMENT', 409);
+  const stored = JSON.parse(String(row.snapshot)) as { branchId?: string };
+  if (!stored.branchId) throw new OrderError('NOT_FOUND', 404);
+  const { menu } = await readMenu();
+  assertBranchOpen(menu, stored.branchId, now);
   const method = String(row.payment_method);
   if (method !== 'sadad' && method !== 'mock') throw new OrderError('INVALID_PAYMENT', 409);
 
