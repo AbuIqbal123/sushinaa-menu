@@ -218,7 +218,7 @@ async function insertOrder(id: string, method: string, patch?: { status?: string
       id,
       patch?.status ?? 'placed',
       method,
-      patch && 'paidAt' in patch ? patch.paidAt : null,
+      patch && 'paidAt' in patch ? patch.paidAt ?? null : null,
       `session-${id}`,
       id,
       id,
