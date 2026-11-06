@@ -22,11 +22,12 @@ import { CarBrandPicker, CarBrandLogo } from './CarBrandPicker';
 import { carBrandName, findCarBrand } from '@/ordering/car-brands';
 import { OrderProgress, orderPhase, orderTrackingLabel } from './OrderProgress';
 import { CouponField, knownCouponMessage, type AppliedCoupon } from './CouponField';
+import { isTerminalCustomerStatus, shouldResumeCustomerReceipt } from '@/ordering/customer-tracking';
 
 const emptyCustomer: Customer = { name: '', phone: '', plate: 'Q', brand: '', colour: '', car: '', instructions: '' };
 type Step = 'menu' | 'details' | 'review' | 'payment' | 'receipt';
 type PaymentMethodUi = 'mock' | 'pay_at_pickup' | 'sadad';
-type Receipt = { id: string; orderNumber?: number | null; paymentStatus: PaymentStatus; totalMinor: number; paymentMethod: PaymentMethodUi; status: string; arrivedAt?: string | null; details?: CustomerReceiptDetails & { coupon?: { code?: string }; couponCode?: string } };
+type Receipt = { id: string; orderNumber?: number | null; paymentStatus: PaymentStatus; totalMinor: number; paymentMethod: PaymentMethodUi; status: string; arrivedAt?: string | null; updatedAt?: string | null; details?: CustomerReceiptDetails & { coupon?: { code?: string }; couponCode?: string } };
 export function OrderingExperience({
   initialNow,
   branchId,
@@ -81,6 +82,9 @@ function Experience({
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
   const [couponPending, setCouponPending] = useState(false);
   const orderKey = 'sushinaa-order-id';
+  function forgetStoredOrder() {
+    try { localStorage.removeItem(orderKey); sessionStorage.removeItem(orderKey); } catch { /* Storage unavailable. */ }
+  }
   const [editing, setEditing] = useState<CartLine | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const previousStep = useRef(step);
@@ -154,14 +158,17 @@ function Experience({
     void fetch(`/api/orders/${stored}`, { cache: 'no-store' }).then(async (response) => {
       if (cancel) return;
       if (!response.ok) {
-        if (response.status === 404 || response.status === 401) {
-          try { localStorage.removeItem(orderKey); sessionStorage.removeItem(orderKey); } catch { /* Storage unavailable. */ }
-        }
+        if (response.status === 404 || response.status === 401) forgetStoredOrder();
         finish(returnMode ? (payFailed ? 'review' : 'menu') : undefined);
         return;
       }
       const saved = await response.json() as Receipt;
       if (cancel) return;
+      if (!shouldResumeCustomerReceipt(saved)) {
+        forgetStoredOrder();
+        finish(returnMode ? (payFailed ? 'review' : 'menu') : undefined);
+        return;
+      }
       setReceipt(saved);
       try { localStorage.setItem(orderKey, saved.id); } catch { /* Keep tracking in memory. */ }
       if (saved.paymentStatus === 'paid' || saved.paymentMethod === 'pay_at_pickup') {
@@ -190,8 +197,14 @@ function Experience({
   }, []);
   useEffect(() => {
     if (!['receipt', 'menu'].includes(step) || !receipt?.id) return;
+    if (!shouldResumeCustomerReceipt(receipt)) {
+      forgetStoredOrder();
+      if (step === 'receipt') setStep('menu');
+      setReceipt(null);
+      return;
+    }
     try { localStorage.setItem(orderKey, receipt.id); } catch { /* Keep tracking in memory. */ }
-    if (receipt.status === 'completed' || receipt.status === 'refunded') return;
+    if (isTerminalCustomerStatus(receipt.status)) return;
     let stopped = false;
     let running = false;
     const controller = new AbortController();
@@ -214,6 +227,10 @@ function Experience({
     };
   }, [step, receipt?.id, receipt?.status]);
   function go(next: Step) {
+    if (next === 'menu' && receipt && isTerminalCustomerStatus(receipt.status)) {
+      forgetStoredOrder();
+      setReceipt(null);
+    }
     if (next === 'menu' && returnMode) {
       router.replace(`/${branchId}`);
       return;

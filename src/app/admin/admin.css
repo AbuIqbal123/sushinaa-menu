@@ -748,14 +748,27 @@
 .admin dialog.users-dialog { width:min(26rem, calc(100vw - 32px)); }
 .users-dialog label { margin-bottom:12px; }
 .users-dialog .staff-error { margin:0 0 12px; }
-.coupons-form { display:flex; flex-wrap:wrap; gap:8px 10px; align-items:end; margin-bottom:12px; }
-.coupons-form label { display:grid; gap:4px; flex:0 1 9rem; min-width:0; color:var(--muted); font-size:12px; }
-.coupons-form .coupons-code { flex:1 1 16rem; }
+.coupons-dialog label,
+.coupons-dialog .coupons-expires { display:grid; gap:6px; margin-bottom:12px; color:var(--muted); font-size:12px; }
+.coupons-dialog .coupons-expires { margin:0 0 4px; padding:0; border:0; min-width:0; }
+.coupons-dialog .coupons-expires > legend { padding:0; margin:0 0 6px; color:var(--muted); font-size:12px; }
 .coupons-code-row { display:flex; gap:6px; align-items:center; }
 .coupons-code-row input { flex:1; min-width:0; letter-spacing:0.04em; }
-.admin .coupons-form input,
-.admin .coupons-form select { width:100%; min-height:32px; padding:4px 8px; }
-.admin .coupons-form button { width:auto; min-height:32px; padding:4px 10px; }
+.coupons-offer-row { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; margin-bottom:12px; }
+.coupons-offer-row label { margin-bottom:0; }
+.coupons-expiry-presets { display:flex; flex-wrap:wrap; gap:6px; }
+.admin .coupons-expiry-preset { width:auto; min-height:30px; padding:4px 10px; border:1px solid var(--line); border-radius:999px; background:#fff; color:var(--ink); font-size:12px; }
+.admin .coupons-expiry-preset:hover:not(:disabled) { background:#f4f1ea; }
+.coupons-expiry-fields { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:10px; }
+.coupons-expiry-fields label { margin-bottom:0; }
+.coupons-expiry-preview { margin:2px 0 0; color:var(--ink); font-size:12px; }
+.admin .coupons-dialog input,
+.admin .coupons-dialog select { width:100%; min-height:36px; padding:6px 10px; }
+.admin .coupons-dialog .coupons-code-row button { width:auto; min-height:36px; padding:6px 12px; }
+@media (max-width:560px) {
+  .coupons-offer-row,
+  .coupons-expiry-fields { grid-template-columns:1fr; }
+}
 .admin dialog.payments-dialog { width:min(36rem, calc(100vw - 32px)); overflow:auto; }
 .payments-dialog-body { display:grid; gap:16px; padding-top:8px; }
 .payments-facts { margin:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 20px; }
