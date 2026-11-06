@@ -6,6 +6,7 @@ import { formatQatarDateTime } from '@/lib/datetime';
 import { useLocale } from '@/i18n/locale';
 import { useModal } from './Fields';
 import { useNotify } from './Notices';
+import { StatusBadge } from './StatusBadge';
 
 const STATUSES: Record<CouponStatus, [string, string]> = {
   available: ['Available', 'متاح'],
@@ -138,9 +139,9 @@ export function CouponsPanel({ creating, onCreating }: { creating: boolean; onCr
                 <td dir="ltr">{shownCode(row.code)}</td>
                 <td dir="ltr">{offer(row)}</td>
                 <td>
-                  <span className={`staff-status status-${row.status}`}>
+                  <StatusBadge status={row.status}>
                     {text(STATUSES[row.status][0], STATUSES[row.status][1])}
-                  </span>
+                  </StatusBadge>
                 </td>
                 <td dir="ltr">{formatQatarDateTime(row.expiresAt)}</td>
                 <td dir="ltr">{row.redeemedOrderId ?? ''}</td>

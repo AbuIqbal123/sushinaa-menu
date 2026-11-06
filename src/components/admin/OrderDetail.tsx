@@ -10,6 +10,7 @@ import { configuredBranches } from '@/branches/branches';
 import { useMenu } from '@/cms/context';
 import { strings } from '@/i18n/copy';
 import { useNotify } from './Notices';
+import { StatusBadge } from './StatusBadge';
 import { allowedTransitions, staffStatus, staffLabels, type OrderStatus } from '@/ordering/status';
 import { formatQatarDateTime } from '@/lib/datetime';
 import { formatMinor } from '@/lib/money';
@@ -132,7 +133,7 @@ export function OrderDetail({ id, onBack, onChange, role, menu, refreshKey=0 }: 
       <header className="ops-detail-heading">
         <div className="ops-detail-title">
           <h2 dir="ltr">#{formatOrderNumber(data.orderNumber)} · {data.currentLines.reduce((n,l)=>n+l.quantity,0)} {text('item(s)','صنف')} · {text('Car collection','استلام بالسيارة')}</h2>
-          <span className={`staff-status status-${staffStatus(data.status)}`}>{staffLabels[staffStatus(data.status)][lang]}</span>
+          <StatusBadge status={staffStatus(data.status)}>{staffLabels[staffStatus(data.status)][lang]}</StatusBadge>
         </div>
         <p className="ops-detail-sub">{[branchName,timingLine].filter(Boolean).join(' · ')}</p>
         {data.arrivedAt && <p className="ops-arrived-banner" role="status">{text('Customer has arrived for pickup', 'وصل العميل للاستلام')}</p>}
