@@ -25,6 +25,7 @@ import { Payments } from "./Payments";
 import { StaffPanel } from "./StaffPanel";
 import { CouponsPanel } from "./CouponsPanel";
 import { Activity } from "./Activity";
+import type { CouponOrderOpen } from "@/ordering/coupons/linked-order";
 import type { Role } from "@/cms/permissions";
 import { confirmDiscard } from "./Fields";
 import { useNotify } from "./Notices";
@@ -49,6 +50,7 @@ export function Admin({ initial, role, branchId }: { initial: MenuSnapshot; role
     return()=>{document.removeEventListener('keydown',keys);document.body.style.overflow=overflow;previous?.focus();};
   },[mobileNav]);
   const [orderIntent,setOrderIntent]=useState<OrderIntent&{key:number}>({key:0});
+  const [paymentIntent,setPaymentIntent]=useState<{orderId?:string;key:number}>({key:0});
   const labels:Record<string,[string,string,OpsIconName]>={Dashboard:['Dashboard','لوحة التحكم','dashboard'],Orders:['Orders','الطلبات المباشرة','orders'],History:['Order history','سجل الطلبات','history'],Payments:['Payments','المدفوعات','money'],Menu:['Menu','القائمة','menu'],Categories:['Categories','التصنيفات','categories'],Branches:['Branches','الفروع','branches'],Users:['Users','المستخدمون','users'],Coupons:['Coupons','القسائم','money'],Settings:['Settings','الإعدادات','settings'],Activity:['Activity','النشاط','activity']};
   const [unreadOrders, setUnreadOrders] = useState(0);
   const [snapshot, setSnapshot] = useState(initial);
@@ -77,8 +79,20 @@ export function Admin({ initial, role, branchId }: { initial: MenuSnapshot; role
   const { menu } = snapshot;
   const branchRows=configuredBranches(menu.branches);
   const selectedBranch=branchRows.find(b=>b.slug===branch);
-  function openOrders(intent:OrderIntent={},nextBranch?:string){if(!confirmDiscard())return;if(nextBranch!==undefined)setBranch(nextBranch);setOrderIntent(previous=>({...intent,key:previous.key+1}));setSection('Orders');}
-  function navigate(next:string){if(next===section){setMobileNav(false);return;}if(!confirmDiscard())return;setSection(next);setCreatingUser(false);setCreatingCoupon(false);setMobileNav(false);if(next==='Orders'||next==='History')setOrderIntent(previous=>({key:previous.key+1}));}
+  function openOrders(intent:OrderIntent={},nextBranch?:string){if(!confirmDiscard())return;if(nextBranch!==undefined)setBranch(nextBranch);setOrderIntent(previous=>({...intent,key:previous.key+1}));setSection(intent.view==='history'?'History':'Orders');}
+  function openCouponLinked(target:CouponOrderOpen){
+    if(!confirmDiscard())return;
+    if(target.section==='payments'){
+      setPaymentIntent(previous=>({orderId:target.orderId,key:previous.key+1}));
+      setSection('Payments');
+      return;
+    }
+    // Clear branch filter so a Downtown order is not hidden under Al Thumama.
+    setBranch('');
+    setOrderIntent(previous=>({orderId:target.orderId,view:target.view,key:previous.key+1}));
+    setSection(target.view==='history'?'History':'Orders');
+  }
+  function navigate(next:string){if(next===section){setMobileNav(false);return;}if(!confirmDiscard())return;setSection(next);setCreatingUser(false);setCreatingCoupon(false);setMobileNav(false);if(next==='Orders'||next==='History')setOrderIntent(previous=>({key:previous.key+1}));if(next==='Payments')setPaymentIntent(previous=>({key:previous.key+1}));}
   const categories = [...menu.categories].sort((a, b) => a.order - b.order);
   async function save(next: MenuData) {
     if (busy) throw new Error("Please wait for the current save.");
@@ -229,9 +243,9 @@ export function Admin({ initial, role, branchId }: { initial: MenuSnapshot; role
             />
           )}
           <Orders active={section === "Orders" || section === "History"} view={section==='History'?'history':'active'} branch={branch} intent={orderIntent} onUnread={setUnreadOrders} role={role} menu={menu} />
-          {role === "admin" && <Payments active={section === "Payments"} />}
+          {role === "admin" && <Payments active={section === "Payments"} intent={paymentIntent} />}
           {section === "Users" && role === "admin" && <StaffPanel menu={menu} creating={creatingUser} onCreating={setCreatingUser} />}
-          {section === "Coupons" && role === "admin" && <CouponsPanel creating={creatingCoupon} onCreating={setCreatingCoupon} />}
+          {section === "Coupons" && role === "admin" && <CouponsPanel creating={creatingCoupon} onCreating={setCreatingCoupon} onOpenLinked={openCouponLinked} />}
           {section === "Branches" && role === "admin" && <BranchEditor menu={menu} onSave={save} />}
           {section === "Activity" && <Activity />}
           {section === "Settings" && role === "admin" && (

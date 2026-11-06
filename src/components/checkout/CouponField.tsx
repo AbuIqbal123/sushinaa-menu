@@ -96,12 +96,29 @@ export function CouponField({
   }
 
   if (applied) {
-    return <div className="coupon-field">
-      <div className="coupon-applied">
-        <span dir="ltr">{applied.code}</span>
-        <button type="button" className="text-action" onClick={() => { setDraft(applied.code); setMessage(''); setOpen(true); onRemove(); }}>{text('Remove', 'إزالة')}</button>
+    return (
+      <div className="coupon-field coupon-field-applied" role="status" aria-live="polite">
+        <div className="coupon-applied">
+          <span className="coupon-applied-mark" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.14" />
+              <path d="m7.5 12.2 3 3.1 6-6.4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
+          <span className="coupon-applied-copy">
+            <strong className="coupon-applied-title">{text('Coupon applied', 'تم تطبيق القسيمة')}</strong>
+            <span className="coupon-applied-code" dir="ltr">{applied.code}</span>
+          </span>
+          <button
+            type="button"
+            className="text-action"
+            onClick={() => { setDraft(applied.code); setMessage(''); setOpen(true); onRemove(); }}
+          >
+            {text('Remove', 'إزالة')}
+          </button>
+        </div>
       </div>
-    </div>;
+    );
   }
 
   if (!open) {

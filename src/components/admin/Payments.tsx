@@ -126,7 +126,7 @@ function PaymentDetailDialog({
 }
 
 /** Admin-only ledger of online pickup payments (Sadad / mock). No refunds. */
-export function Payments({ active }: { active: boolean }) {
+export function Payments({ active, intent }: { active: boolean; intent?: { orderId?: string; key?: number } }) {
   const router = useRouter();
   const [status, setStatus] = useState('');
   const [branch, setBranch] = useState('');
@@ -172,6 +172,23 @@ export function Payments({ active }: { active: boolean }) {
       setBusy(false);
     }
   }
+
+  useEffect(() => {
+    if (!active || !intent?.orderId) return;
+    let cancelled = false;
+    const orderId = intent.orderId;
+    void fetch(`/api/admin/payments/${orderId}`, { cache: 'no-store' })
+      .then(async (response) => {
+        if (cancelled) return;
+        if (response.status === 401) { router.push('/admin/login'); return; }
+        const body = await response.json() as Detail & { code?: string };
+        if (cancelled) return;
+        if (!response.ok) { setError(body.code || 'LOAD_FAILED'); return; }
+        setDetail(body);
+      })
+      .catch(() => { if (!cancelled) setError('LOAD_FAILED'); });
+    return () => { cancelled = true; };
+  }, [active, intent?.orderId, intent?.key, router]);
 
   if (!active) return null;
 

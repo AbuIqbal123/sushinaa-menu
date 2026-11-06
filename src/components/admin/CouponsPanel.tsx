@@ -1,8 +1,10 @@
 'use client';
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import type { Coupon, CouponKind, CouponStatus } from '@/ordering/coupons/types';
+import { couponOrderOpen, type CouponOrderOpen } from '@/ordering/coupons/linked-order';
 import { formatMinor } from '@/lib/money';
 import { formatQatarDateTime } from '@/lib/datetime';
+import { formatOrderNumber } from '@/ordering/order-number';
 import { useLocale } from '@/i18n/locale';
 import { useModal } from './Fields';
 import { useNotify } from './Notices';
@@ -66,7 +68,15 @@ function couponErrorMessage(error: string, text: (en: string, ar: string) => str
   return text('Could not save the coupon.', 'تعذّر حفظ القسيمة.');
 }
 
-export function CouponsPanel({ creating, onCreating }: { creating: boolean; onCreating: (open: boolean) => void }) {
+export function CouponsPanel({
+  creating,
+  onCreating,
+  onOpenLinked,
+}: {
+  creating: boolean;
+  onCreating: (open: boolean) => void;
+  onOpenLinked: (target: CouponOrderOpen) => void;
+}) {
   const { lang } = useLocale();
   const text = (en: string, ar: string) => (lang === 'ar' ? ar : en);
   const notify = useNotify();
@@ -92,10 +102,28 @@ export function CouponsPanel({ creating, onCreating }: { creating: boolean; onCr
     return () => { live = false; };
   }, []);
 
-  function linkedOrderId(row: Coupon) {
-    if (row.status === 'held') return row.heldOrderId ?? '';
-    if (row.status === 'redeemed') return row.redeemedOrderId ?? '';
-    return '';
+  function linkedOpen(row: Coupon): CouponOrderOpen | null {
+    const orderId = row.redeemedOrderId || row.heldOrderId;
+    if (!orderId || !row.orderStatus || !row.orderPaymentMethod) return null;
+    return couponOrderOpen({
+      orderId,
+      status: row.orderStatus,
+      paymentMethod: row.orderPaymentMethod,
+      paidAt: row.orderPaidAt,
+    });
+  }
+
+  function linkedOrderCell(row: Coupon) {
+    if (row.status !== 'held' && row.status !== 'redeemed') return '—';
+    const kitchen = row.orderNumber != null ? `#${formatOrderNumber(row.orderNumber)}` : null;
+    const txn = row.paymentReference;
+    if (!kitchen && !txn) return '—';
+    return (
+      <>
+        <span>{kitchen ?? '—'}</span>
+        {txn ? <small dir="ltr">{text('Sadad', 'سداد')} {txn}</small> : null}
+      </>
+    );
   }
 
   async function postCoupon(id: string, body: Record<string, string>, ok: string) {
@@ -151,8 +179,10 @@ export function CouponsPanel({ creating, onCreating }: { creating: boolean; onCr
             {rows.length === 0 && (
               <tr><td colSpan={6}>{text('No coupons yet.', 'لا توجد قسائم بعد.')}</td></tr>
             )}
-            {rows.map((row) => (
-              <tr key={row.id} data-disabled={row.status === 'disabled' || row.status === 'redeemed' || undefined}>
+            {rows.map((row) => {
+              const open = linkedOpen(row);
+              return (
+              <tr key={row.id} data-disabled={row.status === 'disabled' || undefined}>
                 <td dir="ltr">{shownCode(row.code)}</td>
                 <td dir="ltr">{offer(row)}</td>
                 <td>
@@ -161,7 +191,7 @@ export function CouponsPanel({ creating, onCreating }: { creating: boolean; onCr
                   </StatusBadge>
                 </td>
                 <td dir="ltr">{formatQatarDateTime(row.expiresAt)}</td>
-                <td dir="ltr">{linkedOrderId(row)}</td>
+                <td className="staff-customer" dir="ltr">{linkedOrderCell(row)}</td>
                 <td className="users-access">
                   {row.status === 'available' && (
                     <button type="button" className="danger" disabled={busy} onClick={() => void disable(row.id)}>
@@ -173,9 +203,20 @@ export function CouponsPanel({ creating, onCreating }: { creating: boolean; onCr
                       {text('Release', 'تحرير')}
                     </button>
                   )}
+                  {open?.section === 'orders' && (
+                    <button type="button" disabled={busy} onClick={() => onOpenLinked(open)}>
+                      {text('Open order', 'فتح الطلب')}
+                    </button>
+                  )}
+                  {open?.section === 'payments' && (
+                    <button type="button" disabled={busy} onClick={() => onOpenLinked(open)}>
+                      {text('Open payment', 'فتح الدفع')}
+                    </button>
+                  )}
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </section>

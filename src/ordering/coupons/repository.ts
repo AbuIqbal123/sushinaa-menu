@@ -3,6 +3,7 @@ import { db, initDb } from '@/cms/db';
 import type { DbRow, SqlStatement } from '@/cms/sql';
 import { validateManualCode } from './code';
 import { applyOrderDiscount, couponOffer } from './discount';
+import { statuses, type OrderStatus, type PaymentMethod } from '@/ordering/status';
 import {
   CouponError,
   isCouponKind,
@@ -11,6 +12,8 @@ import {
   type CouponSnapshot,
   type CreateCouponInput,
 } from './types';
+
+const PAYMENT_METHODS = ['pay_at_pickup', 'mock', 'sadad'] as const;
 
 export const HOLD_TTL_MS = 2 * 60 * 60 * 1000;
 
@@ -42,6 +45,23 @@ function integer(row: DbRow, key: string): number {
   return number;
 }
 
+function nullableInteger(row: DbRow, key: string): number | null {
+  if (!(key in row) || row[key] == null) return null;
+  return integer(row, key);
+}
+
+function nullableOrderStatus(row: DbRow, key: string): OrderStatus | null {
+  const value = nullableText(row, key);
+  if (!value) return null;
+  return (statuses as readonly string[]).includes(value) ? value as OrderStatus : null;
+}
+
+function nullablePaymentMethod(row: DbRow, key: string): PaymentMethod | null {
+  const value = nullableText(row, key);
+  if (!value) return null;
+  return (PAYMENT_METHODS as readonly string[]).includes(value) ? value as PaymentMethod : null;
+}
+
 function couponFrom(row: DbRow): Coupon {
   const kind = text(row, 'kind');
   const status = text(row, 'status');
@@ -57,6 +77,11 @@ function couponFrom(row: DbRow): Coupon {
     heldAt: nullableText(row, 'held_at'),
     redeemedOrderId: nullableText(row, 'redeemed_order_id'),
     redeemedAt: nullableText(row, 'redeemed_at'),
+    orderNumber: nullableInteger(row, 'linked_order_number'),
+    orderStatus: nullableOrderStatus(row, 'linked_order_status'),
+    orderPaymentMethod: nullablePaymentMethod(row, 'linked_order_payment_method'),
+    orderPaidAt: nullableText(row, 'linked_order_paid_at'),
+    paymentReference: nullableText(row, 'payment_reference'),
     disabledAt: nullableText(row, 'disabled_at'),
     createdAt: text(row, 'created_at'),
     updatedAt: text(row, 'updated_at'),
@@ -140,7 +165,31 @@ export async function createCoupon(input: CreateCouponInput, now = new Date()): 
 
 export async function listCoupons(): Promise<Coupon[]> {
   await initDb();
-  const result = await db.execute(`SELECT ${COLUMNS} FROM coupons ORDER BY created_at DESC, id DESC`);
+  // Kitchen number + Sadad txn for staff; coupons still store the SU- id used as Sadad ORDER_ID.
+  const couponCols = COLUMNS.split(', ').map((column) => `c.${column}`).join(', ');
+  const result = await db.execute(`
+    SELECT ${couponCols},
+      o.order_number AS linked_order_number,
+      o.status AS linked_order_status,
+      o.payment_method AS linked_order_payment_method,
+      o.paid_at AS linked_order_paid_at,
+      (
+        SELECT pe.provider_reference
+        FROM payment_events pe
+        WHERE pe.order_id = COALESCE(c.redeemed_order_id, c.held_order_id)
+          AND pe.provider = 'sadad'
+          AND pe.our_status = 'paid'
+          AND pe.provider_reference IS NOT NULL
+          AND pe.provider_reference != ''
+          AND pe.provider_reference NOT LIKE 'sadad-callback:%'
+          AND pe.provider_reference NOT LIKE 'sadad-webhook:%'
+        ORDER BY pe.recorded_at DESC
+        LIMIT 1
+      ) AS payment_reference
+    FROM coupons c
+    LEFT JOIN orders o ON o.id = COALESCE(c.redeemed_order_id, c.held_order_id)
+    ORDER BY c.created_at DESC, c.id DESC
+  `);
   return result.rows.map(couponFrom);
 }
 

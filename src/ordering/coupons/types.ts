@@ -1,3 +1,5 @@
+import type { OrderStatus, PaymentMethod } from '@/ordering/status';
+
 export const COUPON_KINDS = ['percent', 'amount'] as const;
 export type CouponKind = (typeof COUPON_KINDS)[number];
 
@@ -33,6 +35,14 @@ export type Coupon = {
   heldAt: string | null;
   redeemedOrderId: string | null;
   redeemedAt: string | null;
+  /** Kitchen order number when held/redeemed; null if unknown or unused. */
+  orderNumber: number | null;
+  /** Linked order fields for staff routing; null when unused or order missing. */
+  orderStatus: OrderStatus | null;
+  orderPaymentMethod: PaymentMethod | null;
+  orderPaidAt: string | null;
+  /** Sadad transaction_number when paid via gateway; null for mock/pickup/unpaid. */
+  paymentReference: string | null;
   disabledAt: string | null;
   createdAt: string;
   updatedAt: string;
