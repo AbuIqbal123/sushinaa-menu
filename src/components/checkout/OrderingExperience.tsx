@@ -23,11 +23,12 @@ import { carBrandName, findCarBrand } from '@/ordering/car-brands';
 import { OrderProgress, orderPhase, orderTrackingLabel } from './OrderProgress';
 import { CouponField, knownCouponMessage, type AppliedCoupon } from './CouponField';
 import { isTerminalCustomerStatus, shouldResumeCustomerReceipt } from '@/ordering/customer-tracking';
+import { paymentFailCopy, paymentFailNoticeKind, type PaymentFailNoticeKind } from '@/ordering/payment-fail-notice';
 
 const emptyCustomer: Customer = { name: '', phone: '', plate: 'Q', brand: '', colour: '', car: '', instructions: '' };
 type Step = 'menu' | 'details' | 'review' | 'payment' | 'receipt';
 type PaymentMethodUi = 'mock' | 'pay_at_pickup' | 'sadad';
-type Receipt = { id: string; orderNumber?: number | null; paymentStatus: PaymentStatus; totalMinor: number; paymentMethod: PaymentMethodUi; status: string; arrivedAt?: string | null; updatedAt?: string | null; details?: CustomerReceiptDetails };
+type Receipt = { id: string; orderNumber?: number | null; paymentStatus: PaymentStatus; totalMinor: number; paymentMethod: PaymentMethodUi; status: string; arrivedAt?: string | null; updatedAt?: string | null; details?: CustomerReceiptDetails; failedPaymentCount?: number };
 export function OrderingExperience({
   initialNow,
   branchId,
@@ -74,6 +75,7 @@ function Experience({
   const [customer, setCustomer] = useState<Customer>(emptyCustomer);
   const [errors, setErrors] = useState<string[]>([]);
   const [error, setError] = useState('');
+  const [payFailNotice, setPayFailNotice] = useState<PaymentFailNoticeKind | null>(null);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const attempt = useRef<{ body: string; key: string } | null>(null);
@@ -127,12 +129,6 @@ function Experience({
         window.history.replaceState({}, '', url.pathname + url.search);
       }
     } catch { /* Keep recovery via localStorage. */ }
-    let failTimer: number | undefined;
-    if (payFailed) {
-      failTimer = window.setTimeout(() => {
-        setError(text('Payment was not completed. Your pickup details are still here. Try again when ready.', 'لم يكتمل الدفع. بيانات الاستلام ما زالت هنا. حاول مجدداً عندما تكون جاهزاً.'));
-      }, 0);
-    }
     const storedFromPay = paidId;
     let stored: string | null = storedFromPay;
     let cancel = false;
@@ -146,12 +142,12 @@ function Experience({
     if (!stored) {
       try { stored = localStorage.getItem(orderKey) || sessionStorage.getItem(orderKey); } catch {
         finish(returnMode ? (payFailed ? 'review' : 'menu') : undefined);
-        return () => { cancel = true; if (failTimer !== undefined) window.clearTimeout(failTimer); };
+        return () => { cancel = true; };
       }
     }
     if (!stored || !/^SU-[0-9a-f-]{36}$/.test(stored)) {
       finish(returnMode ? (payFailed ? 'review' : 'menu') : undefined);
-      return () => { cancel = true; if (failTimer !== undefined) window.clearTimeout(failTimer); };
+      return () => { cancel = true; };
     }
     void fetch(`/api/orders/${stored}`, { cache: 'no-store' }).then(async (response) => {
       if (cancel) return;
@@ -189,6 +185,9 @@ function Experience({
             subtotalMinor: saved.totalMinor + held.discountMinor,
           });
         }
+        if (payFailed) {
+          setPayFailNotice(paymentFailNoticeKind(Number(saved.failedPaymentCount ?? 0)));
+        }
         if (payFailed || returnMode) setStep('review');
       }
       // Clear recovering in this turn so a Strict Mode / HMR remount cannot leave
@@ -199,7 +198,6 @@ function Experience({
     });
     return () => {
       cancel = true;
-      if (failTimer !== undefined) window.clearTimeout(failTimer);
     };
   }, []);
   useEffect(() => {
@@ -324,6 +322,8 @@ function Experience({
     && activeReceipt.paymentStatus === 'awaiting_payment'
     && (activeReceipt.paymentMethod === 'mock' || activeReceipt.paymentMethod === 'sadad'),
   );
+  const payRetryBlocked = payFailNotice === 'later';
+  const payFailCopyShown = payFailNotice ? paymentFailCopy(payFailNotice, text) : null;
   const menuStage = branch ? <div key="menu-stage" className={`app-lock ordering-menu-stage${activeStep !== 'menu' ? ' is-inactive' : ''}`} inert={activeStep !== 'menu'} aria-hidden={activeStep !== 'menu' ? true : undefined}><MenuFeed branch={branchName} inactive={activeStep !== 'menu'} onPickup={() => go('details')}
     orderTracking={confirmed && activeReceipt ? <button type="button" className={`order-tracker is-${orderPhase(activeReceipt.status)}`} aria-live="polite" onClick={() => go('receipt')}>
       <span className="order-tracker-label">{orderTrackingLabel(activeReceipt.status, lang)}</span>{activeReceipt.orderNumber != null && <span className="order-tracker-number" dir="ltr">#{formatOrderNumber(activeReceipt.orderNumber)}</span>}
@@ -402,6 +402,12 @@ function Experience({
             <h1 ref={heading} tabIndex={-1}>{title}</h1>
             {(viewStep === 'details' || viewStep === 'review') && <p className="checkout-branch">{text('Pickup', 'استلام')} · <strong>{branchName}</strong></p>}
             {viewStep !== 'payment' && viewStep !== 'receipt' && closedNotice}
+            {viewStep === 'review' && payFailCopyShown && (
+              <div className="checkout-notice" role="status">
+                <strong>{payFailCopyShown.title}</strong>
+                <p>{payFailCopyShown.body}</p>
+              </div>
+            )}
             {viewStep !== 'receipt' && cart.unavailableCount > 0 && <div className="checkout-notice" role="alert"><strong>{text('Your basket needs an update', 'تحتاج سلتك إلى تحديث')}</strong><p>{text(`${cart.unavailableCount} serving(s) or their choices are no longer available. Remove them before continuing.`, `${cart.unavailableCount} حصة أو خياراتها لم تعد متوفرة. احذفها قبل المتابعة.`)}</p><button type="button" className="text-action" onClick={cart.discardUnavailable}>{text('Remove unavailable selections', 'حذف الخيارات غير المتوفرة')}</button></div>}
             {viewStep === 'details' && <form id="collection-details" onSubmit={validateDetails} noValidate>
               <div className="checkout-fields">{(['name', 'phone', 'brand', 'plate'] as const).map(key => {
@@ -494,12 +500,12 @@ function Experience({
             {error && <div className="checkout-error" role="alert"><p>{error}</p><button className="text-action" type="button" onClick={() => { go('menu'); router.refresh(); }}>{text('Refresh menu', 'تحديث القائمة')}</button></div>}
           </div>
           {viewStep === 'details' && <div className="checkout-step-action"><button type="submit" form="collection-details" className="checkout-primary" disabled={!count || cart.unavailableCount > 0}>{text('Review order', 'مراجعة الطلب')}<Forward /></button></div>}
-          {viewStep === 'review' && <div className="checkout-step-action"><button type="button" className="checkout-primary" disabled={busy || redirecting || couponPending || !branchOpen || (!resumePay && (!count || cart.unavailableCount > 0))} onClick={() => {
-            if (!branchOpen) return;
+          {viewStep === 'review' && <div className="checkout-step-action"><button type="button" className="checkout-primary" disabled={busy || redirecting || couponPending || !branchOpen || payRetryBlocked || (!resumePay && (!count || cart.unavailableCount > 0))} onClick={() => {
+            if (!branchOpen || payRetryBlocked) return;
             if (resumePay && activeReceipt?.paymentMethod === 'sadad') void beginSadadPay(activeReceipt.id);
             else if (resumePay) go('payment');
             else void checkout();
-          }}>{!branchOpen ? text('Order when the branch opens', 'اطلب عندما يفتح الفرع') : redirecting ? text('Redirecting…', 'جارٍ التحويل…') : busy ? text('Checking…', 'جارٍ التحقق…') : resumePay || paymentMethod !== 'pay_at_pickup' ? text('Continue to payment', 'المتابعة إلى الدفع') : text('Place order · pay at pickup', 'تأكيد الطلب · الدفع عند الاستلام')}{branchOpen && !redirecting && !busy && <Forward />}</button></div>}
+          }}>{!branchOpen ? text('Order when the branch opens', 'اطلب عندما يفتح الفرع') : payRetryBlocked ? text('Try again later', 'حاول لاحقاً') : redirecting ? text('Redirecting…', 'جارٍ التحويل…') : busy ? text('Checking…', 'جارٍ التحقق…') : resumePay || paymentMethod !== 'pay_at_pickup' ? text('Continue to payment', 'المتابعة إلى الدفع') : text('Place order · pay at pickup', 'تأكيد الطلب · الدفع عند الاستلام')}{branchOpen && !redirecting && !busy && !payRetryBlocked && <Forward />}</button></div>}
           {viewStep === 'receipt' && <div className="checkout-step-action"><button type="button" className="checkout-primary" onClick={() => go('menu')}><span><span className="back-arrow" aria-hidden="true">←</span> {text('Back to menu', 'العودة للقائمة')}</span></button></div>}
         </main>
       </>

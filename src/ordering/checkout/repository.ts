@@ -82,7 +82,12 @@ export async function customerOrder(id: string, session: string | null) {
   const details: CustomerReceiptDetails = { branchId: row.branch_id as CustomerReceiptDetails['branchId'],
     customer: snapshot.customer ?? null, lines, discountMinor, coupon,
   };
-  return { ...customerResult(row), details };
+  const failedPaymentCount = Number((await db.execute({
+    sql: `SELECT COUNT(*) AS n FROM payment_events
+      WHERE order_id=? AND kind IN ('callback','webhook') AND our_status='failed'`,
+    args: [id],
+  })).rows[0]?.n ?? 0);
+  return { ...customerResult(row), details, failedPaymentCount };
 }
 export async function persistPendingOrder(session: string, key: string, requestHash: string, snapshot: OrderSnapshot, revision: number, method: PaymentMethod = 'mock') {
   await initOrders();
