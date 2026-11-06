@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { callbackHost, paymentLog, sadadCallbackFields } from '../src/ordering/payment-log';
+import { callbackHost, paymentLog, sadadCallbackFields, sadadWebhookFields } from '../src/ordering/payment-log';
 
 test('callbackHost extracts host without leaking path', () => {
   assert.equal(callbackHost('https://test-dev-abu-iqbal-projects.vercel.app/api/payments/callback'), 'test-dev-abu-iqbal-projects.vercel.app');
@@ -32,11 +32,24 @@ test('sadadCallbackFields keeps short gateway text and no other keys', () => {
     checksumhash: 'secret-hash',
     secret: 'sadad-secret',
   });
-  assert.deepEqual(Object.keys(fields).sort(), ['RESPCODE', 'RESPMSG', 'STATUS']);
-  assert.equal(fields.RESPCODE, '2');
-  assert.equal(fields.STATUS, 'TXN_FAILURE');
-  assert.equal(fields.RESPMSG?.length, 80);
-  assert.equal(fields.RESPMSG?.startsWith('Card declined'), true);
+  assert.deepEqual(Object.keys(fields).sort(), ['gatewayStatus', 'respCode', 'respMsg']);
+  assert.equal(fields.respCode, '2');
+  assert.equal(fields.gatewayStatus, 'TXN_FAILURE');
+  assert.equal(fields.respMsg?.length, 80);
+  assert.equal(fields.respMsg?.startsWith('Card declined'), true);
   assert.equal(JSON.stringify(fields).includes('secret'), false);
-  assert.equal(sadadCallbackFields({ RESPMSG: ' \n\t ' }).RESPMSG, undefined);
+  assert.equal(sadadCallbackFields({ RESPMSG: ' \n\t ' }).respMsg, undefined);
+  assert.equal(sadadCallbackFields({ transaction_status: '2' }).gatewayStatus, '2');
+});
+
+test('sadadWebhookFields maps message and transactionStatus', () => {
+  const fields = sadadWebhookFields({
+    message: 'failed',
+    transactionStatus: '2',
+    checksumhash: 'secret-hash',
+  });
+  assert.deepEqual(Object.keys(fields).sort(), ['gatewayStatus', 'respMsg']);
+  assert.equal(fields.gatewayStatus, '2');
+  assert.equal(fields.respMsg, 'failed');
+  assert.equal(JSON.stringify(fields).includes('secret'), false);
 });

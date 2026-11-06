@@ -73,7 +73,7 @@ Runtime logs (Vercel → test-dev → Runtime Logs) emit one JSON line per payme
 | `callback.received` / `callback.verify_failed` / `callback.applied` | Browser return |
 | `webhook.received` / `webhook.verify_failed` / `webhook.applied` | Server notify |
 
-Never logged: secret key, checksum/signature values, full phone, card data. Durable trail remains `payment_events` + admin Payments.
+Callback and webhook lines include clipped gateway fields (`respCode`, `gatewayStatus`, `respMsg`) so a failed sandbox pay shows Sadad’s reason next to `outcome` / `settled` / `returnKind`. Never logged: secret key, checksum/signature values, full phone, card data. Durable trail remains `payment_events` + admin Payments.
 
 Payment logs use `console.warn` / `console.error` (eslint-safe). `next.config.ts` keeps those methods in production builds so they reach Vercel; plain `console.log` is still stripped.
 

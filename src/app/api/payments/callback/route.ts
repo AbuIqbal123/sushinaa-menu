@@ -78,6 +78,7 @@ async function handleCallback(request: Request, method: 'GET' | 'POST') {
 
     const body = await parseBody(request);
     const contentType = request.headers.get('content-type') || '';
+    const gatewayNote = sadadCallbackFields(body);
     paymentLog('info', {
       event: 'callback.received',
       fieldNames: Object.keys(body).sort(),
@@ -85,7 +86,7 @@ async function handleCallback(request: Request, method: 'GET' | 'POST') {
       outcome: body.transaction_status || body.STATUS || body.RESPCODE || undefined,
       reason: contentType ? `content-type:${contentType.split(';')[0]}` : 'content-type:missing',
       hasChecksum: Boolean(body.checksumhash),
-      ...sadadCallbackFields(body),
+      ...gatewayNote,
     });
 
     let fact;
@@ -98,6 +99,7 @@ async function handleCallback(request: Request, method: 'GET' | 'POST') {
         reason,
         orderId: body.ORDERID || body.website_ref_no || undefined,
         fieldNames: Object.keys(body).sort(),
+        ...gatewayNote,
       });
       const orderId = body.ORDERID || body.website_ref_no;
       if (orderId) {
@@ -122,8 +124,11 @@ async function handleCallback(request: Request, method: 'GET' | 'POST') {
       provider: fact.provider,
       outcome: fact.outcome,
       amountMinor: fact.amountMinor,
-      settled: returnKind === 'paid',
+      settled: 'settled' in result ? Boolean(result.settled) : false,
+      alreadyPaid: 'alreadyPaid' in result ? Boolean(result.alreadyPaid) : undefined,
+      returnKind,
       reason: 'reason' in result ? String(result.reason) : undefined,
+      ...gatewayNote,
     });
 
     await initOrders();
