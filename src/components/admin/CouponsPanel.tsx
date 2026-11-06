@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import type { Coupon, CouponKind, CouponStatus } from '@/ordering/coupons/types';
+import { couponOrderOpen, type CouponOrderOpen } from '@/ordering/coupons/linked-order';
 import { formatMinor } from '@/lib/money';
 import { formatQatarDateTime } from '@/lib/datetime';
 import { formatOrderNumber } from '@/ordering/order-number';
@@ -70,11 +71,11 @@ function couponErrorMessage(error: string, text: (en: string, ar: string) => str
 export function CouponsPanel({
   creating,
   onCreating,
-  onOpenOrder,
+  onOpenLinked,
 }: {
   creating: boolean;
   onCreating: (open: boolean) => void;
-  onOpenOrder: (orderId: string, view: 'active' | 'history') => void;
+  onOpenLinked: (target: CouponOrderOpen) => void;
 }) {
   const { lang } = useLocale();
   const text = (en: string, ar: string) => (lang === 'ar' ? ar : en);
@@ -101,8 +102,15 @@ export function CouponsPanel({
     return () => { live = false; };
   }, []);
 
-  function linkedOrderId(row: Coupon) {
-    return row.redeemedOrderId || row.heldOrderId;
+  function linkedOpen(row: Coupon): CouponOrderOpen | null {
+    const orderId = row.redeemedOrderId || row.heldOrderId;
+    if (!orderId || !row.orderStatus || !row.orderPaymentMethod) return null;
+    return couponOrderOpen({
+      orderId,
+      status: row.orderStatus,
+      paymentMethod: row.orderPaymentMethod,
+      paidAt: row.orderPaidAt,
+    });
   }
 
   function linkedOrderCell(row: Coupon) {
@@ -171,8 +179,10 @@ export function CouponsPanel({
             {rows.length === 0 && (
               <tr><td colSpan={6}>{text('No coupons yet.', 'لا توجد قسائم بعد.')}</td></tr>
             )}
-            {rows.map((row) => (
-              <tr key={row.id} data-disabled={row.status === 'disabled' || row.status === 'redeemed' || undefined}>
+            {rows.map((row) => {
+              const open = linkedOpen(row);
+              return (
+              <tr key={row.id} data-disabled={row.status === 'disabled' || undefined}>
                 <td dir="ltr">{shownCode(row.code)}</td>
                 <td dir="ltr">{offer(row)}</td>
                 <td>
@@ -189,28 +199,24 @@ export function CouponsPanel({
                     </button>
                   )}
                   {row.status === 'held' && (
-                    <>
-                      <button type="button" disabled={busy} onClick={() => void release(row.id)}>
-                        {text('Release', 'تحرير')}
-                      </button>
-                      {linkedOrderId(row) && (
-                        <button type="button" disabled={busy} onClick={() => onOpenOrder(linkedOrderId(row)!, 'active')}>
-                          {text('Open order', 'فتح الطلب')}
-                        </button>
-                      )}
-                    </>
+                    <button type="button" disabled={busy} onClick={() => void release(row.id)}>
+                      {text('Release', 'تحرير')}
+                    </button>
                   )}
-                  {row.status === 'redeemed' && linkedOrderId(row) && (
-                    <button type="button" disabled={busy} onClick={() => onOpenOrder(linkedOrderId(row)!, 'history')}>
+                  {open?.section === 'orders' && (
+                    <button type="button" disabled={busy} onClick={() => onOpenLinked(open)}>
                       {text('Open order', 'فتح الطلب')}
                     </button>
                   )}
-                  {row.status === 'disabled' && (
-                    <span className="users-access-flat" aria-hidden="true">···</span>
+                  {open?.section === 'payments' && (
+                    <button type="button" disabled={busy} onClick={() => onOpenLinked(open)}>
+                      {text('Open payment', 'فتح الدفع')}
+                    </button>
                   )}
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </section>
