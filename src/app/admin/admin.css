@@ -808,6 +808,10 @@
 .status-paid { background:#def4e6; color:#216c45; }
 .status-failed { background:#fdecee; color:#9f2432; }
 .status-expired { background:#f0eeea; color:#7b7368; }
+.status-available { background:#def4e6; color:#216c45; }
+.status-held { background:#fff1d6; color:#805d10; }
+.status-redeemed { background:#e5f2f4; color:#0f5f6b; }
+.status-disabled { background:#f0eeea; color:#7b7368; }
 .kitchen-sheet { display: grid; grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr); gap: 28px 48px; align-items: start; margin-top: 8px; }
 .kitchen-sheet h3 { margin: 0 0 12px; font-size: 13px; font-weight: 550; color: var(--muted); }
 .kitchen-who.staff-detail-head { display: block; margin: 0; }

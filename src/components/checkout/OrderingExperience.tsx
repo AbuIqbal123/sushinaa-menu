@@ -199,8 +199,6 @@ function Experience({
     if (!['receipt', 'menu'].includes(step) || !receipt?.id) return;
     if (!shouldResumeCustomerReceipt(receipt)) {
       forgetStoredOrder();
-      if (step === 'receipt') setStep('menu');
-      setReceipt(null);
       return;
     }
     try { localStorage.setItem(orderKey, receipt.id); } catch { /* Keep tracking in memory. */ }
@@ -309,17 +307,19 @@ function Experience({
     finally { setBusy(false); busyRef.current = false; }
   }
   const branchName = branch ? text(branch.name, branch.nameAr) : '';
-  const confirmed = receipt && (receipt.paymentStatus === 'paid' || receipt.paymentMethod === 'pay_at_pickup');
+  const activeReceipt = receipt && shouldResumeCustomerReceipt(receipt) ? receipt : null;
+  const activeStep = step === 'receipt' && !activeReceipt ? 'menu' : step;
+  const confirmed = activeReceipt && (activeReceipt.paymentStatus === 'paid' || activeReceipt.paymentMethod === 'pay_at_pickup');
   const resumePay = Boolean(
-    receipt
-    && receipt.paymentStatus === 'awaiting_payment'
-    && (receipt.paymentMethod === 'mock' || receipt.paymentMethod === 'sadad'),
+    activeReceipt
+    && activeReceipt.paymentStatus === 'awaiting_payment'
+    && (activeReceipt.paymentMethod === 'mock' || activeReceipt.paymentMethod === 'sadad'),
   );
-  const menuStage = branch ? <div key="menu-stage" className={`app-lock ordering-menu-stage${step !== 'menu' ? ' is-inactive' : ''}`} inert={step !== 'menu'} aria-hidden={step !== 'menu' ? true : undefined}><MenuFeed branch={branchName} inactive={step !== 'menu'} onPickup={() => go('details')}
-    orderTracking={confirmed ? <button type="button" className={`order-tracker is-${orderPhase(receipt.status)}`} aria-live="polite" onClick={() => go('receipt')}>
-      <span className="order-tracker-label">{orderTrackingLabel(receipt.status, lang)}</span>{receipt.orderNumber != null && <span className="order-tracker-number" dir="ltr">#{formatOrderNumber(receipt.orderNumber)}</span>}
-    </button> : resumePay && receipt ? <button type="button" className="order-tracker is-awaiting" aria-live="polite" onClick={() => go('review')}>
-      <span className="order-tracker-label">{text('Finish payment', 'أكمل الدفع')}</span>{receipt.orderNumber != null && <span className="order-tracker-number" dir="ltr">#{formatOrderNumber(receipt.orderNumber)}</span>}
+  const menuStage = branch ? <div key="menu-stage" className={`app-lock ordering-menu-stage${activeStep !== 'menu' ? ' is-inactive' : ''}`} inert={activeStep !== 'menu'} aria-hidden={activeStep !== 'menu' ? true : undefined}><MenuFeed branch={branchName} inactive={activeStep !== 'menu'} onPickup={() => go('details')}
+    orderTracking={confirmed && activeReceipt ? <button type="button" className={`order-tracker is-${orderPhase(activeReceipt.status)}`} aria-live="polite" onClick={() => go('receipt')}>
+      <span className="order-tracker-label">{orderTrackingLabel(activeReceipt.status, lang)}</span>{activeReceipt.orderNumber != null && <span className="order-tracker-number" dir="ltr">#{formatOrderNumber(activeReceipt.orderNumber)}</span>}
+    </button> : resumePay && activeReceipt ? <button type="button" className="order-tracker is-awaiting" aria-live="polite" onClick={() => go('review')}>
+      <span className="order-tracker-label">{text('Finish payment', 'أكمل الدفع')}</span>{activeReceipt.orderNumber != null && <span className="order-tracker-number" dir="ltr">#{formatOrderNumber(activeReceipt.orderNumber)}</span>}
     </button> : undefined} /></div> : null;
   if (recovering) {
     return (
@@ -330,17 +330,17 @@ function Experience({
       </div>
     );
   }
-  if (step === 'menu') return <>{menuStage}</>;
-  const receiptCustomer = receipt?.details ? receipt.details.customer ?? emptyCustomer : customer;
-  const receiptBranch = branches.find(b => b.slug === receipt?.details?.branchId) ?? branch;
+  if (activeStep === 'menu') return <>{menuStage}</>;
+  const receiptCustomer = activeReceipt?.details ? activeReceipt.details.customer ?? emptyCustomer : customer;
+  const receiptBranch = branches.find(b => b.slug === activeReceipt?.details?.branchId) ?? branch;
   const receiptBranchName = receiptBranch ? text(receiptBranch.name, receiptBranch.nameAr) : branchName;
-  const receiptLines = receipt?.details?.lines.map(line => ({ key: line.id, displayName: pickName(line, lang),
+  const receiptLines = activeReceipt?.details?.lines.map(line => ({ key: line.id, displayName: pickName(line, lang),
     meta: line.kind ? selectionLabel({ ...line, kind: line.kind }, line.selection, lang, t) : '',
     note: line.note, qty: line.quantity, lineTotal: line.totalMinor / 100,
   })) ?? cart.lines;
-  const title = step === 'details' ? text('Collection details', 'بيانات الاستلام')
-    : step === 'review' ? text('Review your order', 'راجع طلبك')
-    : step === 'receipt' ? text('Your order', 'طلبك') : text('Payment', 'الدفع');
+  const title = activeStep === 'details' ? text('Collection details', 'بيانات الاستلام')
+    : activeStep === 'review' ? text('Review your order', 'راجع طلبك')
+    : activeStep === 'receipt' ? text('Your order', 'طلبك') : text('Payment', 'الدفع');
   const count = cart.itemCount;
   const subtotalMinor = Math.round(cart.totalQar * 100);
   const couponQuote = appliedCoupon?.subtotalMinor === subtotalMinor ? appliedCoupon : null;
@@ -367,35 +367,35 @@ function Experience({
       <div className="customer-fold-body"><p className="order-who"><strong>{customer.name}</strong><span dir="ltr" className="review-phone">{displayPhone(customer.phone)}</span></p><div className="vehicle-pair"><QatarPlate plate={customer.plate} /><p className="review-vehicle"><CarBrandLogo brand={findCarBrand(customer.brand)} /><span>{[customer.colour, carBrandName(customer.brand, lang)].filter(Boolean).join(' · ')}</span></p></div>{customer.instructions && <p className="checkout-note">{customer.instructions}</p>}</div>
     </details>
   </>;
-  if (step === 'payment' && receipt && receipt.paymentMethod === 'mock') return <>{menuStage}<MockSadadGateway amount={money(receipt.totalMinor)} lang={lang} onBack={() => go('review')} onComplete={() => go('receipt')} onPay={async () => {
-    const response = await fetch(`/api/orders/${receipt.id}/mock-pay`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+  if (activeStep === 'payment' && activeReceipt && activeReceipt.paymentMethod === 'mock') return <>{menuStage}<MockSadadGateway amount={money(activeReceipt.totalMinor)} lang={lang} onBack={() => go('review')} onComplete={() => go('receipt')} onPay={async () => {
+    const response = await fetch(`/api/orders/${activeReceipt.id}/mock-pay`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
     const result = await response.json();
     if (!response.ok || result.paymentStatus !== 'paid') throw new Error(errorMessage(result.code || 'NETWORK'));
     setReceipt(current => ({ ...current, ...result }));
     cart.clear(); attempt.current = null;
   }} /></>;
-  return <>{menuStage}<div className="ordering-page" data-step={step} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+  return <>{menuStage}<div className="ordering-page" data-step={activeStep} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
     <div className="ordering-content" inert={Boolean(editing)}>
       <header className="ordering-header"><button type="button" className="ordering-logo" onClick={() => go('menu')} aria-label={text('Back to the menu', 'العودة إلى القائمة')}><Image src={menu.settings.logo} width={59} height={55} alt={t.brand} unoptimized /></button><LangButton /></header>
       <>
-        {step !== 'receipt' && <div className="checkout-navigation">
-          <button type="button" className="text-action" disabled={busy || redirecting} onClick={() => go(step === 'details' ? 'menu' : step === 'review' ? 'details' : 'review')}>
+        {activeStep !== 'receipt' && <div className="checkout-navigation">
+          <button type="button" className="text-action" disabled={busy || redirecting} onClick={() => go(activeStep === 'details' ? 'menu' : activeStep === 'review' ? 'details' : 'review')}>
             <span className="back-arrow" aria-hidden="true">←</span> {text('Back', 'رجوع')}
           </button>
-          {(['details', 'review'] as Step[]).includes(step) && <span aria-label={text(`Step ${['details', 'review'].indexOf(step) + 1} of 2`, `الخطوة ${['details', 'review'].indexOf(step) + 1} من ٢`)}>{['details', 'review'].indexOf(step) + 1} / 2</span>}
+          {(['details', 'review'] as Step[]).includes(activeStep) && <span aria-label={text(`Step ${['details', 'review'].indexOf(activeStep) + 1} of 2`, `الخطوة ${['details', 'review'].indexOf(activeStep) + 1} من ٢`)}>{['details', 'review'].indexOf(activeStep) + 1} / 2</span>}
         </div>}
-        <main id="main" className={`checkout-main${step === 'details' || step === 'review' || step === 'receipt' ? ' has-step-action' : ''}`}>
+        <main id="main" className={`checkout-main${activeStep === 'details' || activeStep === 'review' || activeStep === 'receipt' ? ' has-step-action' : ''}`}>
           {/*
             Keep the fixed CTA outside `.checkout-step`. Step enter/back animations use
             transform, which would otherwise reparent `position: fixed` and make the
             primary button slide from mid-screen down to the bottom on every step change.
           */}
-          <div className="checkout-step" data-motion={motion} key={step}>
+          <div className="checkout-step" data-motion={motion} key={activeStep}>
             <h1 ref={heading} tabIndex={-1}>{title}</h1>
-            {(step === 'details' || step === 'review') && <p className="checkout-branch">{text('Pickup', 'استلام')} · <strong>{branchName}</strong></p>}
-            {step !== 'payment' && step !== 'receipt' && closedNotice}
-            {step !== 'receipt' && cart.unavailableCount > 0 && <div className="checkout-notice" role="alert"><strong>{text('Your basket needs an update', 'تحتاج سلتك إلى تحديث')}</strong><p>{text(`${cart.unavailableCount} serving(s) or their choices are no longer available. Remove them before continuing.`, `${cart.unavailableCount} حصة أو خياراتها لم تعد متوفرة. احذفها قبل المتابعة.`)}</p><button type="button" className="text-action" onClick={cart.discardUnavailable}>{text('Remove unavailable selections', 'حذف الخيارات غير المتوفرة')}</button></div>}
-            {step === 'details' && <form id="collection-details" onSubmit={validateDetails} noValidate>
+            {(activeStep === 'details' || activeStep === 'review') && <p className="checkout-branch">{text('Pickup', 'استلام')} · <strong>{branchName}</strong></p>}
+            {activeStep !== 'payment' && activeStep !== 'receipt' && closedNotice}
+            {activeStep !== 'receipt' && cart.unavailableCount > 0 && <div className="checkout-notice" role="alert"><strong>{text('Your basket needs an update', 'تحتاج سلتك إلى تحديث')}</strong><p>{text(`${cart.unavailableCount} serving(s) or their choices are no longer available. Remove them before continuing.`, `${cart.unavailableCount} حصة أو خياراتها لم تعد متوفرة. احذفها قبل المتابعة.`)}</p><button type="button" className="text-action" onClick={cart.discardUnavailable}>{text('Remove unavailable selections', 'حذف الخيارات غير المتوفرة')}</button></div>}
+            {activeStep === 'details' && <form id="collection-details" onSubmit={validateDetails} noValidate>
               <div className="checkout-fields">{(['name', 'phone', 'brand', 'plate'] as const).map(key => {
                 if (key === 'brand') return <CarBrandPicker key={key} value={customer.brand} lang={lang} invalid={errors.includes('brand')} onChange={brand => { setCustomer({ ...customer, brand }); setErrors(errors.filter(field => field !== 'brand')); }} />;
                 const label = { name: text('Your name', 'اسمك'), phone: text('Mobile number', 'رقم الجوال'), plate: text('Qatar plate number', 'رقم اللوحة القطرية'), colour: text('Car colour', 'لون السيارة'), car: text('Car model', 'طراز السيارة'), instructions: text('Collection instructions', 'تعليمات الاستلام') }[key];
@@ -414,18 +414,18 @@ function Experience({
               </div>
               <details className="optional-vehicle"><summary>{text('Add vehicle details', 'أضف تفاصيل السيارة')}</summary><div className="checkout-fields">{(['colour', 'instructions'] as const).map(key => <label key={key} className={`checkout-field field-${key}`} htmlFor={`collection-${key}`}><span>{{ colour: text('Car colour', 'لون السيارة'), car: text('Car model', 'طراز السيارة'), instructions: text('Collection instructions', 'تعليمات الاستلام') }[key]}</span>{key === 'instructions' ? <textarea id={`collection-${key}`} value={customer[key]} maxLength={400} rows={3} onChange={e => setCustomer({ ...customer, [key]: e.target.value })} /> : <input id={`collection-${key}`} value={customer[key]} maxLength={key === 'colour' ? 50 : 80} onChange={e => setCustomer({ ...customer, [key]: e.target.value })} />}</label>)}</div></details>
             </form>}
-            {step === 'review' && (resumePay && receipt?.details?.lines?.length
+            {activeStep === 'review' && (resumePay && activeReceipt?.details?.lines?.length
               ? <>
                 <section className="ticket checkout-ticket" aria-label={t.yourTicket}>
                   <div className="ticket-scallop" aria-hidden="true" />
-                  <header className="ticket-head"><div><p className="ticket-kicker">{t.brand}</p><h2 className="ticket-title">{t.yourTicket}</h2></div><span className="ticket-count">{receipt.details.lines.reduce((n, line) => n + line.quantity, 0)} {text('items', 'صنف')}</span></header>
+                  <header className="ticket-head"><div><p className="ticket-kicker">{t.brand}</p><h2 className="ticket-title">{t.yourTicket}</h2></div><span className="ticket-count">{activeReceipt.details.lines.reduce((n, line) => n + line.quantity, 0)} {text('items', 'صنف')}</span></header>
                   <p className="ticket-rule" aria-hidden="true" />
-                  <ul className="ticket-lines">{receipt.details.lines.map(line => <li key={line.id} className="ticket-line">
+                  <ul className="ticket-lines">{activeReceipt.details.lines.map(line => <li key={line.id} className="ticket-line">
                     <div className="line-main"><p className="line-name">{pickName(line, lang)}</p>{line.note && <p className="line-note">{t.commentWord}: {line.note}</p>}</div>
                     <span className="ticket-static-qty" dir="ltr" aria-label={text(`Quantity ${line.quantity}`, `الكمية ${line.quantity}`)}><span className="qty-times" aria-hidden="true">×</span>{line.quantity}</span>
                     <p className="line-total">{ticketMoney(line.totalMinor / 100)}</p>
                   </li>)}</ul>
-                  <div className="ticket-sum"><span>{t.total}</span><strong>{money(receipt.totalMinor)}</strong></div>
+                  <div className="ticket-sum"><span>{t.total}</span><strong>{money(activeReceipt.totalMinor)}</strong></div>
                 </section>
                 <details className="customer-fold review-details">
                   <summary><span>{text('Your details', 'بياناتك')}</span></summary>
@@ -433,17 +433,17 @@ function Experience({
                 </details>
               </>
               : receiptBody(true))}
-            {step === 'receipt' && receipt && <div data-order-id={receipt.id}>
+            {activeStep === 'receipt' && activeReceipt && <div data-order-id={activeReceipt.id}>
               <header className="order-status">
-                <p className="order-confirmed" role="status">{receipt.paymentMethod === 'pay_at_pickup' ? text('Order received', 'تم استلام الطلب') : text('Payment confirmed', 'تم تأكيد الدفع')}</p>
-                {receipt.orderNumber != null && <p className="order-number" dir="ltr"><span>{text('Order number', 'رقم الطلب')}</span>{formatOrderNumber(receipt.orderNumber)}</p>}
+                <p className="order-confirmed" role="status">{activeReceipt.paymentMethod === 'pay_at_pickup' ? text('Order received', 'تم استلام الطلب') : text('Payment confirmed', 'تم تأكيد الدفع')}</p>
+                {activeReceipt.orderNumber != null && <p className="order-number" dir="ltr"><span>{text('Order number', 'رقم الطلب')}</span>{formatOrderNumber(activeReceipt.orderNumber)}</p>}
               </header>
-              <OrderProgress status={receipt.status} lang={lang} />
-              {receipt.status === 'ready' && !receipt.arrivedAt && <div className="order-arrived-action">
+              <OrderProgress status={activeReceipt.status} lang={lang} />
+              {activeReceipt.status === 'ready' && !activeReceipt.arrivedAt && <div className="order-arrived-action">
                 <button type="button" className="checkout-primary order-arrived-button" disabled={busy} onClick={() => {
                   if (busyRef.current) return;
                   busyRef.current = true; setBusy(true); setError('');
-                  void fetch(`/api/orders/${receipt.id}/arrived`, {
+                  void fetch(`/api/orders/${activeReceipt.id}/arrived`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: '{}',
@@ -456,7 +456,7 @@ function Experience({
                 }}>{busy ? text('Notifying…', 'جارٍ الإبلاغ…') : text("I've arrived", 'لقد وصلت')}</button>
                 <p>{text('Tap when you are at the branch for pickup.', 'اضغط عندما تصل إلى الفرع للاستلام.')}</p>
               </div>}
-              {receipt.status === 'ready' && receipt.arrivedAt && <p className="order-arrived-note" role="status">{text('Kitchen notified. Stay in your car.', 'تم إبلاغ المطبخ. يرجى البقاء في سيارتك.')}</p>}
+              {activeReceipt.status === 'ready' && activeReceipt.arrivedAt && <p className="order-arrived-note" role="status">{text('Kitchen notified. Stay in your car.', 'تم إبلاغ المطبخ. يرجى البقاء في سيارتك.')}</p>}
               <section className="order-pickup">
                 <div className="confirmation-branch"><p className="checkout-branch">{text('Pickup', 'استلام')} · <strong>{receiptBranchName}</strong></p>
                   {receiptBranch && <a className="branch-call" href={`tel:${receiptBranch.phone}`} aria-label={text(`Call ${receiptBranchName} branch`, `اتصل بفرع ${receiptBranchName}`)}>
@@ -467,9 +467,9 @@ function Experience({
               </section>
               <h2 className="order-items-title">{text('Your order', 'طلبك')}</h2>
               <ul className="order-summary">{receiptLines.map(line => <li key={line.key}><span><b>{line.displayName}</b>{line.meta && <small>{line.meta}</small>}{line.note && <small>{line.note}</small>}</span><span className="order-qty" dir="ltr"><span className="qty-times" aria-hidden="true">×</span>{line.qty}</span><span dir="ltr">{ticketMoney(line.lineTotal)}</span></li>)}</ul>
-              {(receipt.details?.discountMinor ?? 0) > 0 && <p className="order-discount"><span>{text('Discounts', 'الخصومات')}</span><span dir="ltr">−{money(receipt.details!.discountMinor)}</span></p>}
-              {(receipt.details?.coupon?.code || receipt.details?.couponCode) && <p className="order-coupon-code" dir="ltr">{receipt.details?.coupon?.code || receipt.details?.couponCode}</p>}
-              <p className="order-total"><span>{t.total}</span><strong dir="ltr">{money(receipt.totalMinor)}</strong></p>
+              {(activeReceipt.details?.discountMinor ?? 0) > 0 && <p className="order-discount"><span>{text('Discounts', 'الخصومات')}</span><span dir="ltr">−{money(activeReceipt.details!.discountMinor)}</span></p>}
+              {(activeReceipt.details?.coupon?.code || activeReceipt.details?.couponCode) && <p className="order-coupon-code" dir="ltr">{activeReceipt.details?.coupon?.code || activeReceipt.details?.couponCode}</p>}
+              <p className="order-total"><span>{t.total}</span><strong dir="ltr">{money(activeReceipt.totalMinor)}</strong></p>
               <details className="customer-fold order-collection">
                 <summary><span>{text('Your details', 'بياناتك')}</span></summary>
                 <div className="customer-fold-body">
@@ -483,13 +483,13 @@ function Experience({
             </div>}
             {error && <div className="checkout-error" role="alert"><p>{error}</p><button className="text-action" type="button" onClick={() => { go('menu'); router.refresh(); }}>{text('Refresh menu', 'تحديث القائمة')}</button></div>}
           </div>
-          {step === 'details' && <div className="checkout-step-action"><button type="submit" form="collection-details" className="checkout-primary" disabled={!canPlace || !count || cart.unavailableCount > 0}>{text('Review order', 'مراجعة الطلب')}<Forward /></button></div>}
-          {step === 'review' && <div className="checkout-step-action"><button type="button" className="checkout-primary" disabled={busy || redirecting || couponPending || !canPlace || (!resumePay && (!count || cart.unavailableCount > 0))} onClick={() => {
-            if (resumePay && receipt?.paymentMethod === 'sadad') void beginSadadPay(receipt.id);
+          {activeStep === 'details' && <div className="checkout-step-action"><button type="submit" form="collection-details" className="checkout-primary" disabled={!canPlace || !count || cart.unavailableCount > 0}>{text('Review order', 'مراجعة الطلب')}<Forward /></button></div>}
+          {activeStep === 'review' && <div className="checkout-step-action"><button type="button" className="checkout-primary" disabled={busy || redirecting || couponPending || !canPlace || (!resumePay && (!count || cart.unavailableCount > 0))} onClick={() => {
+            if (resumePay && activeReceipt?.paymentMethod === 'sadad') void beginSadadPay(activeReceipt.id);
             else if (resumePay) go('payment');
             else void checkout();
           }}>{redirecting ? text('Redirecting…', 'جارٍ التحويل…') : busy ? text('Checking…', 'جارٍ التحقق…') : resumePay || paymentMethod !== 'pay_at_pickup' ? text('Continue to payment', 'المتابعة إلى الدفع') : text('Place order · pay at pickup', 'تأكيد الطلب · الدفع عند الاستلام')}{!redirecting && !busy && <Forward />}</button></div>}
-          {step === 'receipt' && <div className="checkout-step-action"><button type="button" className="checkout-primary" onClick={() => go('menu')}><span><span className="back-arrow" aria-hidden="true">←</span> {text('Back to menu', 'العودة للقائمة')}</span></button></div>}
+          {activeStep === 'receipt' && <div className="checkout-step-action"><button type="button" className="checkout-primary" onClick={() => go('menu')}><span><span className="back-arrow" aria-hidden="true">←</span> {text('Back to menu', 'العودة للقائمة')}</span></button></div>}
         </main>
       </>
       <footer className="ordering-footer"><span>Sushinaa</span></footer>
