@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export type AppliedCoupon = {
   code: string;
@@ -51,6 +51,13 @@ export function CouponField({
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [open, setOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!open || applied) return;
+    inputRef.current?.focus();
+  }, [open, applied]);
 
   function failureCopy(code: string | undefined) {
     if (code === 'SESSION_REQUIRED') return text('Refresh the page, then apply the code.', 'حدّث الصفحة ثم طبّق الرمز.');
@@ -79,6 +86,7 @@ export function CouponField({
         return;
       }
       onApplied(quote);
+      setOpen(false);
     } catch {
       setMessage(text('Could not apply that code.', 'تعذّر تطبيق هذا الرمز.'));
     } finally {
@@ -91,15 +99,23 @@ export function CouponField({
     return <div className="coupon-field">
       <div className="coupon-applied">
         <span dir="ltr">{applied.code}</span>
-        <button type="button" className="text-action" onClick={() => { setDraft(applied.code); setMessage(''); onRemove(); }}>{text('Remove', 'إزالة')}</button>
+        <button type="button" className="text-action" onClick={() => { setDraft(applied.code); setMessage(''); setOpen(true); onRemove(); }}>{text('Remove', 'إزالة')}</button>
       </div>
+    </div>;
+  }
+
+  if (!open) {
+    return <div className="coupon-field">
+      <button type="button" className="coupon-prompt text-action" onClick={() => setOpen(true)}>
+        {text('Do you have a coupon?', 'هل لديك قسيمة؟')}
+      </button>
     </div>;
   }
 
   return <form className="coupon-field" onSubmit={apply}>
     <label htmlFor="coupon-code">{text('Coupon code', 'رمز القسيمة')}</label>
     <div className="coupon-entry" dir="ltr">
-      <input id="coupon-code" value={draft} maxLength={32} autoComplete="off" autoCapitalize="characters" spellCheck={false} disabled={busy} aria-invalid={Boolean(message)} aria-describedby={message ? 'coupon-error' : undefined} onChange={event => { setDraft(event.target.value); setMessage(''); }} />
+      <input ref={inputRef} id="coupon-code" value={draft} maxLength={32} autoComplete="off" autoCapitalize="characters" spellCheck={false} disabled={busy} aria-invalid={Boolean(message)} aria-describedby={message ? 'coupon-error' : undefined} onChange={event => { setDraft(event.target.value); setMessage(''); }} />
       <button type="submit" disabled={busy || !draft.trim()}>{busy ? text('Checking…', 'جارٍ التحقق…') : text('Apply', 'تطبيق')}</button>
     </div>
     {message && <small id="coupon-error" className="field-error" role="alert">{message}</small>}
