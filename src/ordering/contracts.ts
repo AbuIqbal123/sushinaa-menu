@@ -47,4 +47,5 @@ export type CustomerReceiptDetails = {
     extras?: OrderSnapshot['lines'][number]['extras'];
   })[];
   discountMinor: number;
+  coupon?: { code: string; discountMinor: number } | null;
 };
