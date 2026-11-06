@@ -25,9 +25,14 @@ export function couponCheckoutError(error: CouponError) {
   return new CheckoutError(COUPON_CHECKOUT_CODE[error.code]);
 }
 
-function quoteMenu(input: CheckoutInput, menu: MenuData, now = new Date(), options?: { allowClosed?: boolean }) {
-  const branch = configuredBranches(menu.branches).find(b => b.slug === input.branchId)!;
-  if (!options?.allowClosed && !branchStatus(branch.hours, qatarClock(now)).open) throw new CheckoutError('CLOSED');
+export function assertBranchOpen(menu: MenuData, branchId: string, now = new Date()) {
+  const branch = configuredBranches(menu.branches).find((item) => item.slug === branchId)!;
+  if (!branchStatus(branch.hours, qatarClock(now)).open) throw new CheckoutError('CLOSED');
+  return branch;
+}
+
+function quoteMenu(input: CheckoutInput, menu: MenuData, now = new Date()) {
+  const branch = assertBranchOpen(menu, input.branchId, now);
   if (input.lines.reduce((n, line) => n + line.quantity, 0) > 100) throw new CheckoutError('LIMIT');
   const available = publicMenu(menu).dishes;
   const lines = input.lines.map(line => {
@@ -45,8 +50,8 @@ function quoteMenu(input: CheckoutInput, menu: MenuData, now = new Date(), optio
     totalMinor: lines.reduce((n, line) => n + line.totalMinor, 0), currency: 'QAR' as const };
 }
 
-export async function quoteOrder(input: CheckoutInput, menu: MenuData, now = new Date(), options?: { allowClosed?: boolean }): Promise<ReturnType<typeof quoteMenu> & { coupon?: CouponSnapshot }> {
-  const order = quoteMenu(input, menu, now, options);
+export async function quoteOrder(input: CheckoutInput, menu: MenuData, now = new Date()): Promise<ReturnType<typeof quoteMenu> & { coupon?: CouponSnapshot }> {
+  const order = quoteMenu(input, menu, now);
   if (!input.couponCode) return order;
   // Load the coupon table only when a code is present. A static import would capture CMS_DATABASE_URL before tests point it at a temporary file.
   const { previewCoupon } = await import('@/ordering/coupons/repository');

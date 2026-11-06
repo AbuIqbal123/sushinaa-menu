@@ -77,9 +77,8 @@ test('rejects changed prices, hidden dishes, invalid choices, duplicate extras a
   await assert.rejects(() => quoteOrder({ ...input, lines: [{ ...input.lines[0], expectedUnitMinor: 1 }] }, menu, at('2026-10-22T15:00:00')), /PRICE_CHANGED/);
   const hidden = structuredClone(menu); hidden.dishes.find(d => d.id === roll.id)!.available = false;
   await assert.rejects(() => quoteOrder(input, hidden, at('2026-10-22T15:00:00')), /UNAVAILABLE/);
-  await assert.rejects(() => quoteOrder(input, menu, at('2026-10-23T03:00:00')), /CLOSED/);
   await assert.rejects(
-    () => quoteOrder(input, menu, at('2026-10-23T03:00:00'), { allowClosed: true }),
+    () => quoteOrder(input, menu, at('2026-10-23T03:00:00')),
     (error: unknown) => error instanceof CheckoutError && error.code === 'CLOSED',
   );
   assert.equal(checkoutSchema.parse({ ...input, couponCode: ' save-10 ' }).couponCode, 'save-10');
