@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { databaseUrl } from '@/cms/db';
-import { disableCoupon } from '@/ordering/coupons/repository';
+import { disableCoupon, releaseHeldCoupon } from '@/ordering/coupons/repository';
 import { CouponError } from '@/ordering/coupons/types';
 import { assertOrderDatabaseAllowed } from '@/ordering/guard';
 import { OrderError, failure, jsonBody, reply, requireStaff } from '@/ordering/http';
@@ -8,6 +8,8 @@ import { OrderError, failure, jsonBody, reply, requireStaff } from '@/ordering/h
 export const dynamic = 'force-dynamic';
 
 const disableBody = z.object({}).strict();
+const releaseBody = z.object({ action: z.literal('release') }).strict();
+const postBody = z.union([releaseBody, disableBody]);
 
 function asHttp(error: unknown) {
   if (error instanceof CouponError) {
@@ -21,7 +23,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     assertOrderDatabaseAllowed(databaseUrl);
     await requireStaff(request, 'users');
-    disableBody.parse(await jsonBody(request));
-    return reply(await disableCoupon((await params).id));
+    const body = postBody.parse(await jsonBody(request));
+    const id = (await params).id;
+    if ('action' in body) return reply(await releaseHeldCoupon(id));
+    return reply(await disableCoupon(id));
   } catch (error) { return asHttp(error); }
 }

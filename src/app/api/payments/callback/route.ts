@@ -4,7 +4,7 @@ import { gateway, resolvePaymentProvider } from '@/ordering/payment-gateway/reso
 import { BRANCHES } from '@/branches/branches';
 import { initOrders } from '@/ordering/checkout/repository';
 import { digestPayload, appendPaymentEvent } from '@/ordering/ledger';
-import { callbackHost, paymentLog } from '@/ordering/payment-log';
+import { callbackHost, paymentLog, sadadCallbackFields } from '@/ordering/payment-log';
 import { callbackReturnKind } from '@/ordering/payment-return';
 
 export const runtime = 'nodejs';
@@ -85,6 +85,7 @@ async function handleCallback(request: Request, method: 'GET' | 'POST') {
       outcome: body.transaction_status || body.STATUS || body.RESPCODE || undefined,
       reason: contentType ? `content-type:${contentType.split(';')[0]}` : 'content-type:missing',
       hasChecksum: Boolean(body.checksumhash),
+      ...sadadCallbackFields(body),
     });
 
     let fact;

@@ -144,6 +144,44 @@ export async function listCoupons(): Promise<Coupon[]> {
   return result.rows.map(couponFrom);
 }
 
+const UNPAID_ONLINE_ORDER = `paid_at IS NULL AND status='placed' AND payment_method IN ('sadad','mock')`;
+
+export async function releaseHeldCoupon(id: string, now = new Date()): Promise<Coupon> {
+  await initDb();
+  const at = now.toISOString();
+  const purgeAt = new Date(now.getTime() + 90 * 86400000).toISOString();
+  return withWrite(async (tx) => {
+    const current = await readWhere(tx, 'id=?', [id]);
+    if (!current) throw new CouponError('NOT_FOUND');
+    if (current.status !== 'held') throw new CouponError('CONFLICT');
+    if (current.heldOrderId) {
+      const order = (await tx.execute({
+        sql: 'SELECT status, paid_at FROM orders WHERE id=?',
+        args: [current.heldOrderId],
+      })).rows[0];
+      const alreadyCancelled = order != null && order.paid_at == null && order.status === 'cancelled';
+      if (order && !alreadyCancelled) {
+        const cancelled = await tx.execute({
+          sql: `UPDATE orders SET status='cancelled', updated_at=?, purge_after=? WHERE id=? AND ${UNPAID_ONLINE_ORDER}`,
+          args: [at, purgeAt, current.heldOrderId],
+        });
+        if (Number(cancelled.rowsAffected) !== 1) throw new CouponError('CONFLICT');
+        await tx.execute({
+          sql: `UPDATE payment_attempts SET status='cancelled', updated_at=?
+            WHERE order_id=? AND status NOT IN ('paid', 'failed', 'cancelled')`,
+          args: [at, current.heldOrderId],
+        });
+      }
+    }
+    const updated = (await tx.execute({
+      sql: `UPDATE coupons SET ${RELEASE_ASSIGN} WHERE id=? AND status='held' RETURNING ${COLUMNS}`,
+      args: [at, id],
+    })).rows[0];
+    if (!updated) throw new CouponError('CONFLICT');
+    return couponFrom(updated);
+  });
+}
+
 export async function disableCoupon(id: string, now = new Date()): Promise<Coupon> {
   await initDb();
   const at = now.toISOString();

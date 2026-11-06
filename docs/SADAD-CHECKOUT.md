@@ -79,7 +79,7 @@ Payment logs use `console.warn` / `console.error` (eslint-safe). `next.config.ts
 
 ## Callback vs webhook
 
-- **Callback** (`POST /api/payments/callback`): browser return after pay; verify signature; apply fact; respond **200 HTML** that navigates to absolute `{origin}/{branch}/order?paid={orderId}` only when the fact is paid and settled (or already paid). Failed/cancelled outcomes and amount mismatches go to `?pay=failed` so review resumes with the held coupon instead of a false success. Unexpected `GET` is logged and treated as failed return. Do not use relative `Location` — sandbox returns have left the browser on `payment.sadadqa.com`.
+- **Callback** (`POST /api/payments/callback`): browser return after pay; verify signature; apply fact; respond **200 HTML** that navigates to absolute `{origin}/{branch}/order?paid={orderId}` only when the fact is paid and settled (or already paid). Failed/cancelled outcomes and amount mismatches go to `?pay=failed` so review resumes with the held coupon instead of a false success. Coupons **Release** returns that held code to available and cancels the linked unpaid placed sadad or mock order. Unexpected `GET` is logged and treated as failed return. Do not use relative `Location` — sandbox returns have left the browser on `payment.sadadqa.com`.
 - **Webhook** (`POST /api/payments/webhook`): authoritative server notification; verify; `applyVerifiedFact`; ACK `{ status: 'success' }`. Prefer webhook for settlement certainty; callback is UX + best-effort settle.
 
 Both feed the same ledger/`settlePayment` path. Amount must match `orders.total_minor`.
