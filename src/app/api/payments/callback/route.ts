@@ -5,6 +5,7 @@ import { BRANCHES } from '@/branches/branches';
 import { initOrders } from '@/ordering/checkout/repository';
 import { digestPayload, appendPaymentEvent } from '@/ordering/ledger';
 import { callbackHost, paymentLog } from '@/ordering/payment-log';
+import { callbackReturnKind } from '@/ordering/payment-return';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -113,13 +114,14 @@ async function handleCallback(request: Request, method: 'GET' | 'POST') {
     }
 
     const result = await applyVerifiedFact(fact);
+    const returnKind = callbackReturnKind(fact.outcome, result);
     paymentLog('info', {
       event: 'callback.applied',
       orderId: fact.orderId,
       provider: fact.provider,
       outcome: fact.outcome,
       amountMinor: fact.amountMinor,
-      settled: 'settled' in result ? Boolean(result.settled) : false,
+      settled: returnKind === 'paid',
       reason: 'reason' in result ? String(result.reason) : undefined,
     });
 
@@ -129,8 +131,11 @@ async function handleCallback(request: Request, method: 'GET' | 'POST') {
       args: [fact.orderId],
     })).rows[0];
     const base = branchOrderPath(order ? String(order.branch_id) : null);
-    // Customer recovers the pickup receipt via session + local order id.
-    return redirectTo(request, `${base}?paid=${encodeURIComponent(fact.orderId)}`);
+    // Failed Sadad returns still verify — never send ?paid= unless settled.
+    if (returnKind === 'paid') {
+      return redirectTo(request, `${base}?paid=${encodeURIComponent(fact.orderId)}`);
+    }
+    return redirectTo(request, `${base}?pay=failed`);
   } catch (error) {
     paymentLog('error', {
       event: 'callback.error',

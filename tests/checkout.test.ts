@@ -176,6 +176,7 @@ describe('one-time coupons at checkout', { concurrency: false }, () => {
     assert.equal(snapshot.lines.reduce((sum: number, line: { totalMinor: number }) => sum + line.totalMinor, 0), full.totalMinor);
     const receipt = await repository.customerOrder(placed.order.id, placed.session);
     assert.equal(receipt.details.discountMinor, 100);
+    assert.deepEqual(receipt.details.coupon, { code: 'TENQAR', discountMinor: 100 });
     assert.equal(receipt.totalMinor, full.totalMinor - 100);
     assert.equal((await couponOf('TENQAR')).status, 'held');
     assert.equal((await couponOf('TENQAR')).held_order_id, placed.order.id);

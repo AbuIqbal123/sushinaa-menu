@@ -27,7 +27,7 @@ import { isTerminalCustomerStatus, shouldResumeCustomerReceipt } from '@/orderin
 const emptyCustomer: Customer = { name: '', phone: '', plate: 'Q', brand: '', colour: '', car: '', instructions: '' };
 type Step = 'menu' | 'details' | 'review' | 'payment' | 'receipt';
 type PaymentMethodUi = 'mock' | 'pay_at_pickup' | 'sadad';
-type Receipt = { id: string; orderNumber?: number | null; paymentStatus: PaymentStatus; totalMinor: number; paymentMethod: PaymentMethodUi; status: string; arrivedAt?: string | null; updatedAt?: string | null; details?: CustomerReceiptDetails & { coupon?: { code?: string }; couponCode?: string } };
+type Receipt = { id: string; orderNumber?: number | null; paymentStatus: PaymentStatus; totalMinor: number; paymentMethod: PaymentMethodUi; status: string; arrivedAt?: string | null; updatedAt?: string | null; details?: CustomerReceiptDetails };
 export function OrderingExperience({
   initialNow,
   branchId,
@@ -179,6 +179,15 @@ function Experience({
         // only after an explicit failed-return (`?pay=failed`) or CTA click.
         if (saved.details?.customer) {
           setCustomer({ ...emptyCustomer, ...saved.details.customer });
+        }
+        const held = saved.details?.coupon;
+        if (held?.code && held.discountMinor > 0) {
+          setAppliedCoupon({
+            code: held.code,
+            discountMinor: held.discountMinor,
+            totalMinor: saved.totalMinor,
+            subtotalMinor: saved.totalMinor + held.discountMinor,
+          });
         }
         if (payFailed || returnMode) setStep('review');
       }
@@ -424,6 +433,8 @@ function Experience({
                     <span className="ticket-static-qty" dir="ltr" aria-label={text(`Quantity ${line.quantity}`, `الكمية ${line.quantity}`)}><span className="qty-times" aria-hidden="true">×</span>{line.quantity}</span>
                     <p className="line-total">{ticketMoney(line.totalMinor / 100)}</p>
                   </li>)}</ul>
+                  {(activeReceipt.details.discountMinor ?? 0) > 0 && <p className="order-discount ticket-coupon-discount"><span>{text('Discounts', 'الخصومات')}</span><span dir="ltr">−{money(activeReceipt.details.discountMinor)}</span></p>}
+                  {activeReceipt.details.coupon?.code && <p className="order-coupon-code" dir="ltr">{activeReceipt.details.coupon.code}</p>}
                   <div className="ticket-sum"><span>{t.total}</span><strong>{money(activeReceipt.totalMinor)}</strong></div>
                 </section>
                 <details className="customer-fold review-details">
@@ -467,7 +478,7 @@ function Experience({
               <h2 className="order-items-title">{text('Your order', 'طلبك')}</h2>
               <ul className="order-summary">{receiptLines.map(line => <li key={line.key}><span><b>{line.displayName}</b>{line.meta && <small>{line.meta}</small>}{line.note && <small>{line.note}</small>}</span><span className="order-qty" dir="ltr"><span className="qty-times" aria-hidden="true">×</span>{line.qty}</span><span dir="ltr">{ticketMoney(line.lineTotal)}</span></li>)}</ul>
               {(activeReceipt.details?.discountMinor ?? 0) > 0 && <p className="order-discount"><span>{text('Discounts', 'الخصومات')}</span><span dir="ltr">−{money(activeReceipt.details!.discountMinor)}</span></p>}
-              {(activeReceipt.details?.coupon?.code || activeReceipt.details?.couponCode) && <p className="order-coupon-code" dir="ltr">{activeReceipt.details?.coupon?.code || activeReceipt.details?.couponCode}</p>}
+              {activeReceipt.details?.coupon?.code && <p className="order-coupon-code" dir="ltr">{activeReceipt.details.coupon.code}</p>}
               <p className="order-total"><span>{t.total}</span><strong dir="ltr">{money(activeReceipt.totalMinor)}</strong></p>
               <details className="customer-fold order-collection">
                 <summary><span>{text('Your details', 'بياناتك')}</span></summary>

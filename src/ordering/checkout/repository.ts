@@ -74,9 +74,13 @@ export async function customerOrder(id: string, session: string | null) {
     freeDips: line.freeDips as CustomerReceiptDetails['lines'][number]['freeDips'],
     extras: line.extras as CustomerReceiptDetails['lines'][number]['extras'],
   }));
+  const discountMinor = Math.max(0, lines.reduce((sum, line) => sum + line.totalMinor, 0) - Number(row.total_minor));
+  const coupon = snapshot.coupon && typeof snapshot.coupon.code === 'string' && snapshot.coupon.code
+    && Number.isSafeInteger(snapshot.coupon.discountMinor) && snapshot.coupon.discountMinor > 0
+    ? { code: snapshot.coupon.code, discountMinor: snapshot.coupon.discountMinor }
+    : null;
   const details: CustomerReceiptDetails = { branchId: row.branch_id as CustomerReceiptDetails['branchId'],
-    customer: snapshot.customer ?? null, lines,
-    discountMinor: Math.max(0, lines.reduce((sum, line) => sum + line.totalMinor, 0) - Number(row.total_minor)),
+    customer: snapshot.customer ?? null, lines, discountMinor, coupon,
   };
   return { ...customerResult(row), details };
 }
