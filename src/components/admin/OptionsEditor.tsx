@@ -17,7 +17,9 @@ type Row = Record<string, Value>;
 type Field = {
   key: string;
   label: string;
-  type?: "number" | "check" | "image" | "prices" | "list" | "group";
+  type?: "number" | "check" | "image" | "prices" | "list" | "group" | "price-pair";
+  /** Sale key when type is price-pair. */
+  saleKey?: string;
   fields?: Field[];
   optional?: boolean;
   create?: () => Row;
@@ -33,9 +35,24 @@ const choiceFields: Field[] = [
   { key: "spicy", label: "Spicy", type: "check" },
   { key: "veg", label: "Vegetarian", type: "check" },
 ];
+const SALE_PRICE_HINT =
+  "Optional discounted price the customer pays. Base price is shown crossed out. Leave blank when not on sale. Coupons stay a separate discount at checkout.";
+function chargePair(
+  baseKey: string,
+  baseLabel: string,
+  saleKey = "saleQar",
+): Field {
+  return {
+    key: baseKey,
+    saleKey,
+    label: `${baseLabel} (QAR)`,
+    type: "price-pair",
+    optional: true,
+  };
+}
 const extraFields: Field[] = [
   ...named,
-  { key: "priceQar", label: "Additional price", type: "number" },
+  chargePair("priceQar", "Additional price"),
 ];
 const newChoice = () => ({ id: "", name: "", nameAr: "" });
 const list = (
@@ -51,7 +68,10 @@ const list = (
   optional,
   create: () => ({
     ...newChoice(),
-    ...(fields === extraFields ? { priceQar: 0 } : {}),
+    ...(fields === extraFields ||
+    fields.some((f) => f.key === "priceQar" || f.type === "price-pair")
+      ? { priceQar: 0 }
+      : {}),
   }),
 });
 const group = (key: string, label: string): Field => ({
@@ -67,11 +87,7 @@ const group = (key: string, label: string): Field => ({
     options: [newChoice()],
   }),
 });
-const basePrice: Field = {
-  key: "priceQar",
-  label: "Base price",
-  type: "number",
-};
+const basePrice = chargePair("priceQar", "Base price");
 function newKind(type: string): Row {
   switch (type) {
     case "simple":
@@ -109,14 +125,14 @@ function kindFields(type: string): Field[] {
       return [basePrice];
     case "spicy-toggle":
       return [
-        { key: "mildQar", label: "Regular price", type: "number" },
-        { key: "spicyQar", label: "Spicy price", type: "number" },
+        chargePair("mildQar", "Regular price", "mildSaleQar"),
+        chargePair("spicyQar", "Spicy price", "spicySaleQar"),
       ];
     case "sauce-price":
       return [
         list("sauces", "Sauce prices", [
           ...named,
-          { key: "priceQar", label: "Price", type: "number" },
+          chargePair("priceQar", "Price"),
           { key: "spicy", label: "Spicy", type: "check" },
         ]),
       ];
@@ -276,31 +292,88 @@ function ObjectFields({
               onChange={(v) => set(f.key, v)}
             />
           );
+        if (f.type === "price-pair" && f.saleKey) {
+          const saleKey = f.saleKey;
+          const saleVal = value[saleKey];
+          return (
+            <div className="admin-price-pair" key={f.key}>
+              <div className="admin-grid">
+                <TextField
+                  label={f.label}
+                  type="number"
+                  path={at(f.key)}
+                  value={(val ?? "") as string | number}
+                  onChange={(s) =>
+                    set(f.key, s === "" ? undefined : Number(s))
+                  }
+                />
+                <TextField
+                  label="Sale price (QAR)"
+                  type="number"
+                  path={at(saleKey)}
+                  value={(saleVal ?? "") as string | number}
+                  onChange={(s) =>
+                    set(saleKey, s === "" ? undefined : Number(s))
+                  }
+                />
+              </div>
+              <small className="admin-hint">{SALE_PRICE_HINT}</small>
+            </div>
+          );
+        }
         if (f.type === "prices") {
           const prices = (val || {}) as Record<string, number>;
+          const sales = (value.saleQar || {}) as Record<string, number>;
+          const setPortion = (n: number, base: string, saleAmount: string) => {
+            const nextPrices = { ...prices };
+            const nextSale = { ...sales };
+            if (base === "") {
+              delete nextPrices[n];
+              delete nextSale[n];
+            } else {
+              nextPrices[n] = Number(base);
+              if (saleAmount === "") delete nextSale[n];
+              else nextSale[n] = Number(saleAmount);
+            }
+            const next: Row = { ...value, prices: nextPrices };
+            if (Object.keys(nextSale).length) next.saleQar = nextSale;
+            else delete next.saleQar;
+            onChange(next);
+          };
           return (
             <fieldset className="admin-fieldset" key={f.key}>
               <legend>{f.label}</legend>
               <small>
                 Leave a portion blank to remove it. At least one price is
-                required.
+                required. {SALE_PRICE_HINT}
               </small>
               <FieldError path={at(f.key)} />
               <div className="admin-grid">
                 {[4, 6, 8, 12, 24].map((n) => (
-                  <TextField
-                    key={n}
-                    label={`${n} pieces`}
-                    type="number"
-                    path={`${at(f.key)}.${n}`}
-                    value={prices[n] ?? ""}
-                    onChange={(s) => {
-                      const next = { ...prices };
-                      if (s === "") delete next[n];
-                      else next[n] = Number(s);
-                      set(f.key, next);
-                    }}
-                  />
+                  <div key={n} className="admin-portion-pair">
+                    <TextField
+                      label={`${n} pieces (QAR)`}
+                      type="number"
+                      path={`${at(f.key)}.${n}`}
+                      value={prices[n] ?? ""}
+                      onChange={(s) =>
+                        setPortion(n, s, sales[n] != null ? String(sales[n]) : "")
+                      }
+                    />
+                    <TextField
+                      label="Sale price (QAR)"
+                      type="number"
+                      path={`${at("saleQar")}.${n}`}
+                      value={sales[n] ?? ""}
+                      onChange={(s) =>
+                        setPortion(
+                          n,
+                          prices[n] != null ? String(prices[n]) : "",
+                          s,
+                        )
+                      }
+                    />
+                  </div>
                 ))}
               </div>
             </fieldset>

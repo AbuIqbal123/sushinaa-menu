@@ -22,10 +22,14 @@ import {
   sheetImageFor,
   preferredPieces,
   selectionForDiet,
+  shownLeaf,
+  shownPrice,
   unitPrice,
+  type ShownPrice,
 } from "@/ordering/price";
 import { DietTags } from "./DietTags";
 import { PhotoViewer } from "./PhotoViewer";
+import { PriceShown } from "./PriceShown";
 
 type Props = {
   dish: Dish;
@@ -196,7 +200,7 @@ export function DishDetailSheet({ dish, diet = "all", onClose, ordering = false,
             </h2>
           </div>
           <p className="detail-unit" aria-live="polite">
-            {formatQar(unitPrice(current, shown), lang)}
+            <PriceShown price={shownPrice(current, shown)} />
           </p>
         </div>
         <DietTags tags={current.tags} />
@@ -283,7 +287,6 @@ function Configurator({
 }) {
   const { lang, t } = useLocale();
   const menu = useMenu();
-  const formatQar = (n: number, l: Lang) => money(n, l, menu.settings);
   const fieldLabel = (s: string, l: Lang) => getFieldLabel(s, l, menu.fields);
   const kind = dish.kind;
   const label = (name: string) => fieldLabel(name, lang);
@@ -300,7 +303,7 @@ function Configurator({
           options={kind.sauces.map((s) => ({
             id: s.id,
             name: pickName(s, lang),
-            hint: formatQar(s.priceQar, lang),
+            price: shownLeaf(s.priceQar, s.saleQar),
             spicy: s.spicy,
           }))}
           value={sel.sauce}
@@ -312,8 +315,17 @@ function Configurator({
         <ChoiceRow
           label={label("Heat")}
           options={[
-            { id: "spicy", name: t.spicy, hint: formatQar(kind.spicyQar, lang), spicy: true },
-            { id: "mild", name: t.regular, hint: formatQar(kind.mildQar, lang) },
+            {
+              id: "spicy",
+              name: t.spicy,
+              price: shownLeaf(kind.spicyQar, kind.spicySaleQar),
+              spicy: true,
+            },
+            {
+              id: "mild",
+              name: t.regular,
+              price: shownLeaf(kind.mildQar, kind.mildSaleQar),
+            },
           ]}
           value={sel.spicy ? "spicy" : "mild"}
           onChange={(id) => setSel({ ...sel, spicy: id === "spicy" })}
@@ -325,14 +337,19 @@ function Configurator({
           {kind.proteins.length > 1 ? (
             <ChoiceRow
               label={label("Protein")}
-              options={kind.proteins.map((p) => ({
-                id: p.id,
-                name: pickName(p, lang),
-                hint: p.prices[sel.pieces ?? preferredPieces(p.prices)]
-                  ? formatQar(p.prices[sel.pieces ?? preferredPieces(p.prices)] ?? 0, lang)
-                  : undefined,
-                spicy: p.spicy,
-              }))}
+              options={kind.proteins.map((p) => {
+                const pieces = sel.pieces ?? preferredPieces(p.prices);
+                const charge = p.prices[pieces];
+                return {
+                  id: p.id,
+                  name: pickName(p, lang),
+                  price:
+                    charge != null
+                      ? shownLeaf(charge, p.saleQar?.[String(pieces)])
+                      : undefined,
+                  spicy: p.spicy,
+                };
+              })}
               value={sel.protein}
               onChange={(id) => {
                 const protein = kind.proteins.find((p) => p.id === id);
@@ -353,7 +370,10 @@ function Configurator({
                 return {
                   id: String(n),
                   name: `${n}`,
-                  hint: formatQar(protein.prices[n] ?? 0, lang),
+                  price: shownLeaf(
+                    protein.prices[n] ?? 0,
+                    protein.saleQar?.[String(n)],
+                  ),
                 };
               },
             )}
@@ -421,7 +441,7 @@ function Configurator({
             options={kind.sizes.map((s) => ({
               id: s.id,
               name: pickName(s, lang),
-              hint: formatQar(s.priceQar, lang),
+              price: shownLeaf(s.priceQar, s.saleQar),
             }))}
             value={sel.size}
             onChange={(id) => setSel({ ...sel, size: id })}
@@ -515,7 +535,7 @@ function ChoiceRow({
   onChange,
 }: {
   label: string;
-  options: { id: string; name: string; hint?: string; spicy?: boolean }[];
+  options: { id: string; name: string; price?: ShownPrice; spicy?: boolean }[];
   value?: string;
   onChange: (id: string) => void;
 }) {
@@ -538,7 +558,11 @@ function ChoiceRow({
               onClick={() => onChange(opt.id)}
             >
               <span>{opt.name}</span>
-              {opt.hint ? <em>{opt.hint}</em> : null}
+              {opt.price ? (
+                <em>
+                  <PriceShown price={opt.price} />
+                </em>
+              ) : null}
             </button>
           );
         })}
@@ -706,7 +730,6 @@ function ExtraList({
 }) {
   const { lang } = useLocale();
   const menu = useMenu();
-  const formatQar = (n: number, l: Lang) => money(n, l, menu.settings);
   const fieldLabel = (s: string, l: Lang) => getFieldLabel(s, l, menu.fields);
   return (
     <div className="choice-block">
@@ -720,7 +743,9 @@ function ExtraList({
             <label key={ex.id} className={`extra ${on ? "extra-on" : ""}`}>
               <input type="checkbox" checked={on} onChange={() => onToggle(ex.id)} />
               <span>{pickName(ex, lang)}</span>
-              <em>+{formatQar(ex.priceQar, lang)}</em>
+              <em>
+                <PriceShown price={shownLeaf(ex.priceQar, ex.saleQar)} plus />
+              </em>
             </label>
           );
         })}

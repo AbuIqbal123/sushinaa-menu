@@ -1,4 +1,5 @@
 import { branchListSchema, defaultBranchSettings } from "@/branches/schema";
+import { saleIsLower } from "@/cms/sale-price";
 import { z } from "zod";
 const text = z.string().max(10000);
 const name = z.string().trim().min(1, "Name is required").max(200);
@@ -17,6 +18,7 @@ const price = z
     (n) => Math.abs(n * 100 - Math.round(n * 100)) < 0.00001,
     "Use at most two decimal places",
   );
+const sale = price.optional();
 const image = z
   .string()
   .max(500)
@@ -35,7 +37,37 @@ const choice = z
     veg: z.boolean().optional(),
   })
   .strict();
-const extra = z.object({ ...named, priceQar: price }).strict();
+/** Base price + optional sale. Sale must be strictly lower; customers pay the sale. */
+function priced<T extends z.ZodRawShape>(
+  shape: T,
+  pairs: readonly (readonly [string, string])[],
+) {
+  return z
+    .object(shape)
+    .strict()
+    .superRefine((value, ctx) => {
+      const row = value as Record<string, unknown>;
+      for (const [baseKey, saleKey] of pairs) {
+        const saleAmount = row[saleKey];
+        const base = row[baseKey];
+        if (saleAmount == null) continue;
+        if (
+          typeof saleAmount !== "number" ||
+          typeof base !== "number" ||
+          !saleIsLower(saleAmount, base)
+        ) {
+          ctx.addIssue({
+            code: "custom",
+            path: [saleKey],
+            message: "Sale price must be lower than the base price",
+          });
+        }
+      }
+    });
+}
+const extra = priced({ ...named, priceQar: price, saleQar: sale }, [
+  ["priceQar", "saleQar"],
+]);
 const unique = <T extends { id: string }>(a: T[]) =>
   new Set(a.map((x) => x.id)).size === a.length;
 const choices = z
@@ -60,8 +92,25 @@ const protein = z
     veg: z.boolean().optional(),
     seafood: z.boolean().optional(),
     prices,
+    saleQar: z
+      .record(z.string().regex(/^(4|6|8|12|24)$/), price)
+      .optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((value, ctx) => {
+    const sales = value.saleQar;
+    if (!sales) return;
+    for (const [key, amount] of Object.entries(sales)) {
+      const base = value.prices[key as keyof typeof value.prices];
+      if (base == null || !saleIsLower(amount, base)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["saleQar", key],
+          message: "Sale price must be lower than the base price",
+        });
+      }
+    }
+  });
 const count = z.number().int().min(0).max(20);
 const included = z
   .object({
@@ -73,31 +122,38 @@ const included = z
   })
   .strict()
   .refine((v) => v.min <= v.max, "Minimum cannot exceed maximum");
+const sauceEntry = priced(
+  {
+    ...named,
+    spicy: z.boolean().optional(),
+    priceQar: price,
+    saleQar: sale,
+  },
+  [["priceQar", "saleQar"]],
+);
 const kindSchema = z
   .discriminatedUnion("type", [
-    z.object({ type: z.literal("simple"), priceQar: price }).strict(),
-    z
-      .object({
+    priced(
+      { type: z.literal("simple"), priceQar: price, saleQar: sale },
+      [["priceQar", "saleQar"]],
+    ),
+    priced(
+      {
         type: z.literal("spicy-toggle"),
         mildQar: price,
         spicyQar: price,
-      })
-      .strict(),
+        mildSaleQar: sale,
+        spicySaleQar: sale,
+      },
+      [
+        ["mildQar", "mildSaleQar"],
+        ["spicyQar", "spicySaleQar"],
+      ],
+    ),
     z
       .object({
         type: z.literal("sauce-price"),
-        sauces: z
-          .array(
-            z
-              .object({
-                ...named,
-                spicy: z.boolean().optional(),
-                priceQar: price,
-              })
-              .strict(),
-          )
-          .min(1)
-          .refine(unique),
+        sauces: z.array(sauceEntry).min(1).refine(unique),
         freeDips: choices.optional(),
       })
       .strict(),
@@ -109,23 +165,27 @@ const kindSchema = z
         style: group.optional(),
       })
       .strict(),
-    z
-      .object({
+    priced(
+      {
         type: z.literal("deal-box"),
         priceQar: price,
+        saleQar: sale,
         starters: choices,
         sushi: choices,
-      })
-      .strict(),
-    z
-      .object({
+      },
+      [["priceQar", "saleQar"]],
+    ),
+    priced(
+      {
         type: z.literal("party-box"),
         priceQar: price,
+        saleQar: sale,
         starterMin: count,
         starterMax: count.min(1),
         starters: choices,
-      })
-      .strict(),
+      },
+      [["priceQar", "saleQar"]],
+    ),
     z
       .object({
         type: z.literal("size-price"),
@@ -133,10 +193,11 @@ const kindSchema = z
         flavors: group.optional(),
       })
       .strict(),
-    z
-      .object({
+    priced(
+      {
         type: z.literal("addons"),
         priceQar: price,
+        saleQar: sale,
         extras,
         spicyOptional: z.boolean().optional(),
         freeChoices: z
@@ -147,8 +208,9 @@ const kindSchema = z
           .refine(unique)
           .optional(),
         includedPicks: included.optional(),
-      })
-      .strict(),
+      },
+      [["priceQar", "saleQar"]],
+    ),
   ])
   .refine(
     (k) => k.type !== "party-box" || k.starterMin <= k.starterMax,

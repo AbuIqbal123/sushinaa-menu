@@ -82,9 +82,35 @@ function Experience({
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
   const [couponPending, setCouponPending] = useState(false);
-  const orderKey = 'sushinaa-order-id';
+  /** Scoped per branch so a Downtown receipt does not open on Al Thumama. */
+  const orderKey = `sushinaa-order-id:${branchId}`;
+  const legacyOrderKey = 'sushinaa-order-id';
   function forgetStoredOrder() {
-    try { localStorage.removeItem(orderKey); sessionStorage.removeItem(orderKey); } catch { /* Storage unavailable. */ }
+    try {
+      localStorage.removeItem(orderKey);
+      sessionStorage.removeItem(orderKey);
+      localStorage.removeItem(legacyOrderKey);
+      sessionStorage.removeItem(legacyOrderKey);
+    } catch { /* Storage unavailable. */ }
+  }
+  function readStoredOrderId() {
+    try {
+      return (
+        localStorage.getItem(orderKey)
+        || sessionStorage.getItem(orderKey)
+        || localStorage.getItem(legacyOrderKey)
+        || sessionStorage.getItem(legacyOrderKey)
+      );
+    } catch {
+      return null;
+    }
+  }
+  function rememberStoredOrder(id: string) {
+    try {
+      localStorage.setItem(orderKey, id);
+      localStorage.removeItem(legacyOrderKey);
+      sessionStorage.removeItem(legacyOrderKey);
+    } catch { /* Keep tracking in memory. */ }
   }
   const [editing, setEditing] = useState<CartLine | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -139,12 +165,7 @@ function Experience({
         setRecovering(false);
       });
     };
-    if (!stored) {
-      try { stored = localStorage.getItem(orderKey) || sessionStorage.getItem(orderKey); } catch {
-        finish(returnMode ? (payFailed ? 'review' : 'menu') : undefined);
-        return () => { cancel = true; };
-      }
-    }
+    if (!stored) stored = readStoredOrderId();
     if (!stored || !/^SU-[0-9a-f-]{36}$/.test(stored)) {
       finish(returnMode ? (payFailed ? 'review' : 'menu') : undefined);
       return () => { cancel = true; };
@@ -158,13 +179,19 @@ function Experience({
       }
       const saved = await response.json() as Receipt;
       if (cancel) return;
+      const receiptBranch = saved.details?.branchId;
+      if (receiptBranch && receiptBranch !== branchId) {
+        forgetStoredOrder();
+        finish(returnMode ? (payFailed ? 'review' : 'menu') : undefined);
+        return;
+      }
       if (!shouldResumeCustomerReceipt(saved)) {
         forgetStoredOrder();
         finish(returnMode ? (payFailed ? 'review' : 'menu') : undefined);
         return;
       }
       setReceipt(saved);
-      try { localStorage.setItem(orderKey, saved.id); } catch { /* Keep tracking in memory. */ }
+      rememberStoredOrder(saved.id);
       if (saved.paymentStatus === 'paid' || saved.paymentMethod === 'pay_at_pickup') {
         cart.clear();
         attempt.current = null;
@@ -206,7 +233,7 @@ function Experience({
       forgetStoredOrder();
       return;
     }
-    try { localStorage.setItem(orderKey, receipt.id); } catch { /* Keep tracking in memory. */ }
+    rememberStoredOrder(receipt.id);
     if (isTerminalCustomerStatus(receipt.status)) return;
     let stopped = false;
     let running = false;
@@ -300,7 +327,7 @@ function Experience({
       const res = await fetch('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': attempt.current.key }, body });
       const data = await res.json();
       if (!res.ok) { setError(errorMessage(data.code)); return; }
-      setReceipt(data); try { localStorage.setItem(orderKey, data.id); } catch { /* Keep tracking in memory. */ }
+      setReceipt(data); rememberStoredOrder(data.id);
       const confirmedNow = data.paymentMethod === 'pay_at_pickup' || data.paymentStatus === 'paid';
       if (confirmedNow) { cart.clear(); attempt.current = null; go('receipt'); return; }
       if (data.paymentMethod === 'sadad') {

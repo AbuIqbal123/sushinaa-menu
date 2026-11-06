@@ -156,6 +156,48 @@ test("validation rejects invalid money, relationships, empty choices, limits and
     m.dishes[0].image = "/dishes/../private";
   });
 });
+test("sale price must be lower than base and may omit keys", () => {
+  const ok = structuredClone(seed);
+  const simple = ok.dishes.find((d) => d.kind.type === "simple")!;
+  assert.equal(simple.kind.type, "simple");
+  simple.kind = { type: "simple", priceQar: 40, saleQar: 32 };
+  assert.equal(menuSchema.safeParse(ok).success, true);
+
+  const equal = structuredClone(seed);
+  const s = equal.dishes.find((d) => d.kind.type === "simple")!;
+  s.kind = { type: "simple", priceQar: 32, saleQar: 32 };
+  assert.equal(menuSchema.safeParse(equal).success, false);
+
+  const higher = structuredClone(seed);
+  const h = higher.dishes.find((d) => d.kind.type === "simple")!;
+  h.kind = { type: "simple", priceQar: 32, saleQar: 40 };
+  assert.equal(menuSchema.safeParse(higher).success, false);
+
+  const roll = structuredClone(seed);
+  const r = roll.dishes.find((d) => d.kind.type === "roll")!;
+  assert.equal(r.kind.type, "roll");
+  r.kind.proteins[0] = {
+    ...r.kind.proteins[0],
+    prices: { 6: 40, 12: 48 },
+    saleQar: { 6: 32 },
+  };
+  assert.equal(menuSchema.safeParse(roll).success, true);
+
+  const missingPortion = structuredClone(seed);
+  const mp = missingPortion.dishes.find((d) => d.kind.type === "roll")!;
+  assert.equal(mp.kind.type, "roll");
+  mp.kind.proteins[0] = {
+    ...mp.kind.proteins[0],
+    prices: { 6: 32 },
+    saleQar: { 12: 28 },
+  };
+  assert.equal(menuSchema.safeParse(missingPortion).success, false);
+
+  const unknown = structuredClone(seed);
+  const u = unknown.dishes.find((d) => d.kind.type === "simple")!;
+  (u.kind as { compareAt?: number }).compareAt = 40;
+  assert.equal(menuSchema.safeParse(unknown).success, false);
+});
 test("visibility, availability and explicit ordering determine the public menu", () => {
   const m = structuredClone(seed);
   m.categories[0].visible = false;

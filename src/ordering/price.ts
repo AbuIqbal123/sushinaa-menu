@@ -6,8 +6,104 @@ import type {
   PiecePrices,
   Selection,
 } from "@/catalog/types";
+import { saleIsLower } from "@/cms/sale-price";
 import type { Copy } from "@/i18n/copy";
 import { pickName, type Lang } from "@/i18n/localize";
+
+export type ShownPrice = {
+  chargeQar: number;
+  /** Struck base/list total. Never written back to the menu. */
+  wasQar: number | null;
+};
+
+/** Base is the list price. Optional sale is what the guest pays when lower. */
+function leaf(base: number, sale: number | undefined) {
+  const onSale = sale != null && saleIsLower(sale, base);
+  return {
+    charge: onSale ? sale : base,
+    list: base,
+  };
+}
+
+function quoteLeaves(dish: Dish, sel: Selection): { charge: number; list: number }[] {
+  const kind = dish.kind;
+  const extrasList = kind.type === "addons" ? kind.extras : dish.extras;
+  const selectedExtras = sel.extras ?? [];
+  const extraLeaves = selectedExtras.map((id) => {
+    const ex = extrasList?.find((e) => e.id === id);
+    if (!ex) return leaf(0, undefined);
+    return leaf(ex.priceQar, ex.saleQar);
+  });
+
+  let base: { charge: number; list: number };
+  switch (kind.type) {
+    case "simple":
+    case "deal-box":
+    case "party-box":
+    case "addons":
+      base = leaf(kind.priceQar, kind.saleQar);
+      break;
+    case "spicy-toggle":
+      base = sel.spicy
+        ? leaf(kind.spicyQar, kind.spicySaleQar)
+        : leaf(kind.mildQar, kind.mildSaleQar);
+      break;
+    case "sauce-price": {
+      const sauce = kind.sauces.find((s) => s.id === sel.sauce) ?? kind.sauces[0];
+      base = sauce ? leaf(sauce.priceQar, sauce.saleQar) : leaf(0, undefined);
+      break;
+    }
+    case "roll": {
+      const protein =
+        kind.proteins.find((p) => p.id === sel.protein) ?? kind.proteins[0];
+      const pieces = (sel.pieces ?? preferredPieces(protein.prices)) as PieceCount;
+      let list = protein.prices[pieces];
+      let sale = protein.saleQar?.[String(pieces)];
+      if (list == null) {
+        const fallback = preferredPieces(protein.prices);
+        list = protein.prices[fallback] ?? 0;
+        sale = protein.saleQar?.[String(fallback)];
+      }
+      base = leaf(list, sale);
+      break;
+    }
+    case "size-price": {
+      const size = kind.sizes.find((s) => s.id === sel.size) ?? kind.sizes[0];
+      base = size ? leaf(size.priceQar, size.saleQar) : leaf(0, undefined);
+      break;
+    }
+  }
+  return [base, ...extraLeaves];
+}
+
+/** Payable riyals for this selection (sale when set, else base). */
+export function unitPrice(dish: Dish, sel: Selection): number {
+  return quoteLeaves(dish, sel).reduce((sum, item) => sum + item.charge, 0);
+}
+
+/** Charge plus a strike on the base when a sale applies. */
+export function shownPrice(dish: Dish, sel: Selection): ShownPrice {
+  const leaves = quoteLeaves(dish, sel);
+  const chargeQar = leaves.reduce((sum, item) => sum + item.charge, 0);
+  const listQar = leaves.reduce((sum, item) => sum + item.list, 0);
+  return {
+    chargeQar,
+    wasQar: listQar > chargeQar ? listQar : null,
+  };
+}
+
+/** One leaf. Pass base then optional sale. */
+export function shownLeaf(baseQar: number, saleQar?: number): ShownPrice {
+  const priced = leaf(baseQar, saleQar);
+  return {
+    chargeQar: priced.charge,
+    wasQar: priced.list > priced.charge ? priced.list : null,
+  };
+}
+
+function charged(base: number, sale?: number) {
+  return sale != null && saleIsLower(sale, base) ? sale : base;
+}
 
 export function preferredPieces(prices: PiecePrices): PieceCount {
   if (prices[6] != null) return 6;
@@ -22,22 +118,29 @@ export function minPriceOf(dish: Dish): number {
   const kind = dish.kind;
   switch (kind.type) {
     case "simple":
-      return kind.priceQar;
+      return charged(kind.priceQar, kind.saleQar);
     case "spicy-toggle":
-      return Math.min(kind.mildQar, kind.spicyQar);
+      return Math.min(
+        charged(kind.mildQar, kind.mildSaleQar),
+        charged(kind.spicyQar, kind.spicySaleQar),
+      );
     case "sauce-price":
-      return Math.min(...kind.sauces.map((s) => s.priceQar));
+      return Math.min(...kind.sauces.map((s) => charged(s.priceQar, s.saleQar)));
     case "roll": {
-      const all = kind.proteins.flatMap((p) => Object.values(p.prices));
+      const all = kind.proteins.flatMap((p) =>
+        (Object.keys(p.prices) as unknown as PieceCount[]).map((n) =>
+          charged(p.prices[n] ?? 0, p.saleQar?.[String(n)]),
+        ),
+      );
       return Math.min(...all);
     }
     case "deal-box":
     case "party-box":
-      return kind.priceQar;
+      return charged(kind.priceQar, kind.saleQar);
     case "size-price":
-      return Math.min(...kind.sizes.map((s) => s.priceQar));
+      return Math.min(...kind.sizes.map((s) => charged(s.priceQar, s.saleQar)));
     case "addons":
-      return kind.priceQar;
+      return charged(kind.priceQar, kind.saleQar);
   }
 }
 
@@ -136,50 +239,6 @@ function countedChoiceNames(
   return names.join(lang === "ar" ? "، " : ", ");
 }
 
-function extraTotal(extras: Extra[] | undefined, selected: string[] | undefined): number {
-  if (!extras?.length || !selected?.length) return 0;
-  const map = new Map(extras.map((e) => [e.id, e.priceQar]));
-  return selected.reduce((sum, id) => sum + (map.get(id) ?? 0), 0);
-}
-
-export function unitPrice(dish: Dish, sel: Selection): number {
-  const kind = dish.kind;
-  const extras = extraTotal(
-    kind.type === "addons" ? kind.extras : dish.extras,
-    sel.extras,
-  );
-
-  switch (kind.type) {
-    case "simple":
-      return kind.priceQar + extras;
-    case "spicy-toggle":
-      return (sel.spicy ? kind.spicyQar : kind.mildQar) + extras;
-    case "sauce-price": {
-      const sauce = kind.sauces.find((s) => s.id === sel.sauce) ?? kind.sauces[0];
-      return (sauce?.priceQar ?? 0) + extras;
-    }
-    case "roll": {
-      const protein =
-        kind.proteins.find((p) => p.id === sel.protein) ?? kind.proteins[0];
-      const pieces = (sel.pieces ?? preferredPieces(protein.prices)) as PieceCount;
-      const base = protein.prices[pieces];
-      if (base == null) {
-        const fallback = preferredPieces(protein.prices);
-        return (protein.prices[fallback] ?? 0) + extras;
-      }
-      return base + extras;
-    }
-    case "deal-box":
-    case "party-box":
-      return kind.priceQar + extras;
-    case "size-price": {
-      const size = kind.sizes.find((s) => s.id === sel.size) ?? kind.sizes[0];
-      return (size?.priceQar ?? 0) + extras;
-    }
-    case "addons":
-      return kind.priceQar + extras;
-  }
-}
 
 export function hasPriceRange(dish: Dish): boolean {
   const kind = dish.kind;
