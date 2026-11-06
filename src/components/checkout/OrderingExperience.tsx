@@ -83,6 +83,8 @@ function Experience({
   const [customer, setCustomer] = useState<Customer>(emptyCustomer);
   /** Draft while typing on details; avoids re-rendering the parked menu each keystroke. */
   const customerDraft = useRef<Customer>(emptyCustomer);
+  /** Seed for CollectionDetailsForm — set in go(), never read from a ref during render. */
+  const [detailsInitial, setDetailsInitial] = useState<Customer>(emptyCustomer);
   const [error, setError] = useState('');
   const [payFailNotice, setPayFailNotice] = useState<PaymentFailNoticeKind | null>(null);
   const [busy, setBusy] = useState(false);
@@ -286,6 +288,7 @@ function Experience({
       router.replace(`/${branchId}`);
       return;
     }
+    if (next === 'details') setDetailsInitial(customerDraft.current);
     const order: Step[] = ['menu', 'details', 'review', 'payment', 'receipt'];
     setMotion(order.indexOf(next) < order.indexOf(step) ? 'back' : 'forward');
     setError(''); setRedirecting(false); setStep(next); window.scrollTo({ top: 0, behavior: 'instant' });
@@ -471,7 +474,7 @@ function Experience({
             {viewStep !== 'receipt' && cart.unavailableCount > 0 && <div className="checkout-notice" role="alert"><strong>{text('Your basket needs an update', 'تحتاج سلتك إلى تحديث')}</strong><p>{text(`${cart.unavailableCount} serving(s) or their choices are no longer available. Remove them before continuing.`, `${cart.unavailableCount} حصة أو خياراتها لم تعد متوفرة. احذفها قبل المتابعة.`)}</p><button type="button" className="text-action" onClick={cart.discardUnavailable}>{text('Remove unavailable selections', 'حذف الخيارات غير المتوفرة')}</button></div>}
             {viewStep === 'details' && (
               <CollectionDetailsForm
-                initial={customerDraft.current}
+                initial={detailsInitial}
                 lang={lang}
                 text={text}
                 onDraft={(next) => { customerDraft.current = next; }}

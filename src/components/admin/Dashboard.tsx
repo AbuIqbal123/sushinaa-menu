@@ -9,7 +9,7 @@ import { formatMinor } from '@/lib/money';
 import type { Role } from '@/cms/permissions';
 import { OpsIcon,useAdminClock,useOperations } from './OperationsUI';
 
-export type OrderIntent={status?:string;unprinted?:boolean};
+export type OrderIntent={status?:string;unprinted?:boolean;orderId?:string;view?:'active'|'history'};
 export function Dashboard({menu,onEdit,onMenu,onOrders,onBranches,branch,role}:{menu:MenuData;onEdit:(dish:CmsDish)=>void;onMenu:()=>void;onOrders:(intent?:OrderIntent,branch?:string)=>void;onBranches:()=>void;branch:string;role:Role}){
   const {lang}=useLocale();const ar=lang==='ar';const text=(en:string,arabic:string)=>ar?arabic:en;
   const [period,setPeriod]=useState('7d'),[from,setFrom]=useState(''),[to,setTo]=useState(''),[chart,setChart]=useState<'orders'|'sales'>('orders');

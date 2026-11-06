@@ -26,8 +26,8 @@ export function CollectionDetailsForm({
 }) {
   const [customer, setCustomer] = useState(initial);
   const [errors, setErrors] = useState<string[]>([]);
-  const draft = useRef(customer);
-  draft.current = customer;
+  /** Latest draft for submit; updated only in event handlers (not during render). */
+  const draft = useRef(initial);
 
   function commit(patch: (current: Customer) => Customer) {
     const next = patch(draft.current);

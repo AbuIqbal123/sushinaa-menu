@@ -35,6 +35,8 @@ export type Coupon = {
   redeemedAt: string | null;
   /** Kitchen order number when held/redeemed; null if unknown or unused. */
   orderNumber: number | null;
+  /** Sadad transaction_number (or other provider ref) when paid; null if unpaid/unused. */
+  paymentReference: string | null;
   disabledAt: string | null;
   createdAt: string;
   updatedAt: string;

@@ -77,7 +77,7 @@ export function Admin({ initial, role, branchId }: { initial: MenuSnapshot; role
   const { menu } = snapshot;
   const branchRows=configuredBranches(menu.branches);
   const selectedBranch=branchRows.find(b=>b.slug===branch);
-  function openOrders(intent:OrderIntent={},nextBranch?:string){if(!confirmDiscard())return;if(nextBranch!==undefined)setBranch(nextBranch);setOrderIntent(previous=>({...intent,key:previous.key+1}));setSection('Orders');}
+  function openOrders(intent:OrderIntent={},nextBranch?:string){if(!confirmDiscard())return;if(nextBranch!==undefined)setBranch(nextBranch);setOrderIntent(previous=>({...intent,key:previous.key+1}));setSection(intent.view==='history'?'History':'Orders');}
   function navigate(next:string){if(next===section){setMobileNav(false);return;}if(!confirmDiscard())return;setSection(next);setCreatingUser(false);setCreatingCoupon(false);setMobileNav(false);if(next==='Orders'||next==='History')setOrderIntent(previous=>({key:previous.key+1}));}
   const categories = [...menu.categories].sort((a, b) => a.order - b.order);
   async function save(next: MenuData) {
@@ -231,7 +231,7 @@ export function Admin({ initial, role, branchId }: { initial: MenuSnapshot; role
           <Orders active={section === "Orders" || section === "History"} view={section==='History'?'history':'active'} branch={branch} intent={orderIntent} onUnread={setUnreadOrders} role={role} menu={menu} />
           {role === "admin" && <Payments active={section === "Payments"} />}
           {section === "Users" && role === "admin" && <StaffPanel menu={menu} creating={creatingUser} onCreating={setCreatingUser} />}
-          {section === "Coupons" && role === "admin" && <CouponsPanel creating={creatingCoupon} onCreating={setCreatingCoupon} />}
+          {section === "Coupons" && role === "admin" && <CouponsPanel creating={creatingCoupon} onCreating={setCreatingCoupon} onOpenOrder={(orderId, view) => openOrders({ orderId, view })} />}
           {section === "Branches" && role === "admin" && <BranchEditor menu={menu} onSave={save} />}
           {section === "Activity" && <Activity />}
           {section === "Settings" && role === "admin" && (

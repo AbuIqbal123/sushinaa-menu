@@ -63,6 +63,7 @@ function couponFrom(row: DbRow): Coupon {
     redeemedOrderId: nullableText(row, 'redeemed_order_id'),
     redeemedAt: nullableText(row, 'redeemed_at'),
     orderNumber: nullableInteger(row, 'linked_order_number'),
+    paymentReference: nullableText(row, 'payment_reference'),
     disabledAt: nullableText(row, 'disabled_at'),
     createdAt: text(row, 'created_at'),
     updatedAt: text(row, 'updated_at'),
@@ -146,10 +147,21 @@ export async function createCoupon(input: CreateCouponInput, now = new Date()): 
 
 export async function listCoupons(): Promise<Coupon[]> {
   await initDb();
-  // Kitchen number for staff; coupons still store the SU- id used as Sadad ORDER_ID.
+  // Kitchen number + Sadad txn for staff; coupons still store the SU- id used as Sadad ORDER_ID.
   const couponCols = COLUMNS.split(', ').map((column) => `c.${column}`).join(', ');
   const result = await db.execute(`
-    SELECT ${couponCols}, o.order_number AS linked_order_number
+    SELECT ${couponCols},
+      o.order_number AS linked_order_number,
+      (
+        SELECT pe.provider_reference
+        FROM payment_events pe
+        WHERE pe.order_id = COALESCE(c.redeemed_order_id, c.held_order_id)
+          AND pe.provider_reference IS NOT NULL
+          AND pe.provider_reference != ''
+          AND pe.our_status = 'paid'
+        ORDER BY pe.recorded_at DESC
+        LIMIT 1
+      ) AS payment_reference
     FROM coupons c
     LEFT JOIN orders o ON o.id = COALESCE(c.redeemed_order_id, c.held_order_id)
     ORDER BY c.created_at DESC, c.id DESC

@@ -67,7 +67,15 @@ function couponErrorMessage(error: string, text: (en: string, ar: string) => str
   return text('Could not save the coupon.', 'تعذّر حفظ القسيمة.');
 }
 
-export function CouponsPanel({ creating, onCreating }: { creating: boolean; onCreating: (open: boolean) => void }) {
+export function CouponsPanel({
+  creating,
+  onCreating,
+  onOpenOrder,
+}: {
+  creating: boolean;
+  onCreating: (open: boolean) => void;
+  onOpenOrder: (orderId: string, view: 'active' | 'history') => void;
+}) {
   const { lang } = useLocale();
   const text = (en: string, ar: string) => (lang === 'ar' ? ar : en);
   const notify = useNotify();
@@ -93,10 +101,21 @@ export function CouponsPanel({ creating, onCreating }: { creating: boolean; onCr
     return () => { live = false; };
   }, []);
 
-  function linkedOrderLabel(row: Coupon) {
-    if (row.status !== 'held' && row.status !== 'redeemed') return '';
-    if (row.orderNumber == null) return '';
-    return `#${formatOrderNumber(row.orderNumber)}`;
+  function linkedOrderId(row: Coupon) {
+    return row.redeemedOrderId || row.heldOrderId;
+  }
+
+  function linkedOrderCell(row: Coupon) {
+    if (row.status !== 'held' && row.status !== 'redeemed') return '—';
+    const kitchen = row.orderNumber != null ? `#${formatOrderNumber(row.orderNumber)}` : null;
+    const txn = row.paymentReference;
+    if (!kitchen && !txn) return '—';
+    return (
+      <>
+        <span>{kitchen ?? '—'}</span>
+        {txn ? <small dir="ltr">{text('Sadad', 'سداد')} {txn}</small> : null}
+      </>
+    );
   }
 
   async function postCoupon(id: string, body: Record<string, string>, ok: string) {
@@ -162,7 +181,7 @@ export function CouponsPanel({ creating, onCreating }: { creating: boolean; onCr
                   </StatusBadge>
                 </td>
                 <td dir="ltr">{formatQatarDateTime(row.expiresAt)}</td>
-                <td dir="ltr">{linkedOrderLabel(row)}</td>
+                <td className="staff-customer" dir="ltr">{linkedOrderCell(row)}</td>
                 <td className="users-access">
                   {row.status === 'available' && (
                     <button type="button" className="danger" disabled={busy} onClick={() => void disable(row.id)}>
@@ -170,11 +189,23 @@ export function CouponsPanel({ creating, onCreating }: { creating: boolean; onCr
                     </button>
                   )}
                   {row.status === 'held' && (
-                    <button type="button" disabled={busy} onClick={() => void release(row.id)}>
-                      {text('Release', 'تحرير')}
+                    <>
+                      <button type="button" disabled={busy} onClick={() => void release(row.id)}>
+                        {text('Release', 'تحرير')}
+                      </button>
+                      {linkedOrderId(row) && (
+                        <button type="button" disabled={busy} onClick={() => onOpenOrder(linkedOrderId(row)!, 'active')}>
+                          {text('Open order', 'فتح الطلب')}
+                        </button>
+                      )}
+                    </>
+                  )}
+                  {row.status === 'redeemed' && linkedOrderId(row) && (
+                    <button type="button" disabled={busy} onClick={() => onOpenOrder(linkedOrderId(row)!, 'history')}>
+                      {text('Open order', 'فتح الطلب')}
                     </button>
                   )}
-                  {(row.status === 'redeemed' || row.status === 'disabled') && (
+                  {row.status === 'disabled' && (
                     <span className="users-access-flat" aria-hidden="true">···</span>
                   )}
                 </td>

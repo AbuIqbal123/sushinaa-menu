@@ -759,6 +759,8 @@
 .users-list tr[data-disabled] td:not(.users-access) { color:var(--muted); }
 .users-access { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; align-items:center; min-height:32px; }
 .users-access-flat { color:var(--muted); letter-spacing:0.12em; font-size:14px; line-height:1; user-select:none; }
+.users-list td.staff-customer { white-space:normal; line-height:1.35; }
+.users-list td.staff-customer small { display:block; color:var(--muted); font-size:12px; margin-top:2px; }
 .users-list th:last-child { text-align:end; }
 .admin .users-access button { width:auto; min-height:32px; padding:4px 10px; }
 .admin dialog.users-dialog { width:min(26rem, calc(100vw - 32px)); }

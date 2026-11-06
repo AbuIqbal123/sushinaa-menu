@@ -80,7 +80,7 @@ function OrderWorkspace({view,branch,role,menu,revision,refresh,intent,sound,onS
   const {lang}=useLocale();const ar=lang==='ar';const text=(en:string,arabic:string)=>ar?arabic:en;const branches=configuredBranches(menu.branches);
   const history=view==='history';const [status,setStatus]=useState(intent.status??''),[unprinted,setUnprinted]=useState(Boolean(intent.unprinted));
   const [from,setFrom]=useState(history?historyDate(-29):''),[to,setTo]=useState(history?historyDate():''),[period,setPeriod]=useState(history?'30d':'all');
-  const [q,setQ]=useState(''),[search,setSearch]=useState(''),[page,setPage]=useState(1),[result,setResult]=useState<{key:string;data:List}|null>(null),[detail,setDetail]=useState<string|null>(null),[error,setError]=useState('');
+  const [q,setQ]=useState(''),[search,setSearch]=useState(''),[page,setPage]=useState(1),[result,setResult]=useState<{key:string;data:List}|null>(null),[detail,setDetail]=useState<string|null>(intent.orderId??null),[error,setError]=useState('');
   const {data:operations,refresh:refreshCounts}=useOperations(branch,'today','','',!history);
   const refreshAll=useCallback(()=>{refresh();refreshCounts();},[refresh,refreshCounts]);
   const query=new URLSearchParams({page:String(page),limit:history?'25':'50',view});
