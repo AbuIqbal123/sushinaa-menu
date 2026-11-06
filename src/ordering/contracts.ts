@@ -39,7 +39,7 @@ export type OrderDetailData = OrderSummary & { customer: { name: string; phone: 
 export type CustomerReceiptDetails = {
   branchId: BranchId;
   customer: OrderSnapshot['customer'] | null;
-  lines: (Pick<OrderSnapshot['lines'][number], 'name' | 'nameAr' | 'quantity' | 'note' | 'unitMinor' | 'selection'> & {
+  lines: (Pick<OrderSnapshot['lines'][number], 'dishId' | 'name' | 'nameAr' | 'quantity' | 'note' | 'unitMinor' | 'selection'> & {
     id: string;
     totalMinor: number;
     kind?: OrderSnapshot['lines'][number]['kind'];

@@ -24,6 +24,7 @@ import { OrderProgress, orderPhase, orderTrackingLabel } from './OrderProgress';
 import { CouponField, knownCouponMessage, type AppliedCoupon } from './CouponField';
 import { isTerminalCustomerStatus, shouldResumeCustomerReceipt } from '@/ordering/customer-tracking';
 import { paymentFailCopy, paymentFailNoticeKind, type PaymentFailNoticeKind } from '@/ordering/payment-fail-notice';
+import { cartMatchesPlaced } from '@/ordering/checkout/cart-matches-placed';
 
 const emptyCustomer: Customer = { name: '', phone: '', plate: 'Q', brand: '', colour: '', car: '', instructions: '' };
 type Step = 'menu' | 'details' | 'review' | 'payment' | 'receipt';
@@ -344,13 +345,34 @@ function Experience({
   const activeStep = step === 'receipt' && !activeReceipt ? 'menu' : step;
   const viewStep: Step = activeStep === 'payment' && status && !status.open ? 'review' : activeStep;
   const confirmed = activeReceipt && (activeReceipt.paymentStatus === 'paid' || activeReceipt.paymentMethod === 'pay_at_pickup');
+  const placedMatchesCart = Boolean(
+    activeReceipt?.details?.lines
+    && cartMatchesPlaced(
+      cart.lines.map((line) => ({
+        dishId: line.dish.id,
+        selection: line.sel,
+        quantity: line.qty,
+        note: line.note,
+        unitMinor: Math.round(line.unitQar * 100),
+      })),
+      activeReceipt.details.lines.map((line) => ({
+        dishId: line.dishId,
+        selection: line.selection,
+        quantity: line.quantity,
+        note: line.note,
+        unitMinor: line.unitMinor,
+      })),
+    ),
+  );
+  // Resume only when the live basket still matches the unpaid placed order.
   const resumePay = Boolean(
     activeReceipt
     && activeReceipt.paymentStatus === 'awaiting_payment'
-    && (activeReceipt.paymentMethod === 'mock' || activeReceipt.paymentMethod === 'sadad'),
+    && (activeReceipt.paymentMethod === 'mock' || activeReceipt.paymentMethod === 'sadad')
+    && placedMatchesCart,
   );
-  const payRetryBlocked = payFailNotice === 'later';
-  const payFailCopyShown = payFailNotice ? paymentFailCopy(payFailNotice, text) : null;
+  const payRetryBlocked = resumePay && payFailNotice === 'later';
+  const payFailCopyShown = resumePay && payFailNotice ? paymentFailCopy(payFailNotice, text) : null;
   const menuStage = branch ? <div key="menu-stage" className={`app-lock ordering-menu-stage${activeStep !== 'menu' ? ' is-inactive' : ''}`} inert={activeStep !== 'menu'} aria-hidden={activeStep !== 'menu' ? true : undefined}><MenuFeed branch={branchName} inactive={activeStep !== 'menu'} onPickup={() => go('details')}
     orderTracking={confirmed && activeReceipt ? <button type="button" className={`order-tracker is-${orderPhase(activeReceipt.status)}`} aria-live="polite" onClick={() => go('receipt')}>
       <span className="order-tracker-label">{orderTrackingLabel(activeReceipt.status, lang)}</span>{activeReceipt.orderNumber != null && <span className="order-tracker-number" dir="ltr">#{formatOrderNumber(activeReceipt.orderNumber)}</span>}
@@ -430,7 +452,7 @@ function Experience({
             {(viewStep === 'details' || viewStep === 'review') && <p className="checkout-branch">{text('Pickup', 'استلام')} · <strong>{branchName}</strong></p>}
             {viewStep !== 'payment' && viewStep !== 'receipt' && closedNotice}
             {viewStep === 'review' && payFailCopyShown && (
-              <div className="checkout-notice" role="status">
+              <div className="checkout-notice checkout-notice-fail" role="alert">
                 <strong>{payFailCopyShown.title}</strong>
                 <p>{payFailCopyShown.body}</p>
               </div>
