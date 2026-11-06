@@ -26,16 +26,20 @@ export async function existingOrder(session: string, key: string, requestHash: s
 }
 export function customerResult(row: Record<string, unknown>, reused = false) {
   const paid = Boolean(row.paid_at);
+  const updatedAt = typeof row.updated_at === 'string'
+    ? row.updated_at
+    : typeof row.created_at === 'string' ? String(row.created_at) : null;
   return { id: String(row.id), orderNumber: row.order_number == null ? null : Number(row.order_number),
     paymentStatus: paid ? 'paid' : row.payment_method === 'pay_at_pickup' ? 'pending' : Date.parse(String(row.created_at)) + 30 * 60000 <= Date.now() ? 'expired' : 'awaiting_payment',
     status: String(row.status), paymentMethod: row.payment_method as PaymentMethod, totalMinor: Number(row.total_minor), currency: 'QAR' as const,
-    arrivedAt: typeof row.customer_arrived_at === 'string' ? row.customer_arrived_at : null, reused };
+    arrivedAt: typeof row.customer_arrived_at === 'string' ? row.customer_arrived_at : null,
+    updatedAt, reused };
 }
 export async function markCustomerArrived(id: string, session: string | null, now = new Date()) {
   await initOrders();
   if (!session) throw new OrderError('NOT_FOUND', 404);
   const row = (await db.execute({
-    sql: 'SELECT id,status,payment_method,paid_at,total_minor,created_at,order_number,customer_arrived_at FROM orders WHERE id=? AND session_hash=?',
+    sql: 'SELECT id,status,payment_method,paid_at,total_minor,created_at,updated_at,order_number,customer_arrived_at FROM orders WHERE id=? AND session_hash=?',
     args: [id, hash(session)],
   })).rows[0];
   if (!row) throw new OrderError('NOT_FOUND', 404);
@@ -43,12 +47,12 @@ export async function markCustomerArrived(id: string, session: string | null, no
   if (typeof row.customer_arrived_at === 'string') return customerResult(row);
   const at = now.toISOString();
   const updated = (await db.execute({
-    sql: "UPDATE orders SET customer_arrived_at=?, updated_at=? WHERE id=? AND session_hash=? AND status='ready' AND customer_arrived_at IS NULL RETURNING id,status,payment_method,paid_at,total_minor,created_at,order_number,customer_arrived_at",
+    sql: "UPDATE orders SET customer_arrived_at=?, updated_at=? WHERE id=? AND session_hash=? AND status='ready' AND customer_arrived_at IS NULL RETURNING id,status,payment_method,paid_at,total_minor,created_at,updated_at,order_number,customer_arrived_at",
     args: [at, at, id, hash(session)],
   })).rows[0];
   if (updated) return customerResult(updated);
   const latest = (await db.execute({
-    sql: 'SELECT id,status,payment_method,paid_at,total_minor,created_at,order_number,customer_arrived_at FROM orders WHERE id=? AND session_hash=?',
+    sql: 'SELECT id,status,payment_method,paid_at,total_minor,created_at,updated_at,order_number,customer_arrived_at FROM orders WHERE id=? AND session_hash=?',
     args: [id, hash(session)],
   })).rows[0];
   if (!latest || String(latest.status) !== 'ready') throw new OrderError('INVALID', 409);
@@ -57,7 +61,7 @@ export async function markCustomerArrived(id: string, session: string | null, no
 export async function customerOrder(id: string, session: string | null) {
   await initOrders();
   if (!session) throw new OrderError('NOT_FOUND', 404);
-  const row = (await db.execute({ sql: 'SELECT id,status,payment_method,paid_at,total_minor,created_at,order_number,branch_id,snapshot,customer_arrived_at FROM orders WHERE id=? AND session_hash=?', args: [id, hash(session)] })).rows[0];
+  const row = (await db.execute({ sql: 'SELECT id,status,payment_method,paid_at,total_minor,created_at,updated_at,order_number,branch_id,snapshot,customer_arrived_at FROM orders WHERE id=? AND session_hash=?', args: [id, hash(session)] })).rows[0];
   if (!row) throw new OrderError('NOT_FOUND', 404);
   const snapshot = JSON.parse(String(row.snapshot)) as Partial<OrderSnapshot>;
   const { applyEdits, linesFromSnapshot } = await import('../edits');

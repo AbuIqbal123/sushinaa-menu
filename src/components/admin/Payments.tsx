@@ -6,6 +6,7 @@ import { formatQatarDateTime } from '@/lib/datetime';
 import { nationalPhone } from '@/ordering/checkout/validation';
 import { formatOrderNumber } from '@/ordering/order-number';
 import { useModal } from './Fields';
+import { StatusBadge } from './StatusBadge';
 
 type PaymentRow = {
   orderId: string;
@@ -92,7 +93,7 @@ function PaymentDetailDialog({
       </header>
       <div className="admin-dialog-body payments-dialog-body">
         <dl className="payments-facts">
-          <div><dt>Status</dt><dd><span className={`staff-status status-${detail.status}`}>{statusLabel(detail.status)}</span></dd></div>
+          <div><dt>Status</dt><dd><StatusBadge status={detail.status}>{statusLabel(detail.status)}</StatusBadge></dd></div>
           <div><dt>Order total</dt><dd dir="ltr">{money(detail.amountMinor)}</dd></div>
           {captured != null && captured !== detail.amountMinor && (
             <div><dt>Captured</dt><dd dir="ltr">{money(captured)}</dd></div>
@@ -109,7 +110,7 @@ function PaymentDetailDialog({
             {detail.history.map((h, i) => (
               <li key={`${h.at}-${i}`}>
                 <time>{formatQatarDateTime(h.at)}</time>
-                {' · '}<span className={`staff-status status-${h.status}`}>{statusLabel(h.status)}</span>
+                {' · '}<StatusBadge status={h.status}>{statusLabel(h.status)}</StatusBadge>
                 {' · '}{h.kind}
                 {h.provider ? ` · ${h.provider}` : ''}
                 {h.reference ? ` · ${h.reference}` : ''}
@@ -244,7 +245,7 @@ export function Payments({ active }: { active: boolean }) {
                   <td className="staff-customer">{row.customerName}<br /><span dir="ltr">{localPhone(row.customerPhone)}</span></td>
                   <td dir="ltr">{money(row.amountMinor)}</td>
                   <td>{row.provider}</td>
-                  <td><span className={`staff-status status-${row.status}`}>{statusLabel(row.status)}</span></td>
+                  <td><StatusBadge status={row.status}>{statusLabel(row.status)}</StatusBadge></td>
                   <td><time dateTime={row.recordedAt}>{formatQatarDateTime(row.recordedAt)}</time></td>
                 </tr>
               ))}
