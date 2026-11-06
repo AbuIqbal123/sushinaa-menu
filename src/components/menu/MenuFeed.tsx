@@ -8,7 +8,8 @@ import { useMenu } from "@/cms/context";
 import { CartProvider, useCart } from "@/ordering/cart";
 import { LangButton, useLocale, useSetSheetOpen } from "@/i18n/locale";
 import { pickName, sectionName as categoryName, type Lang } from "@/i18n/localize";
-import { hasPriceRange, imageFor, photoPosition, unitPrice, selectionForDiet } from "@/ordering/price";
+import { hasPriceRange, imageFor, photoPosition, selectionForDiet, shownPrice } from "@/ordering/price";
+import { PriceShown } from "./PriceShown";
 import { formatQar } from "@/lib/money";
 import { CartSheet } from "../order/CartSheet";
 import { CategoryOverlay } from "./CategoryOverlay";
@@ -426,7 +427,12 @@ function FeedInner({ branch, onPickup, branchBar, orderTracking, inactive = fals
                 <Image className="search-thumbnail" src={thumb} width={52} height={52} sizes="52px" alt="" unoptimized
                   style={{ objectPosition: photoPosition(dish, thumb) }} />
                 <span className="search-result-name"><strong>{pickName(dish, lang)}</strong><small>{sectionName(dish.section, lang)}</small></span>
-                <span>{`${hasPriceRange(dish) ? t.from + " " : ""}${formatQar(unitPrice(dish, sel), lang, menu.settings)}`}</span>
+                <span>
+                  <PriceShown
+                    price={shownPrice(dish, sel)}
+                    from={hasPriceRange(dish) ? t.from : undefined}
+                  />
+                </span>
               </button>;
             })}
           </div> : looped.map((item) => {

@@ -219,6 +219,21 @@ body {
   color: #f0d9a8;
 }
 
+.price-was {
+  text-decoration: line-through;
+  font-weight: 500;
+  color: color-mix(in srgb, currentColor 55%, transparent);
+}
+
+.detail-unit .price-was,
+.opt em .price-was,
+.extra em .price-was,
+.search-result .price-was {
+  text-decoration: line-through;
+  font-weight: 500;
+  opacity: 0.65;
+}
+
 .tags {
   display: flex;
   gap: 6px;

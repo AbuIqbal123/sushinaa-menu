@@ -306,6 +306,21 @@
   grid-template-columns: 1fr 1fr;
   gap: 18px;
 }
+.admin-price-pair,
+.admin-portion-pair {
+  margin-bottom: 14px;
+}
+.admin-price-pair .admin-grid,
+.admin-portion-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 18px;
+  margin-bottom: 6px;
+}
+.admin-price-pair .admin-hint {
+  display: block;
+  margin-top: 0;
+}
 .admin-field {
   margin-bottom: 14px;
 }

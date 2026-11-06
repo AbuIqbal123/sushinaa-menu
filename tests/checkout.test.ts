@@ -103,6 +103,36 @@ test('all complete menu selections remain valid after the real basket serializat
   }
 });
 
+test('sale price lowers the quoted unit; base alone is display-only', async () => {
+  const dish = publicMenu(menu).dishes.find((d) => d.kind.type === 'simple')!;
+  assert.equal(dish.kind.type, 'simple');
+  const selection = defaultSelection(dish);
+  const baseMinor = Math.round(unitPrice(dish, selection) * 100);
+  const withSale = structuredClone(menu);
+  const target = withSale.dishes.find((d) => d.id === dish.id)!;
+  assert.equal(target.kind.type, 'simple');
+  const saleQar = Math.max(0, dish.kind.priceQar - 5);
+  target.kind = {
+    type: 'simple',
+    priceQar: dish.kind.priceQar,
+    saleQar,
+  };
+  const saleMinor = Math.round(saleQar * 100);
+  const plain = await quoteOrder(
+    { ...input, lines: [{ dishId: dish.id, selection, quantity: 1, note: '', expectedUnitMinor: baseMinor }] },
+    menu,
+    at('2026-10-22T15:00:00'),
+  );
+  const sale = await quoteOrder(
+    { ...input, lines: [{ dishId: dish.id, selection, quantity: 1, note: '', expectedUnitMinor: saleMinor }] },
+    withSale,
+    at('2026-10-22T15:00:00'),
+  );
+  assert.equal(plain.totalMinor, baseMinor);
+  assert.equal(sale.totalMinor, saleMinor);
+  assert.equal(unitPrice(target, selection), saleQar);
+});
+
 const openAt = at('2026-10-22T15:00:00');
 const couponExpiry = '2027-06-01T00:00:00.000Z';
 
