@@ -42,6 +42,11 @@ function integer(row: DbRow, key: string): number {
   return number;
 }
 
+function nullableInteger(row: DbRow, key: string): number | null {
+  if (!(key in row) || row[key] == null) return null;
+  return integer(row, key);
+}
+
 function couponFrom(row: DbRow): Coupon {
   const kind = text(row, 'kind');
   const status = text(row, 'status');
@@ -57,6 +62,7 @@ function couponFrom(row: DbRow): Coupon {
     heldAt: nullableText(row, 'held_at'),
     redeemedOrderId: nullableText(row, 'redeemed_order_id'),
     redeemedAt: nullableText(row, 'redeemed_at'),
+    orderNumber: nullableInteger(row, 'linked_order_number'),
     disabledAt: nullableText(row, 'disabled_at'),
     createdAt: text(row, 'created_at'),
     updatedAt: text(row, 'updated_at'),
@@ -140,7 +146,14 @@ export async function createCoupon(input: CreateCouponInput, now = new Date()): 
 
 export async function listCoupons(): Promise<Coupon[]> {
   await initDb();
-  const result = await db.execute(`SELECT ${COLUMNS} FROM coupons ORDER BY created_at DESC, id DESC`);
+  // Kitchen number for staff; coupons still store the SU- id used as Sadad ORDER_ID.
+  const couponCols = COLUMNS.split(', ').map((column) => `c.${column}`).join(', ');
+  const result = await db.execute(`
+    SELECT ${couponCols}, o.order_number AS linked_order_number
+    FROM coupons c
+    LEFT JOIN orders o ON o.id = COALESCE(c.redeemed_order_id, c.held_order_id)
+    ORDER BY c.created_at DESC, c.id DESC
+  `);
   return result.rows.map(couponFrom);
 }
 

@@ -33,6 +33,8 @@ export type Coupon = {
   heldAt: string | null;
   redeemedOrderId: string | null;
   redeemedAt: string | null;
+  /** Kitchen order number when held/redeemed; null if unknown or unused. */
+  orderNumber: number | null;
   disabledAt: string | null;
   createdAt: string;
   updatedAt: string;

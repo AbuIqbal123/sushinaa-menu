@@ -17,3 +17,28 @@ export function shouldResumeCustomerReceipt(
   if (!Number.isFinite(at)) return false;
   return now - at < CUSTOMER_RECEIPT_TTL_MS;
 }
+
+/** Session flag: customer left a paid receipt for the menu; remount must not yank them back. */
+export function receiptDismissKey(orderId: string) {
+  return `sushinaa-receipt-dismissed:${orderId}`;
+}
+
+export function markReceiptDismissed(orderId: string, storage: Pick<Storage, 'setItem'> | null = defaultSessionStorage()) {
+  if (!storage) return;
+  try { storage.setItem(receiptDismissKey(orderId), '1'); } catch { /* Private mode. */ }
+}
+
+export function clearReceiptDismissed(orderId: string, storage: Pick<Storage, 'removeItem'> | null = defaultSessionStorage()) {
+  if (!storage) return;
+  try { storage.removeItem(receiptDismissKey(orderId)); } catch { /* Private mode. */ }
+}
+
+export function isReceiptDismissed(orderId: string, storage: Pick<Storage, 'getItem'> | null = defaultSessionStorage()) {
+  if (!storage) return false;
+  try { return storage.getItem(receiptDismissKey(orderId)) === '1'; } catch { return false; }
+}
+
+function defaultSessionStorage(): Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | null {
+  if (typeof sessionStorage === 'undefined') return null;
+  return sessionStorage;
+}

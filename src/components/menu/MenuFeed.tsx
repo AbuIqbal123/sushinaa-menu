@@ -202,9 +202,10 @@ function FeedInner({ branch, onPickup, branchBar, orderTracking, inactive = fals
 
   // A short peek reveals the next photo without skipping the first dish. Any
   // customer input cancels it immediately; never pull someone back mid-swipe.
+  // Skip while the feed is parked under checkout — keystrokes must not hit window listeners.
   useEffect(() => {
     const feed = feedRef.current;
-    if (!feed || !showCategoryHint || demoSeen.current || searchOpen || sheetOpen || diet !== "all" || dishes.length < 2) return;
+    if (inactive || !feed || !showCategoryHint || demoSeen.current || searchOpen || sheetOpen || diet !== "all" || dishes.length < 2) return;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (motion.matches) {
       const gesture = gestureRef.current;
@@ -286,7 +287,7 @@ function FeedInner({ branch, onPickup, branchBar, orderTracking, inactive = fals
       events.forEach((event) => window.removeEventListener(event, interrupt, true));
       motion.removeEventListener("change", interrupt);
     };
-  }, [diet, dishes.length, searchOpen, sheetOpen, showCategoryHint, listKey]);
+  }, [diet, dishes.length, searchOpen, sheetOpen, showCategoryHint, listKey, inactive]);
 
   const measureSearch = useCallback(() => {
     const button = searchButtonRef.current;

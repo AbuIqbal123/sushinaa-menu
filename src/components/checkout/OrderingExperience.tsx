@@ -9,7 +9,8 @@ import { useMenu } from '@/cms/context';
 import { LangButton, useLocale, useSetSheetOpen } from '@/i18n/locale';
 import { configuredBranches, type BranchId } from '@/branches/branches';
 import { branchStatus, qatarClock } from '@/branches/hours';
-import { customerSchema, digits, displayPhone, type Customer } from '@/ordering/checkout/validation';
+import { displayPhone, type Customer } from '@/ordering/checkout/validation';
+import { CollectionDetailsForm } from './CollectionDetailsForm';
 import { formatQar } from '@/lib/money';
 import { formatOrderNumber } from '@/ordering/order-number';
 import type { CustomerReceiptDetails } from '@/ordering/contracts';
@@ -18,11 +19,17 @@ import { pickName } from '@/i18n/localize';
 import type { PaymentStatus } from '@/ordering/checkout/payment';
 import { MockSadadGateway } from './MockSadadGateway';
 import { submitHostedCheckout } from './submit-hosted-checkout';
-import { CarBrandPicker, CarBrandLogo } from './CarBrandPicker';
+import { CarBrandLogo } from './CarBrandPicker';
 import { carBrandName, findCarBrand } from '@/ordering/car-brands';
 import { OrderProgress, orderPhase, orderTrackingLabel } from './OrderProgress';
 import { CouponField, knownCouponMessage, type AppliedCoupon } from './CouponField';
-import { isTerminalCustomerStatus, shouldResumeCustomerReceipt } from '@/ordering/customer-tracking';
+import {
+  clearReceiptDismissed,
+  isReceiptDismissed,
+  isTerminalCustomerStatus,
+  markReceiptDismissed,
+  shouldResumeCustomerReceipt,
+} from '@/ordering/customer-tracking';
 import { paymentFailCopy, paymentFailNoticeKind, type PaymentFailNoticeKind } from '@/ordering/payment-fail-notice';
 import { cartMatchesPlaced } from '@/ordering/checkout/cart-matches-placed';
 
@@ -74,7 +81,8 @@ function Experience({
   const [branchId] = useState<BranchId>(initialBranch);
   const [now, setNow] = useState(() => new Date(initialNow));
   const [customer, setCustomer] = useState<Customer>(emptyCustomer);
-  const [errors, setErrors] = useState<string[]>([]);
+  /** Draft while typing on details; avoids re-rendering the parked menu each keystroke. */
+  const customerDraft = useRef<Customer>(emptyCustomer);
   const [error, setError] = useState('');
   const [payFailNotice, setPayFailNotice] = useState<PaymentFailNoticeKind | null>(null);
   const [busy, setBusy] = useState(false);
@@ -155,6 +163,7 @@ function Experience({
         url.searchParams.delete('pay');
         window.history.replaceState({}, '', url.pathname + url.search);
       }
+      if (paidId) clearReceiptDismissed(paidId);
     } catch { /* Keep recovery via localStorage. */ }
     const storedFromPay = paidId;
     let stored: string | null = storedFromPay;
@@ -196,13 +205,17 @@ function Experience({
       if (saved.paymentStatus === 'paid' || saved.paymentMethod === 'pay_at_pickup') {
         cart.clear();
         attempt.current = null;
-        setStep('receipt');
+        // Fresh Sadad return always opens the receipt. An explicit Back to menu
+        // dismisses it for this tab so remounting the branch menu does not yank back.
+        if (storedFromPay || !isReceiptDismissed(saved.id)) setStep('receipt');
       } else if (saved.paymentStatus === 'awaiting_payment' && (saved.paymentMethod === 'mock' || saved.paymentMethod === 'sadad')) {
         // Never auto-enter payment on a cold branch visit — that re-fires hosted
         // checkout and dumps the customer straight onto Sadad. Resume from review
         // only after an explicit failed-return (`?pay=failed`) or CTA click.
         if (saved.details?.customer) {
-          setCustomer({ ...emptyCustomer, ...saved.details.customer });
+          const restored = { ...emptyCustomer, ...saved.details.customer };
+          setCustomer(restored);
+          customerDraft.current = restored;
         }
         const held = saved.details?.coupon;
         if (held?.code && held.discountMinor > 0) {
@@ -262,6 +275,13 @@ function Experience({
       forgetStoredOrder();
       setReceipt(null);
     }
+    if (
+      next === 'menu'
+      && receipt
+      && (receipt.paymentStatus === 'paid' || receipt.paymentMethod === 'pay_at_pickup')
+    ) {
+      markReceiptDismissed(receipt.id);
+    }
     if (next === 'menu' && returnMode) {
       router.replace(`/${branchId}`);
       return;
@@ -292,15 +312,6 @@ function Experience({
       setError(errorMessage('NETWORK'));
       setRedirecting(false);
     }
-  }
-  function validateDetails(event: React.FormEvent) {
-    event.preventDefault();
-    const result = customerSchema.safeParse(customer);
-    if (!result.success) {
-      const fields = result.error.issues.map(i => String(i.path[0])); setErrors(fields);
-      document.getElementById(`collection-${fields[0]}`)?.focus(); return;
-    }
-    setErrors([]); setCustomer(result.data); go('review');
   }
   const errorMessage = (code: string) => ({
     CLOSED: text('This branch has closed. Your basket is saved.', 'هذا الفرع مغلق الآن. سلتك محفوظة.'),
@@ -458,25 +469,19 @@ function Experience({
               </div>
             )}
             {viewStep !== 'receipt' && cart.unavailableCount > 0 && <div className="checkout-notice" role="alert"><strong>{text('Your basket needs an update', 'تحتاج سلتك إلى تحديث')}</strong><p>{text(`${cart.unavailableCount} serving(s) or their choices are no longer available. Remove them before continuing.`, `${cart.unavailableCount} حصة أو خياراتها لم تعد متوفرة. احذفها قبل المتابعة.`)}</p><button type="button" className="text-action" onClick={cart.discardUnavailable}>{text('Remove unavailable selections', 'حذف الخيارات غير المتوفرة')}</button></div>}
-            {viewStep === 'details' && <form id="collection-details" onSubmit={validateDetails} noValidate>
-              <div className="checkout-fields">{(['name', 'phone', 'brand', 'plate'] as const).map(key => {
-                if (key === 'brand') return <CarBrandPicker key={key} value={customer.brand} lang={lang} invalid={errors.includes('brand')} onChange={brand => { setCustomer({ ...customer, brand }); setErrors(errors.filter(field => field !== 'brand')); }} />;
-                const label = { name: text('Your name', 'اسمك'), phone: text('Mobile number', 'رقم الجوال'), plate: text('Qatar plate number', 'رقم اللوحة القطرية'), colour: text('Car colour', 'لون السيارة'), car: text('Car model', 'طراز السيارة'), instructions: text('Collection instructions', 'تعليمات الاستلام') }[key];
-                const invalid = errors.includes(key);
-                if (key === 'plate') return <div key={key} className="checkout-field field-plate"><label htmlFor="collection-plate">{label}</label>
-                  <div className="plate-entry" dir="ltr"><span className="plate-country"><span className="plate-flag" aria-hidden="true">🇶🇦</span><span>QATAR<br /><span lang="ar">قطر</span></span></span><input id="collection-plate" type="text" inputMode="numeric" autoComplete="off" required minLength={3} maxLength={6} pattern="[0-9]{3,6}" placeholder="000000" value={customer.plate.slice(1)} aria-label={text('Plate number, 3 to 6 digits', 'رقم اللوحة، من ٣ إلى ٦ أرقام')} aria-invalid={invalid} aria-describedby={invalid ? 'hint-plate' : undefined} onChange={e => { const number = digits(e.target.value).replace(/\D/g, '').slice(0, 6); setCustomer({ ...customer, plate: `${customer.plate[0] || 'Q'}${number}` }); setErrors(errors.filter(x => x !== 'plate')); }} /><strong className="plate-current-series" aria-hidden="true">{customer.plate[0] || 'Q'}</strong></div>
-                  <div className="plate-series" role="group" aria-label={text('Plate letter', 'حرف اللوحة')}>{(['Q', 'T', 'R'] as const).map(series => <button key={series} type="button" className={customer.plate[0] === series ? 'selected' : ''} aria-pressed={customer.plate[0] === series} onClick={() => { setCustomer({ ...customer, plate: `${series}${customer.plate.slice(1)}` }); setErrors(errors.filter(x => x !== 'plate')); }}>{series}</button>)}</div>
-                  {invalid && <small id="hint-plate" className="field-error">{text('Enter 3–6 digits and choose Q, T or R.', 'أدخل من ٣ إلى ٦ أرقام واختر Q أو T أو R.')}</small>}
-                </div>;
-                return <label key={key} className={`checkout-field field-${key}`} htmlFor={`collection-${key}`}><span>{label}</span>
-                  {key === 'phone' ? <div className="qatar-phone-field" dir="ltr"><span className="qatar-phone-prefix"><span role="img" aria-label={text('Qatar flag', 'علم قطر')}>🇶🇦</span> +974</span><input id="collection-phone" type="tel" inputMode="numeric" autoComplete="tel-national" pattern="[0-9]*" required maxLength={8} value={customer.phone.replace(/^974/, '')} aria-invalid={invalid} aria-describedby={invalid ? 'hint-phone' : undefined} onChange={e => { const national = digits(e.target.value).replace(/\D/g, '').slice(0, 8); setCustomer({ ...customer, phone: national ? `974${national}` : '' }); setErrors(errors.filter(x => x !== 'phone')); }} /></div>
-                    : <input id={`collection-${key}`} type="text" autoComplete={key === 'name' ? 'name' : 'off'} required maxLength={100} value={customer[key]} aria-invalid={invalid} aria-describedby={invalid ? `hint-${key}` : undefined} onChange={e => { setCustomer({ ...customer, [key]: e.target.value }); setErrors(errors.filter(x => x !== key)); }} />}
-                  {invalid && <small id={`hint-${key}`} className="field-error">{key === 'phone' ? text('Enter a valid Qatar mobile number.', 'أدخل رقم جوال قطرياً صالحاً.') : text('Please enter your name.', 'يرجى إدخال اسمك.')}</small>}
-                </label>;
-              })}
-              </div>
-              <details className="optional-vehicle"><summary>{text('Add vehicle details', 'أضف تفاصيل السيارة')}</summary><div className="checkout-fields">{(['colour', 'instructions'] as const).map(key => <label key={key} className={`checkout-field field-${key}`} htmlFor={`collection-${key}`}><span>{{ colour: text('Car colour', 'لون السيارة'), car: text('Car model', 'طراز السيارة'), instructions: text('Collection instructions', 'تعليمات الاستلام') }[key]}</span>{key === 'instructions' ? <textarea id={`collection-${key}`} value={customer[key]} maxLength={400} rows={3} onChange={e => setCustomer({ ...customer, [key]: e.target.value })} /> : <input id={`collection-${key}`} value={customer[key]} maxLength={key === 'colour' ? 50 : 80} onChange={e => setCustomer({ ...customer, [key]: e.target.value })} />}</label>)}</div></details>
-            </form>}
+            {viewStep === 'details' && (
+              <CollectionDetailsForm
+                initial={customerDraft.current}
+                lang={lang}
+                text={text}
+                onDraft={(next) => { customerDraft.current = next; }}
+                onValid={(next) => {
+                  customerDraft.current = next;
+                  setCustomer(next);
+                  go('review');
+                }}
+              />
+            )}
             {viewStep === 'review' && (resumePay && activeReceipt?.details?.lines?.length
               ? <>
                 <section className="ticket checkout-ticket" aria-label={t.yourTicket}>

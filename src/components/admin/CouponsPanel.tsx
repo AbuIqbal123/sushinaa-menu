@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'rea
 import type { Coupon, CouponKind, CouponStatus } from '@/ordering/coupons/types';
 import { formatMinor } from '@/lib/money';
 import { formatQatarDateTime } from '@/lib/datetime';
+import { formatOrderNumber } from '@/ordering/order-number';
 import { useLocale } from '@/i18n/locale';
 import { useModal } from './Fields';
 import { useNotify } from './Notices';
@@ -92,10 +93,10 @@ export function CouponsPanel({ creating, onCreating }: { creating: boolean; onCr
     return () => { live = false; };
   }, []);
 
-  function linkedOrderId(row: Coupon) {
-    if (row.status === 'held') return row.heldOrderId ?? '';
-    if (row.status === 'redeemed') return row.redeemedOrderId ?? '';
-    return '';
+  function linkedOrderLabel(row: Coupon) {
+    if (row.status !== 'held' && row.status !== 'redeemed') return '';
+    if (row.orderNumber == null) return '';
+    return `#${formatOrderNumber(row.orderNumber)}`;
   }
 
   async function postCoupon(id: string, body: Record<string, string>, ok: string) {
@@ -161,7 +162,7 @@ export function CouponsPanel({ creating, onCreating }: { creating: boolean; onCr
                   </StatusBadge>
                 </td>
                 <td dir="ltr">{formatQatarDateTime(row.expiresAt)}</td>
-                <td dir="ltr">{linkedOrderId(row)}</td>
+                <td dir="ltr">{linkedOrderLabel(row)}</td>
                 <td className="users-access">
                   {row.status === 'available' && (
                     <button type="button" className="danger" disabled={busy} onClick={() => void disable(row.id)}>
@@ -172,6 +173,9 @@ export function CouponsPanel({ creating, onCreating }: { creating: boolean; onCr
                     <button type="button" disabled={busy} onClick={() => void release(row.id)}>
                       {text('Release', 'تحرير')}
                     </button>
+                  )}
+                  {(row.status === 'redeemed' || row.status === 'disabled') && (
+                    <span className="users-access-flat" aria-hidden="true">···</span>
                   )}
                 </td>
               </tr>
