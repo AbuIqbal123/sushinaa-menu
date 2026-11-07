@@ -79,8 +79,10 @@ test('pay-at-pickup order needs Mark paid & collected',async({page,browser,baseU
   for(const name of ['Accept order','Preparing','Ready']) {await staff.getByRole('button',{name,exact:true}).click();await expect(staff.getByRole('button',{name,exact:true})).toHaveCount(0);}
   const blocked=await staff.request.post(`/api/admin/orders/${id}/status`,{headers:{Origin:baseURL!},data:{to:'completed',expected:'ready'}});expect(blocked.status()).toBe(409);
   await staff.getByRole('button',{name:'Mark paid & collected',exact:true}).click();
-  await expect(staff.locator('.staff-detail-head')).toContainText('Collected');
+  await expect(staff.locator(`[data-order-id="${id}"]`)).toHaveCount(0);
+  await expect(staff.locator('.ops-order-detail-pane')).toHaveCount(0);
   const detail=await(await staff.request.get(`/api/admin/orders/${id}`)).json();expect(detail.paidAt).toBeTruthy();
+  expect(detail.status).toBe('completed');
   await context.close();
 });
 

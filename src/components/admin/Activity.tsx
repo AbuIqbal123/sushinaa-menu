@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { useLocale } from "@/i18n/locale";
 import { formatQatarDateTime } from "@/lib/datetime";
+import { formatOrderNumber } from "@/ordering/order-number";
+import { staffOrderRef } from "@/ordering/staff-order-ref";
 import { useNotify } from "./Notices";
 
 type Row = {
@@ -15,6 +17,8 @@ type Row = {
   diff: Record<string, unknown> | null;
   ip: string | null;
   userAgent: string | null;
+  orderNumber?: number | null;
+  paymentReference?: string | null;
 };
 const AREAS = [
   ["", "All activity"],
@@ -70,9 +74,10 @@ export function describe(row: Row, lang: "en" | "ar" = "en") {
   const [, verb] = row.action.split(".");
   const name = `“${row.label ?? row.entityId}”`;
   const changed = row.diff ? Object.keys(row.diff).map(field).join(", ") : "";
+  const orderRef = staffOrderRef(row.orderNumber, row.paymentReference, row.entityId, lang);
   switch (row.action) {
-    case "order.status": return `${lang === "ar" ? "تم تغيير حالة الطلب" : "Order status changed"}: ${row.entityId}`;
-    case "order.contact_viewed": return `${lang === "ar" ? "تم عرض بيانات التواصل للطلب" : "Order contact viewed"}: ${row.entityId}`;
+    case "order.status": return `${lang === "ar" ? "تم تغيير حالة الطلب" : "Order status changed"}: ${orderRef}`;
+    case "order.contact_viewed": return `${lang === "ar" ? "تم عرض بيانات التواصل للطلب" : "Order contact viewed"}: ${orderRef}`;
     case "session.sign_in":
       return "Signed in";
     case "session.sign_out":
@@ -180,6 +185,14 @@ export function Activity() {
               <dl>
                 {row.action !== "session.sign_in_failed" && row.actor && (
                   <Detail term="By">{row.actor}</Detail>
+                )}
+                {row.orderNumber != null && (
+                  <Detail term={lang === "ar" ? "رقم الطلب" : "Order"}>
+                    #{formatOrderNumber(row.orderNumber)}
+                  </Detail>
+                )}
+                {row.paymentReference && (
+                  <Detail term={lang === "ar" ? "سداد" : "Sadad"}>{row.paymentReference}</Detail>
                 )}
                 {changes(row).map(([key, change]) => (
                   <Detail key={key} term={field(key)}>
