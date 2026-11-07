@@ -1,6 +1,5 @@
 import { formatOrderNumber } from '@/ordering/order-number';
 
-/** Kitchen # first, Sadad txn second — same staff mapping as Coupons / Activity. */
 export function staffOrderRef(
   orderNumber: number | null | undefined,
   paymentReference: string | null | undefined,

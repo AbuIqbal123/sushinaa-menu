@@ -69,10 +69,6 @@ export function digestPayload(raw: unknown) {
   return createHash('sha256').update(JSON.stringify(raw)).digest('hex');
 }
 
-/**
- * Latest real Sadad transaction_number for an order id expression.
- * Skips synthetic callback/webhook keys staff should never see as the txn.
- */
 export function sadadTxnSql(orderIdExpr: string) {
   return `(
     SELECT pe.provider_reference

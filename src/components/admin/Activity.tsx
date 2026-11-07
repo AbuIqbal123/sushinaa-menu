@@ -17,9 +17,7 @@ type Row = {
   diff: Record<string, unknown> | null;
   ip: string | null;
   userAgent: string | null;
-  /** Kitchen order number when entity is an order; null for other areas. */
   orderNumber?: number | null;
-  /** Sadad transaction_number when paid via gateway. */
   paymentReference?: string | null;
 };
 const AREAS = [

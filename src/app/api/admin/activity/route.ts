@@ -25,7 +25,6 @@ export async function GET(request: Request) {
   const page = Math.min(1000, Math.max(1, Number(params.get("page")) || 1));
   await initDb();
   const where = types ? `WHERE a.entity_type IN (${types.map(() => "?").join(",")})` : "";
-  // Kitchen number + Sadad txn for order rows; audit still stores the SU- id as entity_id.
   const result = await db.execute({
     sql: `SELECT a.id, a.at, a.actor, a.action, a.entity_type, a.entity_id, a.label, a.diff, a.ip, a.user_agent,
         o.order_number,
