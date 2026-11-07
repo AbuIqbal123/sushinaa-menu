@@ -11,6 +11,7 @@ import { useMenu } from '@/cms/context';
 import { strings } from '@/i18n/copy';
 import { useNotify } from './Notices';
 import { StatusBadge } from './StatusBadge';
+import { closeLiveDetailOnRefresh } from '@/ordering/live-detail-close';
 import { allowedTransitions, staffStatus, staffLabels, terminalStatuses, type OrderStatus } from '@/ordering/status';
 import { formatQatarDateTime } from '@/lib/datetime';
 import { formatMinor } from '@/lib/money';
@@ -64,7 +65,9 @@ export function OrderDetail({ id, onBack, onChange, role, menu, refreshKey=0, cl
     if(!refreshKey)return;let live=true;
     fetch(`/api/admin/orders/${id}`,{cache:'no-store'}).then(async response=>{
       if(!response.ok)throw Error('LOAD_FAILED');const latest=await response.json() as OrderDetailData;
-      if(live)setData(latest);
+      if(!live)return;
+      if(closeLiveDetailOnRefresh(latest.status,closeOnTerminal)){onBack();return;}
+      setData(latest);
     }).catch(()=>{if(live)setError('LOAD_FAILED');});return()=>{live=false;};
   },[id,refreshKey]);
   useEffect(() => {
