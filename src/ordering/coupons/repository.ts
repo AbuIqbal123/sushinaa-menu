@@ -3,6 +3,7 @@ import { db, initDb } from '@/cms/db';
 import type { DbRow, SqlStatement } from '@/cms/sql';
 import { validateManualCode } from './code';
 import { applyOrderDiscount, couponOffer } from './discount';
+import { sadadTxnSql } from '@/ordering/ledger';
 import { statuses, type OrderStatus, type PaymentMethod } from '@/ordering/status';
 import {
   CouponError,
@@ -173,19 +174,7 @@ export async function listCoupons(): Promise<Coupon[]> {
       o.status AS linked_order_status,
       o.payment_method AS linked_order_payment_method,
       o.paid_at AS linked_order_paid_at,
-      (
-        SELECT pe.provider_reference
-        FROM payment_events pe
-        WHERE pe.order_id = COALESCE(c.redeemed_order_id, c.held_order_id)
-          AND pe.provider = 'sadad'
-          AND pe.our_status = 'paid'
-          AND pe.provider_reference IS NOT NULL
-          AND pe.provider_reference != ''
-          AND pe.provider_reference NOT LIKE 'sadad-callback:%'
-          AND pe.provider_reference NOT LIKE 'sadad-webhook:%'
-        ORDER BY pe.recorded_at DESC
-        LIMIT 1
-      ) AS payment_reference
+      ${sadadTxnSql('COALESCE(c.redeemed_order_id, c.held_order_id)')} AS payment_reference
     FROM coupons c
     LEFT JOIN orders o ON o.id = COALESCE(c.redeemed_order_id, c.held_order_id)
     ORDER BY c.created_at DESC, c.id DESC

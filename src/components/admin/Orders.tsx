@@ -97,6 +97,11 @@ function OrderWorkspace({view,branch,role,menu,revision,refresh,intent,sound,onS
   const openOrder=(id:string)=>setDetail(cur=>cur===id?null:id);
   const filters=history?['','collected','cancelled']:['','received','preparing','ready'];
   const filteredData=valid&&result?.key===queryKey?result.data:null;
+  // Live queue: drop the detail pane when the selected order leaves (collected/cancelled or filtered out).
+  useEffect(()=>{
+    if(history||!detail||!filteredData)return;
+    if(!filteredData.rows.some(row=>row.id===detail))setDetail(null);
+  },[history,detail,filteredData]);
   return <>
     <div className="ops-order-filterbar">
       <div className="ops-status-tabs" aria-label={text('Order status','حالة الطلب')}>
@@ -129,7 +134,7 @@ function OrderWorkspace({view,branch,role,menu,revision,refresh,intent,sound,onS
         {history&&filteredData&&filteredData.rows.length>0&&<div className="staff-order-list ops-history-table"><table><thead><tr><th>{text('Order','الطلب')}</th>{!branch&&<th>{text('Branch','الفرع')}</th>}<th>{text('Customer','العميل')}</th><th>{text('Status','الحالة')}</th><th>{text('Closed','وقت الإغلاق')}</th><th>{text('Total','الإجمالي')}</th></tr></thead><tbody>{filteredData.rows.map(row=><tr key={row.id} data-order-id={row.id} className={detail===row.id?'is-selected':''} onClick={()=>openOrder(row.id)}><td data-label={text('Order','الطلب')}><button type="button" className="ops-table-order" dir="ltr" onClick={e=>{e.stopPropagation();openOrder(row.id);}}>#{formatOrderNumber(row.orderNumber)}</button></td>{!branch&&<td data-label={text('Branch','الفرع')}>{ar?branches.find(b=>b.slug===row.branchId)?.nameAr:branches.find(b=>b.slug===row.branchId)?.name}</td>}<td data-label={text('Customer','العميل')}>{row.name}<small dir="ltr">{nationalPhone(row.phone)}</small></td><td data-label={text('Status','الحالة')}><StatusBadge status={staffStatus(row.status)}>{staffLabels[staffStatus(row.status)][lang]}</StatusBadge></td><td data-label={text('Closed','وقت الإغلاق')}>{formatQatarDateTime(row.statusAt??row.createdAt)}</td><td data-label={text('Total','الإجمالي')} dir="ltr">{(row.totalMinor/100).toFixed(2)} {text('QAR','ر.ق')}</td></tr>)}</tbody></table></div>}
         {filteredData&&(page>1||filteredData.more)&&<nav className="admin-pager"><button disabled={page===1} onClick={()=>setPage(v=>v-1)}>{text('Previous','السابق')}</button><span>{num(page)}</span><button disabled={!filteredData.more} onClick={()=>setPage(v=>v+1)}>{text('Next','التالي')}</button></nav>}
       </div>
-      {detail?<div className="ops-order-detail-pane"><OrderDetail key={detail} id={detail} role={role} menu={menu} onBack={()=>setDetail(null)} onChange={refreshAll} refreshKey={revision}/></div>:!history&&Boolean(filteredData?.rows.length)&&<div className="ops-detail-placeholder"><span className="ops-empty-mark"><OpsIcon name="car" size={40}/></span><h2>{text('Select an order','اختر طلباً')}</h2><p>{text('Items, car details, and the next kitchen action show here.','تظهر الأصناف وبيانات السيارة والإجراء التالي هنا.')}</p></div>}
+      {detail?<div className="ops-order-detail-pane"><OrderDetail key={detail} id={detail} role={role} menu={menu} liveQueue={!history} onBack={()=>setDetail(null)} onChange={refreshAll} refreshKey={revision}/></div>:!history&&Boolean(filteredData?.rows.length)&&<div className="ops-detail-placeholder"><span className="ops-empty-mark"><OpsIcon name="car" size={40}/></span><h2>{text('Select an order','اختر طلباً')}</h2><p>{text('Items, car details, and the next kitchen action show here.','تظهر الأصناف وبيانات السيارة والإجراء التالي هنا.')}</p></div>}
     </div>
   </>;
 }

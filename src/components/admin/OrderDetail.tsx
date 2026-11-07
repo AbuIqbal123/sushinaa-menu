@@ -11,7 +11,7 @@ import { useMenu } from '@/cms/context';
 import { strings } from '@/i18n/copy';
 import { useNotify } from './Notices';
 import { StatusBadge } from './StatusBadge';
-import { allowedTransitions, staffStatus, staffLabels, type OrderStatus } from '@/ordering/status';
+import { allowedTransitions, staffStatus, staffLabels, terminalStatuses, type OrderStatus } from '@/ordering/status';
 import { formatQatarDateTime } from '@/lib/datetime';
 import { formatMinor } from '@/lib/money';
 import { formatOrderNumber } from '@/ordering/order-number';
@@ -36,7 +36,7 @@ function lineChoices(line: OrderDetailData['currentLines'][number], menu: MenuDa
   return selectionLabel({ kind: dish.kind, freeDips: dish.freeDips, extras: dish.extras }, line.selection, lang, t).split(' · ').map((part) => part.trim()).filter(Boolean);
 }
 
-export function OrderDetail({ id, onBack, onChange, role, menu, refreshKey=0 }: { id: string; onBack: () => void; onChange: () => void; role: Role; menu: MenuData; refreshKey?:number }) {
+export function OrderDetail({ id, onBack, onChange, role, menu, refreshKey=0, liveQueue=false }: { id: string; onBack: () => void; onChange: () => void; role: Role; menu: MenuData; refreshKey?:number; /** When true, close the pane after a terminal status (order left the live list). */ liveQueue?: boolean }) {
   const { copy } = useMenu();
   const branches = configuredBranches(menu.branches);
   const {lang}=useLocale();
@@ -114,7 +114,10 @@ export function OrderDetail({ id, onBack, onChange, role, menu, refreshKey=0 }: 
         await sendKitchenPrint('manual');
       }
       notify({ tone: 'ok', text: text('Order updated', 'تم تحديث الطلب') + ` · ${staffLabels[staffStatus(shown)][lang]}` });
-      setCancel(false); await load(); onChange();
+      setCancel(false);
+      // Live queue only: collected/cancelled leave the list — close now; list sync covers peer updates.
+      if (liveQueue && (terminalStatuses as readonly string[]).includes(to)) { onBack(); onChange(); return; }
+      await load(); onChange();
     } catch (e) { setError(e instanceof Error && e.message === 'STALE_STATUS' ? 'STALE_STATUS' : e instanceof Error && e.message === 'PRINT_FAILED' ? 'PRINT_FAILED' : 'UPDATE_FAILED'); await load(); }
     finally { setBusy(false); }
   }

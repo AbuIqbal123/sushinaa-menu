@@ -69,6 +69,26 @@ export function digestPayload(raw: unknown) {
   return createHash('sha256').update(JSON.stringify(raw)).digest('hex');
 }
 
+/**
+ * Latest real Sadad transaction_number for an order id expression.
+ * Skips synthetic callback/webhook keys staff should never see as the txn.
+ */
+export function sadadTxnSql(orderIdExpr: string) {
+  return `(
+    SELECT pe.provider_reference
+    FROM payment_events pe
+    WHERE pe.order_id = ${orderIdExpr}
+      AND pe.provider = 'sadad'
+      AND pe.our_status = 'paid'
+      AND pe.provider_reference IS NOT NULL
+      AND pe.provider_reference != ''
+      AND pe.provider_reference NOT LIKE 'sadad-callback:%'
+      AND pe.provider_reference NOT LIKE 'sadad-webhook:%'
+    ORDER BY pe.recorded_at DESC
+    LIMIT 1
+  )`;
+}
+
 export type PaymentListRow = {
   orderId: string;
   orderNumber: number | null;
