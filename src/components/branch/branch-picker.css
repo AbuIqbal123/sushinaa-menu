@@ -1,4 +1,4 @@
-/* Branch picker: one wooden board, one nigiri per branch. Matches the approved v1 demo. */
+/* Branch picker: one wooden board, one sushi piece per branch. */
 .bp-shell {
   --bp-pad: 20px;
   position: relative; width: 100%; max-width: 430px; height: 100svh; height: 100dvh; margin: 0 auto;
@@ -31,17 +31,25 @@
   background: linear-gradient(180deg, rgba(0,0,0,.32) 0 1px, rgba(243,228,196,.08) 1px 2px);
 }
 .bp-pick {
-  flex: 1; display: grid; grid-template-columns: 150px 1fr; align-items: center; column-gap: 16px;
+  flex: 1; display: grid; grid-template-columns: 118px 1fr; align-items: center; column-gap: 16px;
   margin: 0; padding: 0 18px; text-align: start; text-decoration: none; color: inherit; cursor: pointer;
   min-height: 44px; border-radius: 14px; touch-action: manipulation;
 }
 .bp-pick:focus-visible { outline: 2px solid #f3e4c4; outline-offset: 3px; }
-.bp-piece { position: relative; width: 150px; height: 90px; will-change: transform; }
-.bp-piece svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.bp-piece { position: relative; width: 118px; height: 118px; will-change: transform; }
+.bp-piece img {
+  width: 100%; height: 100%; display: block; object-fit: contain;
+  filter: drop-shadow(0 8px 10px rgba(0,0,0,.42));
+  animation: bp-settle 4.8s ease-in-out infinite; animation-delay: calc(var(--i) * 1.2s); transform-origin: 50% 90%;
+}
 /* Idle: a soft glint runs down the board, one piece after another. */
-.bp-sheen { opacity: .28; animation: bp-glint 4.8s ease-in-out infinite; animation-delay: calc(var(--i) * 1.2s); }
+.bp-sheen {
+  position: absolute; top: 12%; left: 18%; right: 18%; height: 28%; pointer-events: none;
+  background: linear-gradient(115deg, transparent 20%, rgba(255,255,255,.55) 48%, transparent 72%);
+  opacity: .28; mix-blend-mode: soft-light; border-radius: 40%;
+  animation: bp-glint 4.8s ease-in-out infinite; animation-delay: calc(var(--i) * 1.2s);
+}
 @keyframes bp-glint { 0%, 30%, 100% { opacity: .28; } 12% { opacity: .85; } }
-.bp-piece svg { animation: bp-settle 4.8s ease-in-out infinite; animation-delay: calc(var(--i) * 1.2s); transform-origin: 50% 90%; }
 @keyframes bp-settle { 0%, 30%, 100% { transform: none; } 12% { transform: translate3d(0, -2px, 0); } }
 
 .bp-info { display: flex; flex-direction: column; gap: 8px; min-width: 0; transition: opacity 240ms var(--ease-out); }
@@ -91,13 +99,13 @@
   .bp-top img { height: 44px; }
   .bp-top h1 { font-size: 23px; }
   .bp-top p { font-size: 13px; }
-  .bp-pick { grid-template-columns: 112px 1fr; column-gap: 12px; padding: 0 12px; }
-  .bp-piece { width: 112px; height: 67px; }
+  .bp-pick { grid-template-columns: 96px 1fr; column-gap: 12px; padding: 0 12px; }
+  .bp-piece { width: 96px; height: 96px; }
   .bp-name { font-size: 22px; }
   .bp-hours { font-size: 14px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .bp-sheen, .bp-piece svg { animation: none; }
+  .bp-sheen, .bp-piece img { animation: none; }
   .bp-info, .bp-pick, .bp-pick:hover .bp-piece { transition: none; }
 }
 
