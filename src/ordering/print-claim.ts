@@ -1,7 +1,3 @@
-/**
- * Kitchen print claim phases. State lives in columns, not a status enum:
- * unprinted → claimed → printed (reprint re-enters claimed from printed).
- */
 export type PrintPhase = 'unprinted' | 'claimed' | 'printed';
 
 export function printPhase(row: {
@@ -18,7 +14,6 @@ export function autoClaimSetSql() {
   return `print_claim_id=?, print_claimed_at=?`;
 }
 
-/** Predicates after `id=? AND ${branch.sql}` — keep branch.sql in the caller for scope audits. */
 export function autoClaimPredicate(printableSql: string) {
   return `print_count=0 AND print_claimed_at IS NULL AND ${printableSql} AND COALESCE(paid_at, created_at)>=?`;
 }

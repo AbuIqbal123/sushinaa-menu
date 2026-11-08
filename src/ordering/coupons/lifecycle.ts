@@ -1,9 +1,5 @@
 import type { CouponStatus } from './types';
 
-/**
- * Coupon status transitions. SQL writers must use these assigns + WHERE status=
- * so the graph stays the single owner.
- */
 const next: Record<CouponStatus, readonly CouponStatus[]> = {
   available: ['held', 'disabled'],
   held: ['available', 'redeemed'],
@@ -15,21 +11,24 @@ export function canCouponTransition(from: CouponStatus, to: CouponStatus) {
   return next[from].includes(to);
 }
 
-/** SET clause: held → available (release / TTL). Placeholders: updated_at. */
-export const RELEASE_ASSIGN =
-  `status='available', held_order_id=NULL, held_at=NULL, updated_at=?`;
+export type CouponEdge = { readonly set: string; readonly from: string };
 
-/** SET clause: held → redeemed. Placeholders: redeemed_order_id, redeemed_at, updated_at. */
-export const REDEEM_ASSIGN =
-  `status='redeemed', redeemed_order_id=?, redeemed_at=?, held_order_id=NULL, held_at=NULL, updated_at=?`;
+export const releaseHeld: CouponEdge = {
+  set: `status='available', held_order_id=NULL, held_at=NULL, updated_at=?`,
+  from: `status='held'`,
+};
 
-/** SET clause: available → held. Placeholders: held_order_id, held_at, updated_at. */
-export const HOLD_ASSIGN =
-  `status='held', held_order_id=?, held_at=?, updated_at=?`;
+export const redeemHeld: CouponEdge = {
+  set: `status='redeemed', redeemed_order_id=?, redeemed_at=?, held_order_id=NULL, held_at=NULL, updated_at=?`,
+  from: `status='held'`,
+};
 
-/** SET clause: available → disabled. Placeholders: disabled_at, updated_at. */
-export const DISABLE_ASSIGN =
-  `status='disabled', disabled_at=?, updated_at=?`;
+export const holdAvailable: CouponEdge = {
+  set: `status='held', held_order_id=?, held_at=?, updated_at=?`,
+  from: `status='available'`,
+};
 
-export const FROM_AVAILABLE = `status='available'`;
-export const FROM_HELD = `status='held'`;
+export const disableAvailable: CouponEdge = {
+  set: `status='disabled', disabled_at=?, updated_at=?`,
+  from: `status='available'`,
+};

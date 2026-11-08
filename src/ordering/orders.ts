@@ -168,7 +168,6 @@ export async function transitionOrder(scope: BranchScope, id: string, input: Sta
   await initOrders();
   const branch = branchClause(scope);
   if (input.to === 'refunded' && role !== 'admin') throw new OrderError('FORBIDDEN', 403);
-  // paid_at for refunded / counter-complete is enforced in the UPDATE below — do not fake it here.
   if (!isTransitionEdge(input.expected, input.to)) throw new OrderError('INVALID_TRANSITION', 409);
   if (input.to === 'refunded' && isProductionDeployment()) throw new OrderError('INVALID_TRANSITION', 409);
   const at = now.toISOString();

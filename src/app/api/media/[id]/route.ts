@@ -19,7 +19,6 @@ export async function GET(
     const upstream = await fetch(`${origin}/api/media/${id}`, {
       next: { revalidate: 3600 },
       signal: AbortSignal.timeout(8000),
-      // Do not follow redirects: a HTTPS menu origin must not bounce to an internal host.
       redirect: "error",
     });
     if (!upstream.ok) return new Response(null, { status: 404 });

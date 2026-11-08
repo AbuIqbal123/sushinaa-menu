@@ -1,10 +1,6 @@
 import type { SqlStatement } from '@/cms/sql';
 import type { PaymentStatus } from './payment-gateway/types';
 
-/**
- * Statuses written on `payment_attempts.status`.
- * Customer-facing `pending` / `expired` are derived on read — not attempt rows.
- */
 export const attemptStatuses = [
   'awaiting_payment',
   'processing',
@@ -15,7 +11,6 @@ export const attemptStatuses = [
 
 export type AttemptStatus = (typeof attemptStatuses)[number];
 
-/** Terminal for cancel sweeps: do not overwrite these when abandoning an unpaid order. */
 export const sealedAttemptStatuses = ['paid', 'failed', 'cancelled'] as const;
 
 const next: Record<AttemptStatus, readonly AttemptStatus[]> = {
@@ -34,7 +29,6 @@ export function canAttemptTransition(from: AttemptStatus, to: AttemptStatus) {
   return next[from].includes(to);
 }
 
-/** SQL fragment: rows still open for cancel when the unpaid order is abandoned. */
 export function openAttemptPredicate() {
   return `status NOT IN (${sealedAttemptStatuses.map((status) => `'${status}'`).join(',')})`;
 }
@@ -81,10 +75,6 @@ export function insertAwaitingAttemptStatement(
   };
 }
 
-/**
- * Customer receipt paymentStatus. One owner for the derivation used by checkout reads.
- * `pending` = pay-at-pickup not yet collected; `expired` = online window elapsed.
- */
 export function deriveCustomerPaymentStatus(input: {
   paidAt: unknown;
   paymentMethod: string;
@@ -99,7 +89,6 @@ export function deriveCustomerPaymentStatus(input: {
   return 'awaiting_payment';
 }
 
-/** For ledger filters that coalesce attempt status with order paid_at. */
 export function attemptStatusCoalesceSql() {
   return `COALESCE(a.status, CASE WHEN o.paid_at IS NOT NULL THEN 'paid' ELSE 'awaiting_payment' END)`;
 }

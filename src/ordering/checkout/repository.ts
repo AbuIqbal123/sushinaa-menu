@@ -13,7 +13,7 @@ import {
   deriveCustomerPaymentStatus,
   insertAwaitingAttemptStatement,
 } from '@/ordering/payment-attempt';
-import { RELEASE_ASSIGN, FROM_HELD } from '@/ordering/coupons/lifecycle';
+import { releaseHeld } from '@/ordering/coupons/lifecycle';
 import { composeOrderNumber, ORDER_NUMBER_FLOOR, orderSequence, qatarDay } from '@/ordering/order-number';
 export async function initOrders() {
   assertOrderDatabaseAllowed(databaseUrl);
@@ -139,7 +139,7 @@ export async function persistPendingOrder(session: string, key: string, requestH
         });
         await tx.execute(cancelOpenAttemptsStatement(staleId, now));
         await tx.execute({
-          sql: `UPDATE coupons SET ${RELEASE_ASSIGN} WHERE ${FROM_HELD} AND held_order_id=?`,
+          sql: `UPDATE coupons SET ${releaseHeld.set} WHERE ${releaseHeld.from} AND held_order_id=?`,
           args: [now, staleId],
         });
       }
