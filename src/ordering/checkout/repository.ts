@@ -8,6 +8,12 @@ import { db, initDb, databaseUrl } from '@/cms/db';
 import { assertOrderDatabaseAllowed } from '@/ordering/guard';
 import type { PaymentMethod } from '@/ordering/status';
 import { OrderError } from '@/ordering/http';
+import {
+  cancelOpenAttemptsStatement,
+  deriveCustomerPaymentStatus,
+  insertAwaitingAttemptStatement,
+} from '@/ordering/payment-attempt';
+import { releaseHeld } from '@/ordering/coupons/lifecycle';
 import { composeOrderNumber, ORDER_NUMBER_FLOOR, orderSequence, qatarDay } from '@/ordering/order-number';
 export async function initOrders() {
   assertOrderDatabaseAllowed(databaseUrl);
@@ -25,12 +31,15 @@ export async function existingOrder(session: string, key: string, requestHash: s
   return customerResult(row, true);
 }
 export function customerResult(row: Record<string, unknown>, reused = false) {
-  const paid = Boolean(row.paid_at);
   const updatedAt = typeof row.updated_at === 'string'
     ? row.updated_at
     : typeof row.created_at === 'string' ? String(row.created_at) : null;
   return { id: String(row.id), orderNumber: row.order_number == null ? null : Number(row.order_number),
-    paymentStatus: paid ? 'paid' : row.payment_method === 'pay_at_pickup' ? 'pending' : Date.parse(String(row.created_at)) + 30 * 60000 <= Date.now() ? 'expired' : 'awaiting_payment',
+    paymentStatus: deriveCustomerPaymentStatus({
+      paidAt: row.paid_at,
+      paymentMethod: String(row.payment_method),
+      createdAt: String(row.created_at),
+    }),
     status: String(row.status), paymentMethod: row.payment_method as PaymentMethod, totalMinor: Number(row.total_minor), currency: 'QAR' as const,
     arrivedAt: typeof row.customer_arrived_at === 'string' ? row.customer_arrived_at : null,
     updatedAt, reused };
@@ -128,14 +137,9 @@ export async function persistPendingOrder(session: string, key: string, requestH
             WHERE id=? AND paid_at IS NULL AND status='placed' AND payment_method IN ('sadad','mock')`,
           args: [now, purgeAfter, staleId],
         });
+        await tx.execute(cancelOpenAttemptsStatement(staleId, now));
         await tx.execute({
-          sql: `UPDATE payment_attempts SET status='cancelled', updated_at=?
-            WHERE order_id=? AND status NOT IN ('paid', 'failed', 'cancelled')`,
-          args: [now, staleId],
-        });
-        await tx.execute({
-          sql: `UPDATE coupons SET status='available', held_order_id=NULL, held_at=NULL, updated_at=?
-            WHERE status='held' AND held_order_id=?`,
+          sql: `UPDATE coupons SET ${releaseHeld.set} WHERE ${releaseHeld.from} AND held_order_id=?`,
           args: [now, staleId],
         });
       }
@@ -161,7 +165,7 @@ export async function persistPendingOrder(session: string, key: string, requestH
         args: [id, sessionHash, key, requestHash, JSON.stringify({ version: 2, menuRevision: revision, ...snapshot }), snapshot.branchId, orderNumber, snapshot.totalMinor, snapshot.currency, snapshot.customer.name, snapshot.customer.phone, snapshot.customer.plate, snapshot.customer.colour, snapshot.customer.car, snapshot.customer.instructions, now, now, method] },
       ...(method === 'pay_at_pickup'
         ? [{ sql: "INSERT INTO order_outbox (id,order_id,event,created_at) VALUES (?,?,'order.placed',?)", args: [randomUUID(), id, now] }]
-        : [{ sql: "INSERT INTO payment_attempts (id,order_id,provider,status,created_at,updated_at) VALUES (?,?,?,'awaiting_payment',?,?)", args: [randomUUID(), id, method === 'sadad' ? 'sadad' : 'mock', now, now] }]),
+        : [insertAwaitingAttemptStatement(randomUUID(), id, method === 'sadad' ? 'sadad' : 'mock', now)]),
     ]);
     await tx.commit();
     return customerResult({ id, status: 'placed', payment_method: method, total_minor: snapshot.totalMinor, created_at: now, order_number: orderNumber });

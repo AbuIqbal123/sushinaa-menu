@@ -3,6 +3,8 @@ import { db } from '@/cms/db';
 import { initOrders } from './checkout/repository';
 import type { PaymentStatus } from './payment-gateway/types';
 import type { BranchId } from '@/branches/branches';
+import { attemptFromPredicate, attemptStatusCoalesceSql, isAttemptStatus } from './payment-attempt';
+import { OrderError } from './http';
 
 export type PaymentEventKind = 'launch' | 'callback' | 'webhook' | 'settled' | 'failed';
 
@@ -48,11 +50,12 @@ export async function updateAttemptStatus(
   reference: string | null,
   now = new Date(),
 ) {
+  if (!isAttemptStatus(status)) throw new OrderError('INVALID', 400);
   await initOrders();
   const at = now.toISOString();
   await db.execute({
     sql: `UPDATE payment_attempts SET status=?, updated_at=?, reference=COALESCE(?, reference)
-      WHERE order_id=? AND provider=?`,
+      WHERE order_id=? AND provider=? AND ${attemptFromPredicate(status)}`,
     args: [status, at, reference, orderId, provider],
   });
 }
@@ -117,7 +120,7 @@ export async function listPayments(query: PaymentListQuery = {}) {
     args.push(query.branchId);
   }
   if (query.status) {
-    where.push('COALESCE(a.status, CASE WHEN o.paid_at IS NOT NULL THEN \'paid\' ELSE \'awaiting_payment\' END)=?');
+    where.push(`${attemptStatusCoalesceSql()}=?`);
     args.push(query.status);
   }
   if (query.from) {

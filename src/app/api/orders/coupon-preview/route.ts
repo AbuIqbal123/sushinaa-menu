@@ -1,6 +1,8 @@
 import { z } from 'zod';
+import { databaseUrl } from '@/cms/db';
 import { previewCoupon } from '@/ordering/coupons/repository';
 import { CouponError } from '@/ordering/coupons/types';
+import { assertOrderDatabaseAllowed } from '@/ordering/guard';
 import { failure, jsonBody, OrderError, reply, writeAccess } from '@/ordering/http';
 import { orderSession } from '@/ordering/session';
 
@@ -14,6 +16,7 @@ const previewBody = z.object({
 
 export async function POST(request: Request) {
   try {
+    assertOrderDatabaseAllowed(databaseUrl);
     writeAccess(request);
     if (!await orderSession()) throw new OrderError('SESSION_REQUIRED', 401);
     const parsed = previewBody.parse(await jsonBody(request));

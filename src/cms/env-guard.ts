@@ -3,6 +3,7 @@ import {
   databaseHost,
   isProductionDeployment,
   LIVE_DATABASE_HOST,
+  touchesLiveDatabaseHost,
 } from "@/lib/deploy-env";
 
 export type GuardMode = "report" | "enforce";
@@ -29,7 +30,7 @@ export function guardProblems(facts: GuardFacts): string[] {
       problems.push("Production must use the live database hostname.");
     if (mock) problems.push("Production must not use a mock payment provider.");
   } else {
-    if (host === LIVE_DATABASE_HOST)
+    if (host === LIVE_DATABASE_HOST || touchesLiveDatabaseHost(facts.databaseUrl))
       problems.push("Non-production must not use the live database hostname.");
     if (facts.marker !== "development")
       problems.push("Non-production must have the development marker.");

@@ -9,6 +9,14 @@ import { branchClause, type BranchScope } from './scope';
 import { AUTO_PRINT_WINDOW_MS } from './config';
 import { printableStatuses, statusInSql } from './status';
 import { afterChange } from './write';
+import {
+  autoClaimPredicate,
+  autoClaimSetSql,
+  claimStillLive,
+  confirmPrintSetSql,
+  manualClaimPredicate,
+  reprintClaimPredicate,
+} from './print-claim';
 
 const CLAIM_MS = 2 * 60 * 1000;
 const printableSql = statusInSql(printableStatuses);
@@ -20,15 +28,18 @@ export async function claimPrint(scope: BranchScope, id: string, mode: 'auto' | 
   const at = now.toISOString();
   const stale = new Date(now.getTime() - CLAIM_MS).toISOString();
   const recent = new Date(now.getTime() - AUTO_PRINT_WINDOW_MS).toISOString();
-  const sql = mode === 'auto'
-    ? `UPDATE orders SET print_claim_id=?, print_claimed_at=? WHERE id=? AND ${branch.sql} AND print_count=0 AND print_claimed_at IS NULL AND ${printableSql} AND COALESCE(paid_at, created_at)>=?`
+  const predicate = mode === 'auto'
+    ? autoClaimPredicate(printableSql)
     : mode === 'manual'
-      ? `UPDATE orders SET print_claim_id=?, print_claimed_at=? WHERE id=? AND ${branch.sql} AND print_count=0 AND ${printableSql} AND (print_claimed_at IS NULL OR print_claimed_at<=?)`
-      : `UPDATE orders SET print_claim_id=?, print_claimed_at=? WHERE id=? AND ${branch.sql} AND printed_at IS NOT NULL AND ${printableSql} AND (print_claimed_at IS NULL OR print_claimed_at<=?)`;
+      ? manualClaimPredicate(printableSql)
+      : reprintClaimPredicate(printableSql);
   const args = mode === 'auto'
     ? [claimId, at, id, ...branch.args, recent]
     : [claimId, at, id, ...branch.args, stale];
-  const result = await db.execute({ sql, args });
+  const result = await db.execute({
+    sql: `UPDATE orders SET ${autoClaimSetSql()} WHERE id=? AND ${branch.sql} AND ${predicate}`,
+    args,
+  });
   if (result.rowsAffected === 1) return { claimId };
   const row = (await db.execute({
     sql: `SELECT print_count, print_claimed_at FROM orders WHERE id=? AND ${branch.sql}`,
@@ -36,7 +47,7 @@ export async function claimPrint(scope: BranchScope, id: string, mode: 'auto' | 
   })).rows[0];
   if (!row) throw new OrderError('NOT_FOUND', 404);
   const claimedAt = row.print_claimed_at ? Date.parse(String(row.print_claimed_at)) : 0;
-  if (claimedAt && now.getTime() - claimedAt < CLAIM_MS) throw new OrderError('PRINT_IN_PROGRESS', 409);
+  if (claimStillLive(claimedAt, now.getTime(), CLAIM_MS)) throw new OrderError('PRINT_IN_PROGRESS', 409);
   throw new OrderError('ALREADY_PRINTED', 409);
 }
 
@@ -56,8 +67,7 @@ export async function confirmPrint(scope: BranchScope, id: string, claimId: stri
     const count = Number(row.print_count) + 1;
     const result = await tx.batch([
       {
-        sql: `UPDATE orders SET printed_at=COALESCE(printed_at, ?), print_count=print_count+1, print_claim_id=NULL, print_claimed_at=NULL
-          WHERE id=? AND ${branch.sql} AND print_claim_id=?`,
+        sql: `UPDATE orders SET ${confirmPrintSetSql()} WHERE id=? AND ${branch.sql} AND print_claim_id=?`,
         args: [at, id, ...branch.args, claimId],
       },
       afterChange(auditInsert(ctx, {

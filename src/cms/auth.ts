@@ -214,14 +214,17 @@ export async function logout(audit: AuditContext | null) {
   jar.delete(COOKIE);
 }
 // CSRF check for admin writes: the browser-set Origin must name the host the
-// browser sent the request to. Compare with the Host header (or the proxy's
-// x-forwarded-host, as Next's server-action check does), not request.url, which
-// under `next dev --hostname 0.0.0.0` is the bind address, not the address used.
+// browser sent the request to. Compare with the Host header (or, on Vercel only,
+// the platform-managed x-forwarded-host), not request.url, which under
+// `next dev --hostname 0.0.0.0` is the bind address, not the address used.
+// Never trust client-supplied X-Forwarded-Host outside Vercel. A bare
+// `next start` / LAN preview forwards that header unchanged and would open CSRF.
 export function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
-  const host =
-    request.headers.get("x-forwarded-host")?.split(",")[0].trim() ||
-    request.headers.get("host");
+  const host = process.env.VERCEL
+    ? request.headers.get("x-forwarded-host")?.split(",")[0].trim() ||
+      request.headers.get("host")
+    : request.headers.get("host");
   if (!origin || !host) return false;
   try {
     return new URL(origin).host === host.toLowerCase();

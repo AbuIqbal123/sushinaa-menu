@@ -4,7 +4,7 @@ import type { DbRow } from '@/cms/sql';
 import { db } from '@/cms/db';
 import { auditInsert, type AuditContext } from '@/cms/audit';
 import { initOrders, hash, customerOrder } from './checkout/repository';
-import { activeStatuses, canTransition, isPrintable, printableStatuses, staffGroups, statusInSql, terminalStatuses, type OrderStatus, type StaffStatus } from './status';
+import { activeStatuses, isPrintable, isTransitionEdge, printableStatuses, staffGroups, statusInSql, terminalStatuses, type OrderStatus, type StaffStatus } from './status';
 import type { Role } from '@/cms/permissions';
 import type { OrderQuery, StatusInput, OrderSummary, OrderDetailData } from './contracts';
 import { OrderError } from './http';
@@ -168,7 +168,7 @@ export async function transitionOrder(scope: BranchScope, id: string, input: Sta
   await initOrders();
   const branch = branchClause(scope);
   if (input.to === 'refunded' && role !== 'admin') throw new OrderError('FORBIDDEN', 403);
-  if (!canTransition(input.expected, input.to, 'sql-checks-paid-at')) throw new OrderError('INVALID_TRANSITION', 409);
+  if (!isTransitionEdge(input.expected, input.to)) throw new OrderError('INVALID_TRANSITION', 409);
   if (input.to === 'refunded' && isProductionDeployment()) throw new OrderError('INVALID_TRANSITION', 409);
   const at = now.toISOString();
   const settled = input.to === 'completed' && input.recordPayment === true

@@ -46,36 +46,72 @@ test("sameOrigin rejects when there is no Host to compare against", () => {
   assert.equal(sameOrigin(req({ origin: "http://localhost:3005" })), false);
 });
 
-test("sameOrigin prefers x-forwarded-host (Vercel)", () => {
+test("sameOrigin prefers x-forwarded-host only on Vercel", () => {
   const url = "https://sushinaa.vercel.app/api/admin/session";
-  const vercel = {
-    host: "sushinaa.vercel.app",
-    "x-forwarded-host": "sushinaa.vercel.app",
-  };
-  assert.ok(
-    sameOrigin(req({ ...vercel, origin: "https://sushinaa.vercel.app" }, url)),
-  );
-  assert.equal(
-    sameOrigin(req({ ...vercel, origin: "https://evil.example" }, url)),
-    false,
-  );
-  assert.ok(
-    sameOrigin(
-      req({
-        origin: "https://menu.example",
-        host: "internal:3000",
-        "x-forwarded-host": "menu.example",
-      }),
-    ),
-  );
-  assert.equal(
-    sameOrigin(
-      req({
-        origin: "http://internal:3000",
-        host: "internal:3000",
-        "x-forwarded-host": "menu.example",
-      }),
-    ),
-    false,
-  );
+  const previous = process.env.VERCEL;
+  process.env.VERCEL = "1";
+  try {
+    const vercel = {
+      host: "sushinaa.vercel.app",
+      "x-forwarded-host": "sushinaa.vercel.app",
+    };
+    assert.ok(
+      sameOrigin(req({ ...vercel, origin: "https://sushinaa.vercel.app" }, url)),
+    );
+    assert.equal(
+      sameOrigin(req({ ...vercel, origin: "https://evil.example" }, url)),
+      false,
+    );
+    assert.ok(
+      sameOrigin(
+        req({
+          origin: "https://menu.example",
+          host: "internal:3000",
+          "x-forwarded-host": "menu.example",
+        }),
+      ),
+    );
+    assert.equal(
+      sameOrigin(
+        req({
+          origin: "http://internal:3000",
+          host: "internal:3000",
+          "x-forwarded-host": "menu.example",
+        }),
+      ),
+      false,
+    );
+  } finally {
+    if (previous === undefined) delete process.env.VERCEL;
+    else process.env.VERCEL = previous;
+  }
+});
+
+test("sameOrigin ignores client X-Forwarded-Host outside Vercel", () => {
+  const previous = process.env.VERCEL;
+  delete process.env.VERCEL;
+  try {
+    assert.equal(
+      sameOrigin(
+        req({
+          origin: "https://evil.example",
+          host: "127.0.0.1:3005",
+          "x-forwarded-host": "evil.example",
+        }),
+      ),
+      false,
+    );
+    assert.ok(
+      sameOrigin(
+        req({
+          origin: "http://127.0.0.1:3005",
+          host: "127.0.0.1:3005",
+          "x-forwarded-host": "evil.example",
+        }),
+      ),
+    );
+  } finally {
+    if (previous === undefined) delete process.env.VERCEL;
+    else process.env.VERCEL = previous;
+  }
 });

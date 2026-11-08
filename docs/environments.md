@@ -48,6 +48,8 @@ The dev hostname starts with `sushinaa-cms-dev-`. The dev database has an `env_m
 
 `test-dev` has `CMS_DATABASE_URL`, `CMS_DATABASE_AUTH_TOKEN`, and `CMS_ENV_GUARD=enforce` for the dev database only. It has no admin password, so its CMS sign-in fails closed. The dev admin password lives in the Development environment of `sushinaa-menu`, not in git.
 
+Set `CRON_SECRET` on `test-dev` (and any other hosted non-live project that runs `vercel.json` crons) so Vercel Cron can call `/api/cron/purge-orders`. Without it the route returns 401. Do not rely on purge against the live Turso host; the route refuses that database.
+
 ### Sadad (online pay before pickup)
 
 Product remains car-collection pickup. Sadad only replaces pay-at-pickup/mock for that order.

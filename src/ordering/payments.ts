@@ -6,6 +6,10 @@ import { initOrders } from './checkout/repository';
 import { afterChange } from './write';
 import { appendPaymentEvent, updateAttemptStatus } from './ledger';
 import { redeemHeldCouponStatement } from './coupons/repository';
+import {
+  markAttemptPaidForProviderStatement,
+  markAttemptPaidStatement,
+} from './payment-attempt';
 import type { VerifiedPaymentFact } from './payment-gateway/types';
 
 export type ProviderEvent = { provider: string; reference: string; type: string };
@@ -66,7 +70,7 @@ export async function settlePayment(
     )),
     { sql: "INSERT OR IGNORE INTO order_outbox (id,order_id,event,created_at) SELECT ?,?,'order.paid',? WHERE changes()=1", args: [randomUUID(), orderId, at] },
     { sql: "INSERT OR IGNORE INTO order_events (id,order_id,provider_event,type,created_at) SELECT ?,?,?,?,? WHERE changes()=1", args: [randomUUID(), orderId, event.reference, event.type, at] },
-    { sql: "UPDATE payment_attempts SET status='paid', updated_at=?, reference=COALESCE(reference, ?) WHERE order_id=? AND provider=? AND changes()=1", args: [at, event.reference, orderId, event.provider] },
+    markAttemptPaidForProviderStatement(orderId, event.provider, at, event.reference),
     redeemHeldCouponStatement(orderId, at),
   ], 'write');
   return result[0].rowsAffected === 1;
@@ -140,7 +144,7 @@ export function counterSettlementStatements(orderId: string, at: string): SqlSta
     },
     { sql: "INSERT OR IGNORE INTO order_outbox (id,order_id,event,created_at) SELECT ?,?,'order.paid',? WHERE changes()=1", args: [randomUUID(), orderId, at] },
     { sql: "INSERT OR IGNORE INTO order_events (id,order_id,provider_event,type,created_at) SELECT ?,?,?,?,? WHERE changes()=1", args: [randomUUID(), orderId, `counter:${orderId}`, 'counter.paid', at] },
-    { sql: "UPDATE payment_attempts SET status='paid', updated_at=? WHERE order_id=? AND changes()=1", args: [at, orderId] },
+    markAttemptPaidStatement(orderId, at),
     redeemHeldCouponStatement(orderId, at),
   ];
 }
