@@ -6,6 +6,10 @@ const next: Record<OrderStatus, readonly OrderStatus[]> = {
   accepted: ['preparing', 'cancelled'], preparing: ['ready', 'cancelled'],
   ready: ['completed', 'cancelled'], cancelled: ['refunded'], completed: [], refunded: [],
 };
+/** Graph edge only. paid_at gates for refunded live in SQL / allowedTransitions. */
+export function isTransitionEdge(from: OrderStatus, to: OrderStatus) {
+  return next[from].includes(to);
+}
 export function allowedTransitions(status: OrderStatus, paidAt: string | null) {
   return next[status].filter(s => s !== 'refunded' || Boolean(paidAt));
 }

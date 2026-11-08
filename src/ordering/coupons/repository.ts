@@ -13,14 +13,23 @@ import {
   type CouponSnapshot,
   type CreateCouponInput,
 } from './types';
+import {
+  DISABLE_ASSIGN,
+  FROM_AVAILABLE,
+  FROM_HELD,
+  HOLD_ASSIGN,
+  REDEEM_ASSIGN,
+  RELEASE_ASSIGN,
+  canCouponTransition,
+} from './lifecycle';
+import { cancelOpenAttemptsStatement } from '@/ordering/payment-attempt';
 
 const PAYMENT_METHODS = ['pay_at_pickup', 'mock', 'sadad'] as const;
 
 export const HOLD_TTL_MS = 2 * 60 * 60 * 1000;
 
 const COLUMNS = 'id, code, kind, value, expires_at, status, held_order_id, held_at, redeemed_order_id, redeemed_at, disabled_at, created_at, updated_at';
-const REDEEM_ASSIGN = `status='redeemed', redeemed_order_id=?, redeemed_at=?, held_order_id=NULL, held_at=NULL, updated_at=?`;
-const RELEASE_ASSIGN = `status='available', held_order_id=NULL, held_at=NULL, updated_at=?`;
+export { REDEEM_ASSIGN, RELEASE_ASSIGN, canCouponTransition } from './lifecycle';
 
 type Queryable = {
   execute(statement: SqlStatement): Promise<{ rows: DbRow[]; rowsAffected: number }>;
@@ -118,8 +127,8 @@ async function releaseHeld(executor: Queryable, now: Date, ttlMs: number, code?:
   const at = now.toISOString();
   const before = new Date(now.getTime() - ttlMs).toISOString();
   const result = await executor.execute({
-    sql: `UPDATE coupons SET status='available', held_order_id=NULL, held_at=NULL, updated_at=?
-      WHERE status='held' AND held_at IS NOT NULL AND held_at<?${code ? ' AND code=?' : ''}`,
+    sql: `UPDATE coupons SET ${RELEASE_ASSIGN}
+      WHERE ${FROM_HELD} AND held_at IS NOT NULL AND held_at<?${code ? ' AND code=?' : ''}`,
     args: code ? [at, before, code] : [at, before],
   });
   return Number(result.rowsAffected);
@@ -191,7 +200,7 @@ export async function releaseHeldCoupon(id: string, now = new Date()): Promise<C
   return withWrite(async (tx) => {
     const current = await readWhere(tx, 'id=?', [id]);
     if (!current) throw new CouponError('NOT_FOUND');
-    if (current.status !== 'held') throw new CouponError('CONFLICT');
+    if (!canCouponTransition(current.status, 'available')) throw new CouponError('CONFLICT');
     if (current.heldOrderId) {
       const order = (await tx.execute({
         sql: 'SELECT status, paid_at FROM orders WHERE id=?',
@@ -204,15 +213,11 @@ export async function releaseHeldCoupon(id: string, now = new Date()): Promise<C
           args: [at, purgeAt, current.heldOrderId],
         });
         if (Number(cancelled.rowsAffected) !== 1) throw new CouponError('CONFLICT');
-        await tx.execute({
-          sql: `UPDATE payment_attempts SET status='cancelled', updated_at=?
-            WHERE order_id=? AND status NOT IN ('paid', 'failed', 'cancelled')`,
-          args: [at, current.heldOrderId],
-        });
+        await tx.execute(cancelOpenAttemptsStatement(current.heldOrderId, at));
       }
     }
     const updated = (await tx.execute({
-      sql: `UPDATE coupons SET ${RELEASE_ASSIGN} WHERE id=? AND status='held' RETURNING ${COLUMNS}`,
+      sql: `UPDATE coupons SET ${RELEASE_ASSIGN} WHERE id=? AND ${FROM_HELD} RETURNING ${COLUMNS}`,
       args: [at, id],
     })).rows[0];
     if (!updated) throw new CouponError('CONFLICT');
@@ -224,8 +229,8 @@ export async function disableCoupon(id: string, now = new Date()): Promise<Coupo
   await initDb();
   const at = now.toISOString();
   const updated = (await db.execute({
-    sql: `UPDATE coupons SET status='disabled', disabled_at=?, updated_at=?
-      WHERE id=? AND status='available' RETURNING ${COLUMNS}`,
+    sql: `UPDATE coupons SET ${DISABLE_ASSIGN}
+      WHERE id=? AND ${FROM_AVAILABLE} RETURNING ${COLUMNS}`,
     args: [at, at, id],
   })).rows[0];
   if (updated) return couponFrom(updated);
@@ -267,8 +272,8 @@ export async function claimCouponOn(executor: Queryable, code: string, orderId: 
   })).rows[0];
   if (other) throw new CouponError('CONFLICT');
   const claimed = (await executor.execute({
-    sql: `UPDATE coupons SET status='held', held_order_id=?, held_at=?, updated_at=?
-      WHERE code=? AND status='available' AND expires_at>?
+    sql: `UPDATE coupons SET ${HOLD_ASSIGN}
+      WHERE code=? AND ${FROM_AVAILABLE} AND expires_at>?
       RETURNING ${COLUMNS}`,
     args: [orderId, at, at, normalized, at],
   })).rows[0];
@@ -287,7 +292,7 @@ export async function claimCoupon(code: string, orderId: string, now = new Date(
 export function redeemHeldCouponStatement(orderId: string, at: string): SqlStatement {
   return {
     sql: `UPDATE coupons SET ${REDEEM_ASSIGN}
-      WHERE status='held' AND held_order_id=?
+      WHERE ${FROM_HELD} AND held_order_id=?
       AND EXISTS (SELECT 1 FROM orders WHERE id=? AND paid_at IS NOT NULL)`,
     args: [orderId, at, at, orderId, orderId],
   };
@@ -298,7 +303,7 @@ export async function redeemCouponForOrder(orderId: string, now = new Date()): P
   const at = now.toISOString();
   const updated = (await db.execute({
     sql: `UPDATE coupons SET ${REDEEM_ASSIGN}
-      WHERE status='held' AND held_order_id=?
+      WHERE ${FROM_HELD} AND held_order_id=?
       RETURNING ${COLUMNS}`,
     args: [orderId, at, at, orderId],
   })).rows[0];
@@ -311,7 +316,7 @@ export async function redeemCouponForOrder(orderId: string, now = new Date()): P
 /** A failed status write leaves changes() at 0, so a cancelled batch does not free a code it did not cancel. */
 export function releaseCouponStatement(orderId: string, at: string): SqlStatement {
   return {
-    sql: `UPDATE coupons SET ${RELEASE_ASSIGN} WHERE status='held' AND held_order_id=? AND changes()=1`,
+    sql: `UPDATE coupons SET ${RELEASE_ASSIGN} WHERE ${FROM_HELD} AND held_order_id=? AND changes()=1`,
     args: [at, orderId],
   };
 }
@@ -320,7 +325,7 @@ export async function releaseCouponForOrder(orderId: string, now = new Date()): 
   await initDb();
   const at = now.toISOString();
   const updated = (await db.execute({
-    sql: `UPDATE coupons SET ${RELEASE_ASSIGN} WHERE status='held' AND held_order_id=? RETURNING ${COLUMNS}`,
+    sql: `UPDATE coupons SET ${RELEASE_ASSIGN} WHERE ${FROM_HELD} AND held_order_id=? RETURNING ${COLUMNS}`,
     args: [at, orderId],
   })).rows[0];
   return updated ? couponFrom(updated) : null;
