@@ -1,8 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  attemptFromPredicate,
   canAttemptTransition,
   deriveCustomerPaymentStatus,
+  fromStatusesFor,
+  markAttemptPaidForProviderStatement,
   openAttemptPredicate,
   sealedAttemptStatuses,
 } from '../src/ordering/payment-attempt';
@@ -24,6 +27,15 @@ test('payment attempt graph seals paid/failed/cancelled', () => {
   assert.equal(canAttemptTransition('cancelled', 'awaiting_payment'), false);
   assert.deepEqual([...sealedAttemptStatuses], ['paid', 'failed', 'cancelled']);
   assert.match(openAttemptPredicate(), /NOT IN/);
+});
+
+test('attempt writers only accept graph-legal from statuses', () => {
+  assert.deepEqual([...fromStatusesFor('processing')], ['awaiting_payment', 'processing', 'failed']);
+  assert.deepEqual([...fromStatusesFor('paid')], ['awaiting_payment', 'processing', 'failed']);
+  assert.match(attemptFromPredicate('processing'), /awaiting_payment/);
+  assert.doesNotMatch(attemptFromPredicate('processing'), /'paid'/);
+  assert.doesNotMatch(attemptFromPredicate('paid'), /'cancelled'/);
+  assert.match(markAttemptPaidForProviderStatement('o', 'sadad', 't', 'r').sql, /status IN/);
 });
 
 test('customer paymentStatus derivation has one owner', () => {

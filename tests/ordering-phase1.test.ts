@@ -490,7 +490,7 @@ test('counter payment at collection settles through the payments module and chan
   const at = new Date('2026-10-23T16:00:00Z');
   await db.execute({
     sql: 'INSERT INTO payment_attempts (id,order_id,provider,reference,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?)',
-    args: [`PA-${order.id}`, order.id, 'counter', null, 'pending', at.toISOString(), at.toISOString()],
+    args: [`PA-${order.id}`, order.id, 'counter', null, 'awaiting_payment', at.toISOString(), at.toISOString()],
   });
   const before = await row(order.id);
   await orders.transitionOrder(admin, order.id, { expected: 'ready', to: 'completed', recordPayment: true }, ctx, at);

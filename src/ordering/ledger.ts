@@ -3,7 +3,7 @@ import { db } from '@/cms/db';
 import { initOrders } from './checkout/repository';
 import type { PaymentStatus } from './payment-gateway/types';
 import type { BranchId } from '@/branches/branches';
-import { attemptStatusCoalesceSql, isAttemptStatus } from './payment-attempt';
+import { attemptFromPredicate, attemptStatusCoalesceSql, isAttemptStatus } from './payment-attempt';
 import { OrderError } from './http';
 
 export type PaymentEventKind = 'launch' | 'callback' | 'webhook' | 'settled' | 'failed';
@@ -55,7 +55,7 @@ export async function updateAttemptStatus(
   const at = now.toISOString();
   await db.execute({
     sql: `UPDATE payment_attempts SET status=?, updated_at=?, reference=COALESCE(?, reference)
-      WHERE order_id=? AND provider=?`,
+      WHERE order_id=? AND provider=? AND ${attemptFromPredicate(status)}`,
     args: [status, at, reference, orderId, provider],
   });
 }

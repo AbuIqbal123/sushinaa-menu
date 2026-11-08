@@ -29,6 +29,17 @@ export function canAttemptTransition(from: AttemptStatus, to: AttemptStatus) {
   return next[from].includes(to);
 }
 
+/** Statuses that may legally move to `to` per the attempt graph. */
+export function fromStatusesFor(to: AttemptStatus): readonly AttemptStatus[] {
+  return attemptStatuses.filter((from) => canAttemptTransition(from, to));
+}
+
+export function attemptFromPredicate(to: AttemptStatus) {
+  const from = fromStatusesFor(to);
+  if (!from.length) return '0';
+  return `status IN (${from.map((status) => `'${status}'`).join(',')})`;
+}
+
 export function openAttemptPredicate() {
   return `status NOT IN (${sealedAttemptStatuses.map((status) => `'${status}'`).join(',')})`;
 }
@@ -50,14 +61,15 @@ export function markAttemptPaidForProviderStatement(
 ): SqlStatement {
   return {
     sql: `UPDATE payment_attempts SET status='paid', updated_at=?, reference=COALESCE(reference, ?)
-      WHERE order_id=? AND provider=? AND changes()=1`,
+      WHERE order_id=? AND provider=? AND changes()=1 AND ${attemptFromPredicate('paid')}`,
     args: [at, reference, orderId, provider],
   };
 }
 
 export function markAttemptPaidStatement(orderId: string, at: string): SqlStatement {
   return {
-    sql: `UPDATE payment_attempts SET status='paid', updated_at=? WHERE order_id=? AND changes()=1`,
+    sql: `UPDATE payment_attempts SET status='paid', updated_at=?
+      WHERE order_id=? AND changes()=1 AND ${attemptFromPredicate('paid')}`,
     args: [at, orderId],
   };
 }
