@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { LIVE_DATABASE_HOST } from '../src/lib/deploy-env';
 
 test('coupon preview quotes a code for the session and does not claim it', () => {
   const dir = mkdtempSync(join(tmpdir(), 'sn-coupon-preview-'));
@@ -58,5 +59,36 @@ test('coupon preview quotes a code for the session and does not claim it', () =>
     },
   });
   rmSync(dir, { recursive: true, force: true });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+});
+
+test('coupon preview refuses the live database host', () => {
+  const result = spawnSync(process.execPath, ['--experimental-test-module-mocks', '--import', 'tsx', '--eval', `
+    const assert = (await import('node:assert/strict')).default;
+    const { mock } = await import('node:test');
+    mock.module('next/headers', { namedExports: { cookies: async () => ({
+      get: () => ({ value: '${'ab'.repeat(32)}' }),
+      set() {},
+    }) } });
+    const route = await import('./src/app/api/orders/coupon-preview/route.ts');
+    const response = await route.POST(new Request('http://localhost/api/orders/coupon-preview', {
+      method: 'POST',
+      headers: { origin: 'http://localhost', host: 'localhost', 'content-type': 'application/json' },
+      body: JSON.stringify({ code: 'SAVE10', subtotalMinor: 1000 }),
+    }));
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), { code: 'ORDERING_UNAVAILABLE' });
+  `], {
+    encoding: 'utf8',
+    timeout: 20000,
+    env: {
+      ...process.env,
+      VERCEL: '1',
+      VERCEL_ENV: 'preview',
+      CMS_DATABASE_AUTH_TOKEN: '',
+      CMS_ENV_GUARD: 'report',
+      CMS_DATABASE_URL: `libsql://${LIVE_DATABASE_HOST}`,
+    },
+  });
   assert.equal(result.status, 0, result.stderr || result.stdout);
 });
