@@ -14,13 +14,15 @@ test('databaseHost strips trailing dots and ignores file urls', () => {
 });
 
 test('orderDatabaseAllowed refuses live host aliases libsql still dials', () => {
+  const withUserinfo = ['libsql://', 'evil.test', String.fromCharCode(64), LIVE_DATABASE_HOST].join('');
+  const withBackslashUserinfo = ['libsql://', 'evil.test', '\\', String.fromCharCode(64), LIVE_DATABASE_HOST].join('');
   assert.equal(orderDatabaseAllowed(`libsql://${LIVE_DATABASE_HOST}`), false);
   assert.equal(orderDatabaseAllowed(`libsql://${LIVE_DATABASE_HOST}.`), false);
   assert.equal(orderDatabaseAllowed(`libsql://${LIVE_DATABASE_HOST}%2e`), false);
-  assert.equal(orderDatabaseAllowed(`libsql://evil.test\\@${LIVE_DATABASE_HOST}`), false);
-  assert.equal(orderDatabaseAllowed(`libsql://evil.test@${LIVE_DATABASE_HOST}`), false);
+  assert.equal(orderDatabaseAllowed(withBackslashUserinfo), false);
+  assert.equal(orderDatabaseAllowed(withUserinfo), false);
   assert.equal(orderDatabaseAllowed('libsql://sushinaa-cms-dev-example.turso.io'), true);
   assert.equal(orderDatabaseAllowed('file:./data/menu.db'), true);
-  assert.equal(touchesLiveDatabaseHost(`libsql://evil.test\\@${LIVE_DATABASE_HOST}`), true);
+  assert.equal(touchesLiveDatabaseHost(withBackslashUserinfo), true);
   assert.equal(touchesLiveDatabaseHost('libsql://sushinaa-cms-dev-example.turso.io'), false);
 });

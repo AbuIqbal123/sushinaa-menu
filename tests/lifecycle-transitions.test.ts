@@ -35,7 +35,9 @@ test('attempt writers only accept graph-legal from statuses', () => {
   assert.match(attemptFromPredicate('processing'), /awaiting_payment/);
   assert.doesNotMatch(attemptFromPredicate('processing'), /'paid'/);
   assert.doesNotMatch(attemptFromPredicate('paid'), /'cancelled'/);
-  assert.match(markAttemptPaidForProviderStatement('o', 'sadad', 't', 'r').sql, /status IN/);
+  const markPaid = markAttemptPaidForProviderStatement('o', 'sadad', 't', 'r');
+  assert.ok(typeof markPaid === 'object' && markPaid !== null && 'sql' in markPaid);
+  assert.match(markPaid.sql, /status IN/);
 });
 
 test('customer paymentStatus derivation has one owner', () => {
