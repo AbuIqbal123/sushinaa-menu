@@ -3,7 +3,6 @@ import { gateway, resolvePaymentProvider } from '@/ordering/payment-gateway/reso
 import { WEBHOOK_ACK } from '@/ordering/vendors/sadad';
 import { rateAllowed } from '@/ordering/rate-limit';
 import { auditContext } from '@/cms/audit';
-import { digestPayload, appendPaymentEvent } from '@/ordering/ledger';
 import { paymentLog, sadadWebhookFields } from '@/ordering/payment-log';
 
 export const runtime = 'nodejs';
@@ -46,6 +45,8 @@ export async function POST(request: Request) {
       fact = await gateway().verifyWebhook(raw);
     } catch (error) {
       const reason = error instanceof Error ? error.message : 'VERIFY_FAILED';
+      // Log only: never write payment_events for unverified payloads. Those rows
+      // feed failedPaymentCount and would let anyone with an order id lock the pay CTA.
       paymentLog('error', {
         event: 'webhook.verify_failed',
         reason,
@@ -53,16 +54,6 @@ export async function POST(request: Request) {
         fieldNames,
         ...gatewayNote,
       });
-      if (orderHint) {
-        await appendPaymentEvent({
-          orderId: orderHint,
-          provider: 'sadad',
-          kind: 'webhook',
-          ourStatus: 'failed',
-          eventKey: `webhook:verify-failed:${digestPayload(raw)}`,
-          rawDigest: digestPayload(raw),
-        }).catch(() => {});
-      }
       return Response.json({ status: 'error' }, { status: 400 });
     }
 

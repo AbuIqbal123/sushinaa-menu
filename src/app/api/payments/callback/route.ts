@@ -3,7 +3,6 @@ import { applyVerifiedFact } from '@/ordering/payments';
 import { gateway, resolvePaymentProvider } from '@/ordering/payment-gateway/resolve';
 import { BRANCHES } from '@/branches/branches';
 import { initOrders } from '@/ordering/checkout/repository';
-import { digestPayload, appendPaymentEvent } from '@/ordering/ledger';
 import { callbackHost, paymentLog, sadadCallbackFields } from '@/ordering/payment-log';
 import { callbackReturnKind } from '@/ordering/payment-return';
 
@@ -94,6 +93,8 @@ async function handleCallback(request: Request, method: 'GET' | 'POST') {
       fact = await gateway().verifyCallback(body);
     } catch (error) {
       const reason = error instanceof Error ? error.message : 'VERIFY_FAILED';
+      // Log only: never write payment_events for unverified payloads. Those rows
+      // feed failedPaymentCount and would let anyone with an order id lock the pay CTA.
       paymentLog('error', {
         event: 'callback.verify_failed',
         reason,
@@ -101,18 +102,6 @@ async function handleCallback(request: Request, method: 'GET' | 'POST') {
         fieldNames: Object.keys(body).sort(),
         ...gatewayNote,
       });
-      const orderId = body.ORDERID || body.website_ref_no;
-      if (orderId) {
-        await appendPaymentEvent({
-          orderId,
-          provider: 'sadad',
-          kind: 'callback',
-          ourStatus: 'failed',
-          providerReference: body.transaction_number || null,
-          eventKey: `callback:verify-failed:${digestPayload(body)}`,
-          rawDigest: digestPayload(body),
-        }).catch(() => {});
-      }
       return redirectTo(request, `${fallback}?pay=failed`);
     }
 
